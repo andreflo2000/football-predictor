@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: football-predictor-api
+    env: python
+    region: frankfurt
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: API_FOOTBALL_KEY
+        sync: false
+      - key: FOOTBALL_DATA_KEY
+        sync: false
+    rootDir: backend
+    healthCheckPath: /api/health

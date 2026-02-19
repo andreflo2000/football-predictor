@@ -1,0 +1,138 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --pitch-dark: #050f08;
+  --pitch-mid: #0a1f10;
+  --pitch-line: #1a3d22;
+  --neon-green: #00ff6a;
+  --neon-dim: #00c950;
+  --gold: #fbbf24;
+  --red-card: #ef4444;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--pitch-dark);
+  font-family: var(--font-display), sans-serif;
+  letter-spacing: 0.01em;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Pitch grid background */
+.pitch-grid {
+  background-image:
+    linear-gradient(rgba(0, 255, 106, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 255, 106, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* Scanline effect */
+.scanlines::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.08) 2px,
+    rgba(0, 0, 0, 0.08) 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* Glow effects */
+.glow-green {
+  box-shadow: 0 0 20px rgba(0, 255, 106, 0.2), 0 0 60px rgba(0, 255, 106, 0.05);
+}
+.glow-text {
+  text-shadow: 0 0 20px rgba(0, 255, 106, 0.6);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--pitch-dark); }
+::-webkit-scrollbar-thumb { background: var(--pitch-line); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: var(--neon-green); }
+
+/* Probability bars */
+.prob-bar {
+  height: 8px;
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+}
+.prob-bar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%);
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 10px rgba(0, 255, 106, 0.2); }
+  50% { box-shadow: 0 0 30px rgba(0, 255, 106, 0.5); }
+}
+
+.animate-in { animation: fadeInUp 0.5s ease-out forwards; }
+.animate-pulse-glow { animation: pulse-glow 2s infinite; }
+
+/* Ticket card style */
+.ticket-card {
+  background: linear-gradient(135deg, #0d2416 0%, #071309 100%);
+  border: 1px solid var(--pitch-line);
+  border-radius: 12px;
+  position: relative;
+  overflow: hidden;
+}
+.ticket-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--neon-green), transparent);
+}
+
+/* Score badge */
+.score-badge {
+  font-family: var(--font-mono);
+  background: #0d2416;
+  border: 1px solid var(--pitch-line);
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+.score-badge:hover {
+  border-color: var(--neon-green);
+  box-shadow: 0 0 12px rgba(0, 255, 106, 0.15);
+}
+
+/* Form badge */
+.form-w { background: #14532d; color: #4ade80; }
+.form-d { background: #1e3a5f; color: #60a5fa; }
+.form-l { background: #450a0a; color: #f87171; }
+
+/* Select styling */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+}
