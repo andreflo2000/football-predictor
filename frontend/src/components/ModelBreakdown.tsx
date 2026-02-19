@@ -105,12 +105,11 @@ export default function ModelBreakdown({ breakdown }: Props) {
       </div>
 
       {models.map(m => (
-        <ModelRow
-          key={m.key}
-          {...m}
-          data={m.key === 'xgboost' ? breakdown.xgboost : breakdown[m.key as 'elo' | 'poisson']}
-        />
-      ))}
+  <ModelRow
+    {...m}
+    data={m.key === 'xgboost' ? breakdown.xgboost : breakdown[m.key as 'elo' | 'poisson']}
+  />
+))}
     </div>
   )
 }
