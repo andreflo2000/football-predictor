@@ -135,7 +135,7 @@ export default function ProbabilityChart({ prediction }: Props) {
             labels: { color: '#4a6b50', font: { family: 'JetBrains Mono', size: 10 } }
           },
           tooltip: {
-            callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(1)}%` }
+            callbacks: { label: ctx => ` ${ctx.dataset.label}: ${(ctx.parsed.y ?? 0).toFixed(1)}%` }
           }
         },
         scales: {
