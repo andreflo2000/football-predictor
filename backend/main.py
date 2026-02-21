@@ -525,3 +525,16 @@ async def health():
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+
+
+# ─── WEEKLY ENDPOINT ─────────────────────────────────────────────────────────
+from models.weekly import get_weekly_fixtures
+
+@app.get("/api/weekly")
+async def get_weekly():
+    """Returnează toate meciurile săptămânii grupate pe zile cu predicții complete."""
+    try:
+        weekly = get_weekly_fixtures(DEMO_FIXTURES)
+        return weekly
+    except Exception as e:
+        return {"error": str(e)}
