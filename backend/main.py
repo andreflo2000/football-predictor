@@ -496,10 +496,11 @@ async def predict_match(
     home_team_id: int = Query(None),
     away_team_id: int = Query(None),
 ):
+    import traceback
     from models.betting import BettingCalculator
     from data.leagues import LEAGUES_LIST
-    betting = BettingCalculator()
 
+    # 1. Rulează predicția
     try:
         result = await predictor.predict(
             home_team=home_team,
@@ -511,42 +512,69 @@ async def predict_match(
     except Exception:
         result = predictor.demo_prediction(home_team, away_team)
 
-    # ── Normalizare response pentru frontend ──────────────────────────────────
-    pred = result.get("prediction", {})
-    breakdown = result.get("model_breakdown", {})
-    team_stats = result.get("team_stats", {})
-    xg = result.get("expected_goals", {"home": 1.45, "away": 1.15})
+    # 2. Extrage valorile cu fallback-uri sigure
+    pred = result.get("prediction") or {}
+    breakdown = result.get("model_breakdown") or {}
+    team_stats = result.get("team_stats") or {}
+    xg = result.get("expected_goals") or {"home": 1.45, "away": 1.15}
 
-    # Formatare probabilități finale
-    home_p = pred.get("home_win", 45.0)
-    draw_p = pred.get("draw", 27.0)
-    away_p = pred.get("away_win", 28.0)
+    home_p = float(pred.get("home_win") or 45.0)
+    draw_p = float(pred.get("draw") or 27.0)
+    away_p = float(pred.get("away_win") or 28.0)
 
-    # Calculare markets
-    league_info = next((l for l in LEAGUES_LIST if l["id"] == league_id), None)
-    league_rating = league_info["rating"] if league_info else 50.0
-    markets = betting.calculate_all_markets(
-        lambda_=float(xg.get("home", 1.45)),
-        mu=float(xg.get("away", 1.15)),
-        home_team=home_team,
-        away_team=away_team,
-        league_rating=league_rating,
-    )
+    lam = float(xg.get("home") or 1.45)
+    mu  = float(xg.get("away") or 1.15)
 
-    # Format stats
-    def fmt_stats(s, team):
-        if not s: return None
-        return {
-            "elo_rating": int(s.get("elo", 1500)),
-            "xg_for": round(float(s.get("xg_for", 1.4)), 2),
-            "xg_against": round(float(s.get("xg_against", 1.1)), 2),
-            "goals_avg": round(float(s.get("xg_for", 1.4)), 2),
-            "form": s.get("form", ["W","D","W","W","L"]),
-        }
+    # 3. Markets
+    try:
+        betting = BettingCalculator()
+        league_info = next((l for l in LEAGUES_LIST if l["id"] == league_id), None)
+        league_rating = float(league_info["rating"]) if league_info else 50.0
+        markets = betting.calculate_all_markets(
+            lambda_=lam, mu=mu,
+            home_team=home_team, away_team=away_team,
+            league_rating=league_rating,
+        )
+    except Exception:
+        markets = {}
 
-    elo_bd = breakdown.get("elo", {})
-    poisson_bd = breakdown.get("poisson", {})
-    xgb_bd = breakdown.get("xgboost", {}) or {}
+    # 4. Format breakdown
+    elo_bd    = breakdown.get("elo") or {}
+    poisson_bd= breakdown.get("poisson") or {}
+    xgb_bd    = breakdown.get("xgboost") or {}
+
+    # 5. Format top_scores
+    raw_scores = result.get("top_scores") or []
+    top_scores = []
+    for s in raw_scores[:10]:
+        try:
+            if "score" in s:
+                score_str = str(s["score"])
+            elif "home_goals" in s and "away_goals" in s:
+                score_str = f"{s['home_goals']}:{s['away_goals']}"
+            else:
+                score_str = "0:0"
+            top_scores.append({
+                "score": score_str,
+                "probability": round(float(s.get("probability") or 5.0), 2)
+            })
+        except Exception:
+            continue
+
+    # 6. Format team stats
+    def fmt_stats(s):
+        if not s:
+            return None
+        try:
+            return {
+                "elo_rating": int(float(s.get("elo") or 1500)),
+                "xg_for":     round(float(s.get("xg_for") or 1.4), 2),
+                "xg_against": round(float(s.get("xg_against") or 1.1), 2),
+                "goals_avg":  round(float(s.get("xg_for") or 1.4), 2),
+                "form":       s.get("form") or ["W","D","W","W","L"],
+            }
+        except Exception:
+            return None
 
     return {
         "home_team": home_team,
@@ -557,31 +585,24 @@ async def predict_match(
             "away": round(away_p, 1),
         },
         "elo": {
-            "home": round(float(elo_bd.get("home_win", home_p)), 1),
-            "draw": round(float(elo_bd.get("draw", draw_p)), 1),
-            "away": round(float(elo_bd.get("away_win", away_p)), 1),
+            "home": round(float(elo_bd.get("home_win") or home_p), 1),
+            "draw": round(float(elo_bd.get("draw") or draw_p), 1),
+            "away": round(float(elo_bd.get("away_win") or away_p), 1),
         },
         "poisson": {
-            "home": round(float(poisson_bd.get("home_win", home_p)), 1),
-            "draw": round(float(poisson_bd.get("draw", draw_p)), 1),
-            "away": round(float(poisson_bd.get("away_win", away_p)), 1),
+            "home": round(float(poisson_bd.get("home_win") or home_p), 1),
+            "draw": round(float(poisson_bd.get("draw") or draw_p), 1),
+            "away": round(float(poisson_bd.get("away_win") or away_p), 1),
         },
         "xgboost": {
-            "home": round(float(xgb_bd.get("home_win", home_p) if xgb_bd else home_p), 1),
-            "draw": round(float(xgb_bd.get("draw", draw_p) if xgb_bd else draw_p), 1),
-            "away": round(float(xgb_bd.get("away_win", away_p) if xgb_bd else away_p), 1),
+            "home": round(float(xgb_bd.get("home_win") or home_p), 1),
+            "draw": round(float(xgb_bd.get("draw") or draw_p), 1),
+            "away": round(float(xgb_bd.get("away_win") or away_p), 1),
         },
-        "expected_goals": {
-            "home": round(float(xg.get("home", 1.45)), 2),
-            "away": round(float(xg.get("away", 1.15)), 2),
-        },
-        "top_scores": [
-            {"score": s.get("score", s.get("home_goals","0")+":"+s.get("away_goals","0") if "home_goals" in s else "0:0"),
-             "probability": round(float(s.get("probability", 5.0)), 2)}
-            for s in result.get("top_scores", [])[:10]
-        ],
-        "home_stats": fmt_stats(team_stats.get("home"), home_team),
-        "away_stats": fmt_stats(team_stats.get("away"), away_team),
+        "expected_goals": {"home": round(lam, 2), "away": round(mu, 2)},
+        "top_scores": top_scores,
+        "home_stats": fmt_stats(team_stats.get("home")),
+        "away_stats": fmt_stats(team_stats.get("away")),
         "markets": markets,
     }
 
