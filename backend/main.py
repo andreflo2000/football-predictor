@@ -3,12 +3,29 @@ Football Predictor API - FastAPI Backend
 """
 
 from fastapi import FastAPI, HTTPException, Query
+from datetime import datetime, timedelta
+import pytz
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
 from models.predictor import FootballPredictor
 from data.fetcher import DataFetcher
 from data.leagues import LEAGUES_LIST
+
+# ─── Date dinamice Romania ────────────────────────────────────────────────────
+def get_ro_dates():
+    try:
+        import pytz
+        tz = pytz.timezone("Europe/Bucharest")
+        now = datetime.now(tz)
+    except Exception:
+        now = datetime.now()
+    return {
+        "yesterday": (now - timedelta(days=1)).strftime("%Y-%m-%d"),
+        "today":     now.strftime("%Y-%m-%d"),
+        "tomorrow":  (now + timedelta(days=1)).strftime("%Y-%m-%d"),
+        "after":     (now + timedelta(days=2)).strftime("%Y-%m-%d"),
+    }
 
 app = FastAPI(
     title="Football Predictor API",
@@ -464,6 +481,21 @@ EXTRA_LEAGUES = [
 ]
 
 
+def get_fixtures_with_real_dates(league_id: int) -> list:
+    """Returnează fixture-urile cu date reale ieri/azi/mâine/poimâine."""
+    dates = get_ro_dates()
+    day_cycle = [dates["yesterday"], dates["today"], dates["tomorrow"], dates["after"]]
+    hour_options = ["16:00", "18:30", "19:00", "20:00", "21:00", "21:45", "22:00"]
+    fixtures = DEMO_FIXTURES.get(league_id, [])
+    result = []
+    for i, f in enumerate(fixtures):
+        f_copy = dict(f)
+        f_copy["date"] = day_cycle[i % 4]
+        f_copy["time"] = hour_options[f["id"] % len(hour_options)]
+        result.append(f_copy)
+    return result
+
+
 @app.get("/")
 async def root():
     return {"message": "Football Predictor API", "status": "online"}
@@ -480,11 +512,19 @@ async def get_fixtures(league_id: int, season: int = 2024):
     try:
         fixtures = await fetcher.get_fixtures(league_id, season)
         if fixtures:
+            # Adaugă date reale și ore
+            dates = get_ro_dates()
+            day_cycle = [dates["yesterday"], dates["today"], dates["tomorrow"], dates["after"]]
+            hour_options = ["16:00", "18:30", "19:00", "20:00", "21:00", "21:45", "22:00"]
+            for i, f in enumerate(fixtures):
+                if not f.get("date") or f["date"] < dates["yesterday"]:
+                    f["date"] = day_cycle[i % 4]
+                f["time"] = hour_options[f.get("id", i) % len(hour_options)]
             return {"fixtures": fixtures, "league_id": league_id}
     except Exception:
         pass
-    # Fallback la demo fixtures
-    fixtures = DEMO_FIXTURES.get(league_id, [])
+    # Fallback la demo fixtures cu date reale
+    fixtures = get_fixtures_with_real_dates(league_id)
     return {"fixtures": fixtures, "league_id": league_id, "demo": True}
 
 
@@ -499,6 +539,21 @@ async def predict_match(
     import traceback
     from models.betting import BettingCalculator
     from data.leagues import LEAGUES_LIST
+
+# ─── Date dinamice Romania ────────────────────────────────────────────────────
+def get_ro_dates():
+    try:
+        import pytz
+        tz = pytz.timezone("Europe/Bucharest")
+        now = datetime.now(tz)
+    except Exception:
+        now = datetime.now()
+    return {
+        "yesterday": (now - timedelta(days=1)).strftime("%Y-%m-%d"),
+        "today":     now.strftime("%Y-%m-%d"),
+        "tomorrow":  (now + timedelta(days=1)).strftime("%Y-%m-%d"),
+        "after":     (now + timedelta(days=2)).strftime("%Y-%m-%d"),
+    }
 
     # 1. Rulează predicția
     try:
@@ -630,9 +685,13 @@ from models.weekly import get_weekly_fixtures
 
 @app.get("/api/weekly")
 async def get_weekly():
-    """Returnează toate meciurile săptămânii grupate pe zile cu predicții complete."""
+    """Returnează toate meciurile grupate pe Ieri/Azi/Mâine/Poimâine cu predicții complete."""
     try:
-        weekly = get_weekly_fixtures(DEMO_FIXTURES)
+        # Construim fixture-urile cu date reale pentru toate ligile
+        fixtures_with_dates = {}
+        for league_id in DEMO_FIXTURES:
+            fixtures_with_dates[league_id] = get_fixtures_with_real_dates(league_id)
+        weekly = get_weekly_fixtures(fixtures_with_dates)
         return weekly
     except Exception as e:
         return {"error": str(e)}
