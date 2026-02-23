@@ -3,29 +3,13 @@ Football Predictor API - FastAPI Backend
 """
 
 from fastapi import FastAPI, HTTPException, Query
-from datetime import datetime, timedelta
-import pytz
 from fastapi.middleware.cors import CORSMiddleware
+from datetime import datetime, timedelta
 import uvicorn
 
 from models.predictor import FootballPredictor
 from data.fetcher import DataFetcher
 from data.leagues import LEAGUES_LIST
-
-# ─── Date dinamice Romania ────────────────────────────────────────────────────
-def get_ro_dates():
-    try:
-        import pytz
-        tz = pytz.timezone("Europe/Bucharest")
-        now = datetime.now(tz)
-    except Exception:
-        now = datetime.now()
-    return {
-        "yesterday": (now - timedelta(days=1)).strftime("%Y-%m-%d"),
-        "today":     now.strftime("%Y-%m-%d"),
-        "tomorrow":  (now + timedelta(days=1)).strftime("%Y-%m-%d"),
-        "after":     (now + timedelta(days=2)).strftime("%Y-%m-%d"),
-    }
 
 app = FastAPI(
     title="Football Predictor API",
@@ -44,7 +28,21 @@ app.add_middleware(
 predictor = FootballPredictor()
 fetcher = DataFetcher()
 
-# ─── DEMO FIXTURES (toate ligile + cupe europene) ─────────────────────────────
+# ─── Date dinamice Romania ─────────────────────────────────────────────────────
+def get_ro_dates():
+    try:
+        import pytz
+        tz = pytz.timezone("Europe/Bucharest")
+        now = datetime.now(tz)
+    except Exception:
+        now = datetime.now()
+    return {
+        "yesterday": (now - timedelta(days=1)).strftime("%Y-%m-%d"),
+        "today":     now.strftime("%Y-%m-%d"),
+        "tomorrow":  (now + timedelta(days=1)).strftime("%Y-%m-%d"),
+        "after":     (now + timedelta(days=2)).strftime("%Y-%m-%d"),
+    }
+
 DEMO_FIXTURES = {
     39:  [  # Premier League
         {"id":101,"home":"Manchester City","away":"Arsenal","home_id":50,"away_id":42,"date":"2025-03-01"},
@@ -473,7 +471,8 @@ DEMO_FIXTURES = {
     ],
 }
 
-# Adăugăm cupele europene în lista de ligi pentru dropdown
+
+# ─── Cupe europene ─────────────────────────────────────────────────────────────
 EXTRA_LEAGUES = [
     {"rank": 0, "id": 2,   "name": "UEFA Champions League", "country": "Europe", "flag": "🏆", "confederation": "UEFA", "rating": 100.0},
     {"rank": 0, "id": 3,   "name": "UEFA Europa League",    "country": "Europe", "flag": "🥈", "confederation": "UEFA", "rating": 95.0},
@@ -496,6 +495,8 @@ def get_fixtures_with_real_dates(league_id: int) -> list:
     return result
 
 
+# ─── ROUTES ────────────────────────────────────────────────────────────────────
+
 @app.get("/")
 async def root():
     return {"message": "Football Predictor API", "status": "online"}
@@ -512,7 +513,6 @@ async def get_fixtures(league_id: int, season: int = 2024):
     try:
         fixtures = await fetcher.get_fixtures(league_id, season)
         if fixtures:
-            # Adaugă date reale și ore
             dates = get_ro_dates()
             day_cycle = [dates["yesterday"], dates["today"], dates["tomorrow"], dates["after"]]
             hour_options = ["16:00", "18:30", "19:00", "20:00", "21:00", "21:45", "22:00"]
@@ -523,7 +523,6 @@ async def get_fixtures(league_id: int, season: int = 2024):
             return {"fixtures": fixtures, "league_id": league_id}
     except Exception:
         pass
-    # Fallback la demo fixtures cu date reale
     fixtures = get_fixtures_with_real_dates(league_id)
     return {"fixtures": fixtures, "league_id": league_id, "demo": True}
 
@@ -536,26 +535,8 @@ async def predict_match(
     home_team_id: int = Query(None),
     away_team_id: int = Query(None),
 ):
-    import traceback
     from models.betting import BettingCalculator
-    from data.leagues import LEAGUES_LIST
 
-# ─── Date dinamice Romania ────────────────────────────────────────────────────
-def get_ro_dates():
-    try:
-        import pytz
-        tz = pytz.timezone("Europe/Bucharest")
-        now = datetime.now(tz)
-    except Exception:
-        now = datetime.now()
-    return {
-        "yesterday": (now - timedelta(days=1)).strftime("%Y-%m-%d"),
-        "today":     now.strftime("%Y-%m-%d"),
-        "tomorrow":  (now + timedelta(days=1)).strftime("%Y-%m-%d"),
-        "after":     (now + timedelta(days=2)).strftime("%Y-%m-%d"),
-    }
-
-    # 1. Rulează predicția
     try:
         result = await predictor.predict(
             home_team=home_team,
@@ -567,20 +548,17 @@ def get_ro_dates():
     except Exception:
         result = predictor.demo_prediction(home_team, away_team)
 
-    # 2. Extrage valorile cu fallback-uri sigure
-    pred = result.get("prediction") or {}
-    breakdown = result.get("model_breakdown") or {}
+    pred       = result.get("prediction") or {}
+    breakdown  = result.get("model_breakdown") or {}
     team_stats = result.get("team_stats") or {}
-    xg = result.get("expected_goals") or {"home": 1.45, "away": 1.15}
+    xg         = result.get("expected_goals") or {"home": 1.45, "away": 1.15}
 
     home_p = float(pred.get("home_win") or 45.0)
     draw_p = float(pred.get("draw") or 27.0)
     away_p = float(pred.get("away_win") or 28.0)
+    lam    = float(xg.get("home") or 1.45)
+    mu     = float(xg.get("away") or 1.15)
 
-    lam = float(xg.get("home") or 1.45)
-    mu  = float(xg.get("away") or 1.15)
-
-    # 3. Markets
     try:
         betting = BettingCalculator()
         league_info = next((l for l in LEAGUES_LIST if l["id"] == league_id), None)
@@ -593,12 +571,10 @@ def get_ro_dates():
     except Exception:
         markets = {}
 
-    # 4. Format breakdown
-    elo_bd    = breakdown.get("elo") or {}
-    poisson_bd= breakdown.get("poisson") or {}
-    xgb_bd    = breakdown.get("xgboost") or {}
+    elo_bd     = breakdown.get("elo") or {}
+    poisson_bd = breakdown.get("poisson") or {}
+    xgb_bd     = breakdown.get("xgboost") or {}
 
-    # 5. Format top_scores
     raw_scores = result.get("top_scores") or []
     top_scores = []
     for s in raw_scores[:10]:
@@ -616,7 +592,6 @@ def get_ro_dates():
         except Exception:
             continue
 
-    # 6. Format team stats
     def fmt_stats(s):
         if not s:
             return None
@@ -676,18 +651,12 @@ async def health():
     return {"status": "healthy", "model_loaded": predictor.model_loaded, "demo_mode": predictor.demo_mode}
 
 
-if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
-
-
-# ─── WEEKLY ENDPOINT ─────────────────────────────────────────────────────────
+# ─── WEEKLY ENDPOINT ───────────────────────────────────────────────────────────
 from models.weekly import get_weekly_fixtures
 
 @app.get("/api/weekly")
 async def get_weekly():
-    """Returnează toate meciurile grupate pe Ieri/Azi/Mâine/Poimâine cu predicții complete."""
     try:
-        # Construim fixture-urile cu date reale pentru toate ligile
         fixtures_with_dates = {}
         for league_id in DEMO_FIXTURES:
             fixtures_with_dates[league_id] = get_fixtures_with_real_dates(league_id)
@@ -695,3 +664,7 @@ async def get_weekly():
         return weekly
     except Exception as e:
         return {"error": str(e)}
+
+
+if __name__ == "__main__":
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
