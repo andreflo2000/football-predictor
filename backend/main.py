@@ -402,7 +402,15 @@ async def get_team_stats(team_id: int, league_id: int = 39, season: int = 2024):
 
 @app.get("/api/health")
 async def health():
-    return {"status": "healthy", "model_loaded": predictor.model_loaded, "demo_mode": predictor.demo_mode}
+    import os
+    api_key = os.getenv("API_FOOTBALL_KEY", "")
+    return {
+        "status": "healthy",
+        "model_loaded": predictor.model_loaded,
+        "demo_mode": predictor.demo_mode,
+        "api_football": "✅ activ" if api_key else "❌ lipsă",
+        "api_key_length": len(api_key) if api_key else 0,
+    }
 
 
 # ─── WEEKLY ENDPOINT ───────────────────────────────────────────────────────────
