@@ -264,19 +264,16 @@ async def get_leagues():
 
 @app.get("/api/fixtures/{league_id}")
 async def get_fixtures(league_id: int, season: int = 2024):
+    import logging
+    log = logging.getLogger("fixtures")
     try:
-        fixtures = await fetcher.get_fixtures(league_id, season)
+        log.warning(f"Fetching fixtures for league {league_id}, season 2024, api_key={'SET' if os.getenv('API_FOOTBALL_KEY') else 'MISSING'}")
+        fixtures = await fetcher.get_fixtures(league_id, 2024)
+        log.warning(f"API returned {len(fixtures)} fixtures for league {league_id}")
         if fixtures:
-            dates = get_ro_dates()
-            day_cycle = [dates["yesterday"], dates["today"], dates["tomorrow"], dates["after"]]
-            hour_options = ["16:00", "18:30", "19:00", "20:00", "21:00", "21:45", "22:00"]
-            for i, f in enumerate(fixtures):
-                if not f.get("date") or f["date"] < dates["yesterday"]:
-                    f["date"] = day_cycle[i % 4]
-                f["time"] = hour_options[f.get("id", i) % len(hour_options)]
-            return {"fixtures": fixtures, "league_id": league_id}
-    except Exception:
-        pass
+            return {"fixtures": fixtures, "league_id": league_id, "source": "api"}
+    except Exception as e:
+        log.warning(f"API error: {e}")
     fixtures = get_fixtures_with_real_dates(league_id)
     return {"fixtures": fixtures, "league_id": league_id, "demo": True}
 
