@@ -47,7 +47,6 @@ interface Prediction {
   markets?: any
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 function getProbColor(p: number) {
   if (p >= 65) return '#10b981'
   if (p >= 45) return '#f59e0b'
@@ -79,10 +78,10 @@ function MarketSection({ market }: { market: any }) {
   const preview = market.markets.slice(0, 4)
   const rest = market.markets.slice(4)
   return (
-    <div className="bg-blue-950/60 rounded-lg border border-blue-900/50 overflow-hidden">
-      <div className="flex items-center gap-2 px-3 py-2 bg-blue-900/30 border-b border-blue-900/40">
+    <div className="bg-green-950/60 rounded-lg border border-green-900/50 overflow-hidden">
+      <div className="flex items-center gap-2 px-3 py-2 bg-green-900/30 border-b border-green-900/40">
         <span>{market.icon}</span>
-        <span className="text-xs font-semibold uppercase tracking-wider text-blue-200">{market.label}</span>
+        <span className="text-xs font-semibold uppercase tracking-wider text-green-200">{market.label}</span>
       </div>
       <div className="p-2 space-y-0.5">
         {preview.map((m: any, i: number) => <MarketRow key={i} market={m} />)}
@@ -90,11 +89,34 @@ function MarketSection({ market }: { market: any }) {
           <>
             {expanded && rest.map((m: any, i: number) => <MarketRow key={i + 4} market={m} />)}
             <button onClick={() => setExpanded(!expanded)}
-              className="w-full text-[11px] font-mono text-blue-600 hover:text-blue-400 py-1 transition-colors">
+              className="w-full text-[11px] font-mono text-green-600 hover:text-green-400 py-1 transition-colors">
               {expanded ? '▲ Mai puțin' : `▼ +${rest.length} opțiuni`}
             </button>
           </>
         )}
+      </div>
+    </div>
+  )
+}
+
+// ─── Fixture info banner ──────────────────────────────────────────────────────
+function FixtureBanner({ fixture }: { fixture: Fixture }) {
+  if (!fixture.date) return null
+  const dayLabel = getDayLabel(fixture.date)
+  const dateStr = formatDateRO(fixture.date)
+  const timeStr = fixture.time || ''
+
+  return (
+    <div className="flex items-center gap-3 p-3 mb-4 rounded-xl bg-green-900/30 border border-green-700/40">
+      <div className="text-2xl">📅</div>
+      <div>
+        <p className="text-xs font-mono text-green-400 uppercase tracking-widest">{dayLabel}</p>
+        <p className="font-display text-lg text-white tracking-wide">
+          {fixture.home} <span className="text-green-600 text-sm">vs</span> {fixture.away}
+        </p>
+        <p className="text-xs font-mono text-gray-400 mt-0.5">
+          {dateStr}{timeStr ? ` · 🕐 ${timeStr} ora României` : ''}
+        </p>
       </div>
     </div>
   )
@@ -129,35 +151,23 @@ function PredictionDisplay({ prediction, fixture }: { prediction: Prediction; fi
 
   return (
     <div className="fade-in space-y-5">
-      {/* Match header */}
       <div className="card-highlight p-6">
-        {/* Date/time badge */}
         <div className="flex items-center justify-between mb-4">
-          <span className="badge badge-blue">⚽ Predicție finală</span>
+          <span className="badge badge-green">⚽ Predicție finală</span>
           <div className="flex items-center gap-2">
-            <span className="badge badge-gray">
-              📅 {dayLabel} · {dateStr}
-            </span>
+            <span className="badge badge-gray">📅 {dayLabel} · {dateStr}</span>
             {timeStr !== '—' && (
-              <span className="badge badge-amber">
-                🕐 {timeStr} (RO)
-              </span>
+              <span className="badge badge-amber">🕐 {timeStr} (RO)</span>
             )}
           </div>
         </div>
 
-        {/* Teams */}
         <div className="flex items-center gap-4">
           <div className="flex-1 text-center">
-            <p className="font-display text-2xl sm:text-3xl text-white tracking-wide leading-tight">
-              {prediction.home_team}
-            </p>
-            <p className="font-display text-4xl sm:text-5xl mt-2" style={{ color: getProbColor(homeProb) }}>
-              {homeProb}%
-            </p>
+            <p className="font-display text-2xl sm:text-3xl text-white tracking-wide leading-tight">{prediction.home_team}</p>
+            <p className="font-display text-4xl sm:text-5xl mt-2" style={{ color: getProbColor(homeProb) }}>{homeProb}%</p>
             <p className="text-xs text-gray-500 mt-1 font-mono uppercase">Victorie</p>
           </div>
-
           <div className="text-center px-2">
             <div className="text-gray-500 text-xs font-mono uppercase tracking-widest mb-1">Egal</div>
             <div className="font-display text-3xl text-gray-300">{drawProb}%</div>
@@ -165,19 +175,13 @@ function PredictionDisplay({ prediction, fixture }: { prediction: Prediction; fi
               xG {prediction.expected_goals?.home} : {prediction.expected_goals?.away}
             </div>
           </div>
-
           <div className="flex-1 text-center">
-            <p className="font-display text-2xl sm:text-3xl text-white tracking-wide leading-tight">
-              {prediction.away_team}
-            </p>
-            <p className="font-display text-4xl sm:text-5xl mt-2" style={{ color: getProbColor(awayProb) }}>
-              {awayProb}%
-            </p>
+            <p className="font-display text-2xl sm:text-3xl text-white tracking-wide leading-tight">{prediction.away_team}</p>
+            <p className="font-display text-4xl sm:text-5xl mt-2" style={{ color: getProbColor(awayProb) }}>{awayProb}%</p>
             <p className="text-xs text-gray-500 mt-1 font-mono uppercase">Victorie</p>
           </div>
         </div>
 
-        {/* Prob bar */}
         <div className="score-bar mt-5">
           <div className="prob-fill-blue rounded-l-full" style={{ flex: homeProb }} />
           <div className="prob-fill-draw" style={{ flex: drawProb }} />
@@ -190,7 +194,6 @@ function PredictionDisplay({ prediction, fixture }: { prediction: Prediction; fi
         </div>
       </div>
 
-      {/* Tabs */}
       <div className="tab-bar">
         {[
           { key: 'markets', label: '📊 Pariuri' },
@@ -198,14 +201,12 @@ function PredictionDisplay({ prediction, fixture }: { prediction: Prediction; fi
           { key: 'models',  label: '🤖 Modele' },
           { key: 'stats',   label: '📈 Statistici' },
         ].map(t => (
-          <button key={t.key} className={`tab ${activeTab === t.key ? 'active' : ''}`}
-            onClick={() => setActiveTab(t.key)}>
+          <button key={t.key} className={`tab ${activeTab === t.key ? 'active' : ''}`} onClick={() => setActiveTab(t.key)}>
             {t.label}
           </button>
         ))}
       </div>
 
-      {/* Markets tab */}
       {activeTab === 'markets' && (
         <div className="fade-in">
           {marketSections.length > 0 ? (
@@ -220,7 +221,6 @@ function PredictionDisplay({ prediction, fixture }: { prediction: Prediction; fi
         </div>
       )}
 
-      {/* Exact scores tab */}
       {activeTab === 'scores' && (
         <div className="card p-5 fade-in">
           <h3 className="font-display text-lg text-white tracking-wide mb-4">Top 10 Scoruri Exacte</h3>
@@ -228,9 +228,7 @@ function PredictionDisplay({ prediction, fixture }: { prediction: Prediction; fi
             {prediction.top_scores?.slice(0, 10).map((s, i) => (
               <div key={i} className="card-highlight p-3 text-center">
                 <div className="font-display text-2xl text-white">{s.score}</div>
-                <div className="text-xs font-mono mt-1" style={{ color: getProbColor(s.probability) }}>
-                  {s.probability}%
-                </div>
+                <div className="text-xs font-mono mt-1" style={{ color: getProbColor(s.probability) }}>{s.probability}%</div>
                 <div className="text-[10px] font-mono text-gray-600 mt-0.5">#{i + 1}</div>
               </div>
             ))}
@@ -238,11 +236,10 @@ function PredictionDisplay({ prediction, fixture }: { prediction: Prediction; fi
         </div>
       )}
 
-      {/* Models tab */}
       {activeTab === 'models' && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 fade-in">
           {[
-            { label: 'XGBoost', icon: '🤖', weight: '40%', data: prediction.xgboost, color: '#38bdf8' },
+            { label: 'XGBoost', icon: '🤖', weight: '40%', data: prediction.xgboost, color: '#4ade80' },
             { label: 'Poisson', icon: '📐', weight: '40%', data: prediction.poisson,  color: '#a78bfa' },
             { label: 'Elo',     icon: '♟',  weight: '20%', data: prediction.elo,      color: '#34d399' },
           ].map(model => (
@@ -252,7 +249,7 @@ function PredictionDisplay({ prediction, fixture }: { prediction: Prediction; fi
                   <span className="text-xl">{model.icon}</span>
                   <span className="font-display text-lg text-white tracking-wide">{model.label}</span>
                 </div>
-                <span className="badge badge-blue">{model.weight}</span>
+                <span className="badge badge-green">{model.weight}</span>
               </div>
               {model.data && ['home', 'draw', 'away'].map((k, i) => {
                 const labels = ['1 (Gazdă)', 'X (Egal)', '2 (Oaspete)']
@@ -274,7 +271,6 @@ function PredictionDisplay({ prediction, fixture }: { prediction: Prediction; fi
         </div>
       )}
 
-      {/* Stats tab */}
       {activeTab === 'stats' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 fade-in">
           {[prediction.home_team, prediction.away_team].map((team, ti) => {
@@ -322,6 +318,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false)
   const [loadingFixtures, setLoadingFixtures] = useState(false)
 
+  // Date dinamice: azi, mâine, poimâine
   const nextDays = getNextDays(3)
 
   useEffect(() => {
@@ -335,9 +332,9 @@ export default function Home() {
     axios.get(`${API_BASE}/api/fixtures/${selectedLeague}`)
       .then(r => {
         const all: Fixture[] = r.data.fixtures || []
-        // Filtrează doar meciurile din următoarele 3 zile (azi + mâine + poimâine)
-        // Dacă nu există date exacte (demo), arată toate
-        const filtered = all.filter(f => !f.date || nextDays.includes(f.date))
+        // Meciurile din azi + mâine + poimâine
+        const filtered = all.filter(f => f.date && nextDays.includes(f.date))
+        // Dacă nu există meciuri în intervalul de 3 zile, arată toate
         setFixtures(filtered.length > 0 ? filtered : all)
       })
       .finally(() => setLoadingFixtures(false))
@@ -356,7 +353,6 @@ export default function Home() {
           away_team_id: selectedFixture.away_id,
         }
       })
-      // Dacă backend-ul nu returnează markets, le calculăm din endpoint weekly
       setPrediction(r.data)
     } catch { } finally { setLoading(false) }
   }
@@ -367,7 +363,7 @@ export default function Home() {
     return acc
   }, {} as Record<string, League[]>)
 
-  // Grupează fixture-urile pe zile
+  // Grupează fixture-urile pe zile (doar azi/mâine/poimâine)
   const fixturesByDay = nextDays.reduce((acc, day) => {
     const dayFixtures = fixtures.filter(f => f.date === day)
     if (dayFixtures.length > 0) acc[day] = dayFixtures
@@ -383,13 +379,14 @@ export default function Home() {
       <header className="header">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-sm">⚽</div>
+            <div className="w-8 h-8 rounded-lg bg-green-700 flex items-center justify-center text-sm">⚽</div>
             <span className="font-display text-xl text-white tracking-widest">FOOTPREDICT</span>
             <div className="pulse-dot ml-2 hidden sm:block" />
           </div>
+          {/* ① "Săptămâna" redenumit în "Rezultate" */}
           <nav className="flex items-center gap-1">
             <a href="/" className="nav-link active">Predicții</a>
-            <a href="/weekly" className="nav-link">Săptămâna</a>
+            <a href="/weekly" className="nav-link">Rezultate</a>
           </nav>
         </div>
       </header>
@@ -400,7 +397,7 @@ export default function Home() {
           <h1 className="font-display text-5xl sm:text-6xl text-white tracking-widest mb-3">
             PREDICȚII FOTBAL
           </h1>
-          <p className="text-blue-300 text-sm font-mono uppercase tracking-widest">
+          <p className="text-green-400 text-sm font-mono uppercase tracking-widest">
             xG · Elo · XGBoost · Poisson — 100 Ligi
           </p>
         </div>
@@ -408,6 +405,7 @@ export default function Home() {
         {/* Selector card */}
         <div className="card p-6 mb-6 fade-in">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
             {/* Liga */}
             <div>
               <label className="block text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2">
@@ -433,14 +431,16 @@ export default function Home() {
               </select>
             </div>
 
-            {/* Meci */}
+            {/* ② Meci — grupat pe zile cu dată și oră deasupra fiecărui meci */}
             <div>
               <label className="block text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2">
-                Meci {fixtures.length > 0 && <span className="text-blue-500 ml-1">({fixtures.length} disponibile)</span>}
+                Meci {fixtures.length > 0 && (
+                  <span className="text-green-500 ml-1">({fixtures.length} disponibile)</span>
+                )}
               </label>
               {loadingFixtures ? (
                 <div className="select-styled flex items-center gap-2 text-gray-500">
-                  <div className="w-3 h-3 border border-blue-500 border-t-transparent rounded-full animate-spin" />
+                  <div className="w-3 h-3 border border-green-500 border-t-transparent rounded-full animate-spin" />
                   Se încarcă meciurile...
                 </div>
               ) : (
@@ -457,21 +457,20 @@ export default function Home() {
                     {fixtures.length === 0 ? 'Selectează liga mai întâi...' : 'Selectează meciul...'}
                   </option>
 
-                  {/* Grupate pe zile dacă avem date */}
+                  {/* Grupate pe zile cu label: Azi · 22.02.2026 */}
                   {hasDatedFixtures ? (
                     nextDays.map(day => (
                       fixturesByDay[day]?.length > 0 && (
-                        <optgroup key={day} label={`── ${getDayLabel(day)} · ${formatDateRO(day)} ──`}>
+                        <optgroup key={day} label={`📅 ${getDayLabel(day)} · ${formatDateRO(day)}`}>
                           {fixturesByDay[day].map(f => (
                             <option key={f.id} value={f.id}>
-                              {f.home} vs {f.away}{f.time ? ` · ${f.time}` : ''}
+                              {f.time ? `🕐 ${f.time}  ` : ''}{f.home} vs {f.away}
                             </option>
                           ))}
                         </optgroup>
                       )
                     ))
                   ) : (
-                    /* Fără date — afișăm toate */
                     fixtures.map(f => (
                       <option key={f.id} value={f.id}>
                         {f.home} vs {f.away}
@@ -479,7 +478,6 @@ export default function Home() {
                     ))
                   )}
 
-                  {/* Meciuri fără dată în intervalul de 3 zile */}
                   {hasDatedFixtures && fixturesWithoutDate.length > 0 && (
                     <optgroup label="── Alte meciuri ──">
                       {fixturesWithoutDate.map(f => (
@@ -493,23 +491,30 @@ export default function Home() {
               )}
             </div>
 
-            {/* Prezice */}
+            {/* ③ Buton redenumit din "Prezice" în "Predicție" */}
             <div className="flex flex-col justify-end">
               <button
                 className="btn-accent w-full"
                 onClick={predict}
                 disabled={!selectedFixture || loading}
               >
-                {loading ? '⏳ Se calculează...' : '🔮 Prezice'}
+                {loading ? '⏳ Se calculează...' : '🔮 Predicție'}
               </button>
               {selectedFixture && (
                 <p className="text-[11px] font-mono text-gray-500 mt-2 text-center">
                   {getDayLabel(selectedFixture.date)} · {formatDateRO(selectedFixture.date)}
-                  {selectedFixture.time && ` · 🕐 ${selectedFixture.time}`}
+                  {selectedFixture.time && ` · 🕐 ${selectedFixture.time} (RO)`}
                 </p>
               )}
             </div>
           </div>
+
+          {/* ② Banner cu data și ora meciului selectat */}
+          {selectedFixture && (
+            <div className="mt-4">
+              <FixtureBanner fixture={selectedFixture} />
+            </div>
+          )}
         </div>
 
         {/* Loading */}
@@ -517,7 +522,7 @@ export default function Home() {
           <div className="flex items-center justify-center py-16 fade-in">
             <div className="text-center">
               <div className="spinner mx-auto mb-4" />
-              <p className="text-blue-300 text-sm font-mono uppercase tracking-widest">
+              <p className="text-green-300 text-sm font-mono uppercase tracking-widest">
                 Calculez predicțiile pentru {selectedFixture?.home} vs {selectedFixture?.away}...
               </p>
             </div>
@@ -535,13 +540,13 @@ export default function Home() {
             <div className="text-6xl opacity-10 mb-4">⚽</div>
             <p className="font-display text-2xl text-gray-600 tracking-widest mb-2">SELECTEAZĂ O LIGĂ ȘI UN MECI</p>
             <p className="text-gray-700 text-sm font-mono">
-              Meciurile din următoarele 3 zile vor apărea automat
+              Meciurile din azi, mâine și poimâine vor apărea automat
             </p>
           </div>
         )}
       </main>
 
-      <footer className="border-t border-blue-900/40 mt-12 py-6">
+      <footer className="border-t border-green-900/40 mt-12 py-6">
         <div className="max-w-6xl mx-auto px-4 text-center">
           <p className="text-xs font-mono text-gray-700">
             FootPredict — Scop educațional. Nu reprezintă sfaturi de pariuri.
