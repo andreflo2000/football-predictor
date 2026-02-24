@@ -74,7 +74,7 @@ class DataFetcher:
         }
 
     # ─── FIXTURES ─────────────────────────────────────────────────────────────
-    async def get_fixtures(self, league_id: int, season: int = 2025) -> list:
+    async def get_fixtures(self, league_id: int, season: int = 2024) -> list:
         """
         Aduce meciurile viitoare din API-Football (next=15).
         Returnează lista cu date și ore în ora României (UTC+2).
@@ -133,7 +133,7 @@ class DataFetcher:
             return []
 
     # ─── STATISTICI ECHIPĂ ─────────────────────────────────────────────────────
-    async def get_team_stats_live(self, team_id: int, league_id: int, season: int = 2025) -> dict:
+    async def get_team_stats_live(self, team_id: int, league_id: int, season: int = 2024) -> dict:
         """Statistici reale: formă, goluri, xG proxy."""
         if not API_FOOTBALL_KEY or not team_id:
             return {}
@@ -184,7 +184,7 @@ class DataFetcher:
             return {}
 
     # ─── ULTIME 5 MECIURI ─────────────────────────────────────────────────────
-    async def get_last_fixtures(self, team_id: int, league_id: int, season: int = 2025) -> list:
+    async def get_last_fixtures(self, team_id: int, league_id: int, season: int = 2024) -> list:
         """Ultimele 5 meciuri jucate ale echipei."""
         if not API_FOOTBALL_KEY or not team_id:
             return []
@@ -195,7 +195,7 @@ class DataFetcher:
             return cached
 
         url = f"{API_BASE}/fixtures"
-        params = {"team": team_id, "season": season, "last": 5}
+        params = {"team": team_id, "last": 5}
 
         try:
             session = await self._session_get()
@@ -241,13 +241,13 @@ class DataFetcher:
 
         if API_FOOTBALL_KEY and team_id:
             # Statistici sezon curent
-            stats = await self.get_team_stats_live(team_id, league_id, 2025)
+            stats = await self.get_team_stats_live(team_id, league_id, 2024)
             if stats:
                 data.update(stats)
                 logger.info(f"✅ Date reale pentru {team_name}")
 
             # Ultimele 5 meciuri — xG proxy mai precis
-            last5 = await self.get_last_fixtures(team_id, league_id, 2025)
+            last5 = await self.get_last_fixtures(team_id, league_id, 2024)
             if len(last5) >= 3:
                 data["last_5"] = [m["result"] for m in last5[:5]]
                 data["xg_for_history"]     = [round(m["goals_for"]     * 1.05, 2) for m in last5[:5]]
