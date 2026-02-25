@@ -266,14 +266,15 @@ async def get_leagues():
 async def get_fixtures(league_id: int, season: int = 2024):
     import logging
     log = logging.getLogger("fixtures")
+    fd_key = os.getenv("FOOTBALL_DATA_KEY", "")
+    log.warning(f"Fetching fixtures liga {league_id}, FOOTBALL_DATA_KEY={'SET('+str(len(fd_key))+')' if fd_key else 'MISSING'}")
     try:
-        log.warning(f"Fetching fixtures for league {league_id}, season 2024, api_key={'SET' if os.getenv('API_FOOTBALL_KEY') else 'MISSING'}")
         fixtures = await fetcher.get_fixtures(league_id, 2024)
-        log.warning(f"API returned {len(fixtures)} fixtures for league {league_id}")
+        log.warning(f"fetcher returned {len(fixtures)} fixtures pentru liga {league_id}")
         if fixtures:
-            return {"fixtures": fixtures, "league_id": league_id, "source": "api"}
+            return {"fixtures": fixtures, "league_id": league_id, "source": "football-data.org"}
     except Exception as e:
-        log.warning(f"API error: {e}")
+        log.warning(f"fetcher error: {e}")
     fixtures = get_fixtures_with_real_dates(league_id)
     return {"fixtures": fixtures, "league_id": league_id, "demo": True}
 
@@ -399,13 +400,13 @@ async def get_team_stats(team_id: int, league_id: int = 39, season: int = 2024):
 
 @app.get("/api/health")
 async def health():
-    api_key = os.getenv("API_FOOTBALL_KEY", "")
+    fd_key = os.getenv("FOOTBALL_DATA_KEY", "")
     return {
         "status": "healthy",
         "model_loaded": predictor.model_loaded,
         "demo_mode": predictor.demo_mode,
-        "api_football": "✅ activ" if api_key else "❌ lipsă",
-        "api_key_length": len(api_key) if api_key else 0,
+        "football_data_org": "✅ activ" if fd_key else "❌ lipsă",
+        "fd_key_length": len(fd_key) if fd_key else 0,
     }
 
 @app.get("/api/cache-stats")
