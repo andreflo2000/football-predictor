@@ -399,7 +399,6 @@ async def get_team_stats(team_id: int, league_id: int = 39, season: int = 2024):
 
 @app.get("/api/health")
 async def health():
-    import os
     api_key = os.getenv("API_FOOTBALL_KEY", "")
     return {
         "status": "healthy",
@@ -407,6 +406,18 @@ async def health():
         "demo_mode": predictor.demo_mode,
         "api_football": "✅ activ" if api_key else "❌ lipsă",
         "api_key_length": len(api_key) if api_key else 0,
+    }
+
+@app.get("/api/cache-stats")
+async def cache_stats():
+    """Monitorizare requesturi API și cache."""
+    stats = fetcher.cache_stats()
+    return {
+        "requests_made": stats["request_count"],
+        "requests_remaining_approx": max(0, 100 - stats["request_count"]),
+        "cached_keys": stats["cache"]["keys"],
+        "cache_keys": stats["cache"]["keys_list"],
+        "tip": "Fixtures se cachează 6h, stats 12h, last5 3h",
     }
 
 
