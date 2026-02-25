@@ -2,6 +2,7 @@
 Football Predictor API - FastAPI Backend
 """
 
+import os
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime, timedelta
