@@ -272,6 +272,8 @@ async def get_fixtures(league_id: int, season: int = 2024):
     try:
         fixtures = await fetcher.get_fixtures(league_id, 2024)
         log.warning(f"fetcher returned {len(fixtures)} fixtures pentru liga {league_id}")
+        # Filtrăm meciurile incomplete (echipe null — UCL sferturi/semifinale nedesemnate)
+        fixtures = [f for f in fixtures if f.get("home") and f.get("away")]
         if fixtures:
             return {"fixtures": fixtures, "league_id": league_id, "source": "football-data.org"}
     except Exception as e:
