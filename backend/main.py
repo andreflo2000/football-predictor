@@ -270,12 +270,18 @@ async def get_fixtures(league_id: int, season: int = 2024):
     fd_key = os.getenv("FOOTBALL_DATA_KEY", "")
     log.warning(f"Fetching fixtures liga {league_id}, FOOTBALL_DATA_KEY={'SET('+str(len(fd_key))+')' if fd_key else 'MISSING'}")
     try:
-        fixtures = await fetcher.get_fixtures(league_id, 2024)
-        log.warning(f"fetcher returned {len(fixtures)} fixtures pentru liga {league_id}")
-        # Filtrăm meciurile incomplete (echipe null — UCL sferturi/semifinale nedesemnate)
-        fixtures = [f for f in fixtures if f.get("home") and f.get("away")]
-        if fixtures:
-            return {"fixtures": fixtures, "league_id": league_id, "source": "football-data.org"}
+        # Ligi disponibile pe planul gratuit football-data.org
+        FREE_PLAN_LEAGUES = {39, 140, 78, 135, 61, 88, 94, 2, 71}
+        
+        if league_id in FREE_PLAN_LEAGUES:
+            fixtures = await fetcher.get_fixtures(league_id, 2024)
+            log.warning(f"fetcher returned {len(fixtures)} fixtures pentru liga {league_id}")
+            # Filtrăm meciurile incomplete (echipe null)
+            fixtures = [f for f in fixtures if f.get("home") and f.get("away")]
+            if fixtures:
+                return {"fixtures": fixtures, "league_id": league_id, "source": "football-data.org"}
+        else:
+            log.warning(f"Liga {league_id} nu e pe planul gratuit — folosesc demo")
     except Exception as e:
         log.warning(f"fetcher error: {e}")
     fixtures = get_fixtures_with_real_dates(league_id)
