@@ -10,27 +10,15 @@ import aiohttp
 import logging
 from datetime import datetime, timedelta
 from typing import Optional
+from data.leagues import FOOTBALL_DATA_COMPETITION_MAP
 
 logger = logging.getLogger(__name__)
 
 FOOTBALL_DATA_KEY = os.getenv("FOOTBALL_DATA_KEY", "b7a245f650554efd8af759f4c571bd40")
 FD_BASE = "https://api.football-data.org/v4"
 
-# Map league_id → competition code football-data.org
-LEAGUE_TO_CODE = {
-    39:  "PL",   # Premier League
-    140: "PD",   # La Liga
-    78:  "BL1",  # Bundesliga
-    135: "SA",   # Serie A
-    61:  "FL1",  # Ligue 1
-    88:  "DED",  # Eredivisie
-    94:  "PPL",  # Primeira Liga
-    2:   "CL",   # Champions League
-    3:   "EL",   # Europa League
-    848: "ECL",  # Conference League
-    66:  "EC",   # European Championship
-    2001:"CLI",  # Copa Libertadores (limitată)
-}
+# Map league_id → competition code (din leagues.py — include toate ligile cu fd_code)
+LEAGUE_TO_CODE = FOOTBALL_DATA_COMPETITION_MAP
 
 # ─── Cache cu TTL ─────────────────────────────────────────────────────────────
 class TTLCache:
