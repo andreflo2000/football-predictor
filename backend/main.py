@@ -12,6 +12,11 @@ from models.predictor import FootballPredictor
 from data.fetcher import DataFetcher
 from data.leagues import LEAGUES_LIST
 
+# ─── Startup: antrenament automat model ──────────────────────────────────────
+import asyncio
+import logging
+logging.basicConfig(level=logging.INFO)
+
 app = FastAPI(
     title="Football Predictor API",
     description="Predicții fotbal bazate pe xG, Elo și formă recentă cu XGBoost",
@@ -28,6 +33,19 @@ app.add_middleware(
 
 predictor = FootballPredictor()
 fetcher = DataFetcher()
+
+@app.on_event("startup")
+async def startup_event():
+    """Pornește antrenamentul modelului cu date reale la startup."""
+    import logging
+    log = logging.getLogger("startup")
+    log.info("🚀 FootPredict API pornit")
+    try:
+        from models.trainer import run_training
+        log.info("📥 Pornire antrenament în background...")
+        asyncio.create_task(run_training())
+    except Exception as e:
+        log.warning(f"⚠ Antrenament skip: {e}")
 
 # ─── Date dinamice Romania ─────────────────────────────────────────────────────
 def get_ro_dates():
@@ -133,18 +151,29 @@ DEMO_FIXTURES = {
         {"id":20007,"home":"PSG","away":"Monaco","home_id":85,"away_id":91,"date":"2026-02-25","time":"22:00"},
         {"id":20008,"home":"Real Madrid","away":"Benfica","home_id":541,"away_id":211,"date":"2026-02-25","time":"22:00"},
     ],
-    3:   [  # UEFA Europa League — Playoff retur (26 Feb 2026)
-        {"id":30001,"home":"Manchester United","away":"PAOK","home_id":33,"away_id":586,"date":"2026-02-26","time":"19:45"},
-        {"id":30002,"home":"Lazio","away":"Fenerbahce","home_id":487,"away_id":636,"date":"2026-02-26","time":"22:00"},
-        {"id":30003,"home":"Ajax","away":"Galatasaray","home_id":194,"away_id":611,"date":"2026-02-26","time":"22:00"},
-        {"id":30004,"home":"Eintracht Frankfurt","away":"Sevilla","home_id":169,"away_id":559,"date":"2026-02-26","time":"22:00"},
-        {"id":30005,"home":"Nottm Forest","away":"Brann","home_id":65,"away_id":780,"date":"2026-02-26","time":"19:45"},
+    3:   [  # UEFA Europa League — Optimi tur (12 Mar) + retur (19 Mar 2026)
+        # Tragere la sorti: 27 Feb 2026 — echipele calificate din top 8: Lazio, Frankfurt, Man Utd, Lyon, Tottenham, Roma, Ajax, Fenerbahce
+        {"id":30001,"home":"Lazio","away":"Manchester United","home_id":487,"away_id":33,"date":"2026-03-12","time":"21:00"},
+        {"id":30002,"home":"Eintracht Frankfurt","away":"Lyon","home_id":169,"away_id":80,"date":"2026-03-12","time":"21:00"},
+        {"id":30003,"home":"Ajax","away":"Fenerbahce","home_id":194,"away_id":636,"date":"2026-03-12","time":"19:00"},
+        {"id":30004,"home":"Roma","away":"Tottenham","home_id":497,"away_id":73,"date":"2026-03-12","time":"21:00"},
+        # Retururi 19 Martie
+        {"id":30005,"home":"Manchester United","away":"Lazio","home_id":33,"away_id":487,"date":"2026-03-19","time":"21:00"},
+        {"id":30006,"home":"Lyon","away":"Eintracht Frankfurt","home_id":80,"away_id":169,"date":"2026-03-19","time":"21:00"},
+        {"id":30007,"home":"Fenerbahce","away":"Ajax","home_id":636,"away_id":194,"date":"2026-03-19","time":"19:00"},
+        {"id":30008,"home":"Tottenham","away":"Roma","home_id":73,"away_id":497,"date":"2026-03-19","time":"21:00"},
     ],
-    848: [  # UEFA Conference League — Playoff retur (26 Feb 2026)
-        {"id":40001,"home":"Chelsea","away":"Fiorentina","home_id":49,"away_id":502,"date":"2026-02-26","time":"19:45"},
-        {"id":40002,"home":"FCSB","away":"Molde","home_id":670,"away_id":772,"date":"2026-02-26","time":"22:00"},
-        {"id":40003,"home":"Gent","away":"Rapid Wien","home_id":246,"away_id":403,"date":"2026-02-26","time":"19:45"},
-        {"id":40004,"home":"Djurgarden","away":"Panathinaikos","home_id":850,"away_id":860,"date":"2026-02-26","time":"19:45"},
+    848: [  # UEFA Conference League — Optimi tur (12 Mar) + retur (19 Mar 2026)
+        # Tragere la sorti: 27 Feb 2026 — echipele calificate din top 8: Mainz, Jagiellonia, Rapid Wien, FCSB, Cercle Brugge, Djurgarden, Gent, Panathinaikos
+        {"id":40001,"home":"Mainz","away":"Jagiellonia","home_id":164,"away_id":2785,"date":"2026-03-12","time":"19:00"},
+        {"id":40002,"home":"Rapid Wien","away":"FCSB","home_id":403,"away_id":670,"date":"2026-03-12","time":"21:00"},
+        {"id":40003,"home":"Cercle Brugge","away":"Djurgarden","home_id":251,"away_id":850,"date":"2026-03-12","time":"19:00"},
+        {"id":40004,"home":"Gent","away":"Panathinaikos","home_id":246,"away_id":860,"date":"2026-03-12","time":"21:00"},
+        # Retururi 19 Martie
+        {"id":40005,"home":"FCSB","away":"Rapid Wien","home_id":670,"away_id":403,"date":"2026-03-19","time":"21:00"},
+        {"id":40006,"home":"Djurgarden","away":"Cercle Brugge","home_id":850,"away_id":251,"date":"2026-03-19","time":"19:00"},
+        {"id":40007,"home":"Panathinaikos","away":"Gent","home_id":860,"away_id":246,"date":"2026-03-19","time":"21:00"},
+        {"id":40008,"home":"Jagiellonia","away":"Mainz","home_id":2785,"away_id":164,"date":"2026-03-19","time":"19:00"},
     ],
     71:  [  # Brasileirao — Sezon incepe Aprilie 2026
         {"id":1001,"home":"Flamengo","away":"Palmeiras","home_id":127,"away_id":121,"date":"2026-04-05","time":"22:00"},
@@ -407,6 +436,25 @@ async def get_team_stats(team_id: int, league_id: int = 39, season: int = 2024):
         return {"error": str(e), "team_id": team_id}
 
 
+@app.get("/api/team-form/{team_id}")
+async def get_team_form(team_id: int, league_id: int = 39):
+    """Forma detaliată a echipei — ultimele 10 meciuri."""
+    try:
+        data = await fetcher.get_team_form(team_id, league_id)
+        if not data:
+            return {"form": [], "source": "unavailable"}
+        return {
+            "team_id": team_id,
+            "form": data.get("last_5", []),
+            "goals_avg": data.get("goals_avg", 0),
+            "xg_for": data.get("xg_for_history", []),
+            "xg_against": data.get("xg_against_history", []),
+            "source": data.get("_source", "demo"),
+        }
+    except Exception as e:
+        return {"form": [], "error": str(e)}
+
+
 @app.get("/api/health")
 async def health():
     fd_key = os.getenv("FOOTBALL_DATA_KEY", "")
@@ -417,6 +465,66 @@ async def health():
         "football_data_org": "✅ activ" if fd_key else "❌ lipsă",
         "fd_key_length": len(fd_key) if fd_key else 0,
     }
+
+@app.get("/api/standings/{league_id}")
+async def get_standings(league_id: int):
+    """Clasamentul ligii din football-data.org (cache 3h)."""
+    from data.fetcher import _cache, FOOTBALL_DATA_KEY, FD_BASE
+    import aiohttp
+
+    cache_key = f"standings_{league_id}"
+    cached = _cache.get(cache_key)
+    if cached is not None:
+        return {"standings": cached, "league_id": league_id, "source": "cache"}
+
+    FREE_PLAN_LEAGUES = {39, 140, 78, 135, 61, 88, 94, 2, 71}
+    if league_id not in FREE_PLAN_LEAGUES or not FOOTBALL_DATA_KEY:
+        return {"standings": [], "league_id": league_id, "source": "unavailable"}
+
+    from data.leagues import FOOTBALL_DATA_COMPETITION_MAP
+    code = FOOTBALL_DATA_COMPETITION_MAP.get(league_id)
+    if not code:
+        return {"standings": [], "league_id": league_id, "source": "no_code"}
+
+    try:
+        timeout = aiohttp.ClientTimeout(total=15)
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            url = f"{FD_BASE}/competitions/{code}/standings"
+            async with session.get(url, headers={"X-Auth-Token": FOOTBALL_DATA_KEY}) as resp:
+                if resp.status != 200:
+                    return {"standings": [], "source": f"error_{resp.status}"}
+                data = await resp.json()
+
+        standings = []
+        for table in data.get("standings", []):
+            if table.get("type") == "TOTAL":
+                for row in table.get("table", []):
+                    team = row.get("team", {})
+                    standings.append({
+                        "position": row.get("position"),
+                        "team": team.get("shortName") or team.get("name", ""),
+                        "team_id": team.get("id"),
+                        "played": row.get("playedGames", 0),
+                        "won": row.get("won", 0),
+                        "draw": row.get("draw", 0),
+                        "lost": row.get("lost", 0),
+                        "goals_for": row.get("goalsFor", 0),
+                        "goals_against": row.get("goalsAgainst", 0),
+                        "goal_diff": row.get("goalDifference", 0),
+                        "points": row.get("points", 0),
+                        "form": row.get("form", ""),
+                    })
+                break
+
+        if standings:
+            _cache.set(cache_key, standings, 3 * 3600)
+
+        return {"standings": standings, "league_id": league_id, "source": "football-data.org"}
+
+    except Exception as e:
+        log.error(f"Standings error: {e}")
+        return {"standings": [], "error": str(e)}
+
 
 @app.get("/api/cache-stats")
 async def cache_stats():
