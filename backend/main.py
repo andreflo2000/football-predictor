@@ -257,12 +257,7 @@ DEMO_FIXTURES = {
         {"id":7703,"home":"Rakow Czestochowa","away":"Jagiellonia","home_id":2784,"away_id":2785,"date":"2026-02-22","time":"16:00"},
     ],
 }
-# ─── Cupe europene ─────────────────────────────────────────────────────────────
-EXTRA_LEAGUES = [
-    {"rank": 0, "id": 2,   "name": "UEFA Champions League", "country": "Europe", "flag": "🏆", "confederation": "UEFA", "rating": 100.0},
-    {"rank": 0, "id": 3,   "name": "UEFA Europa League",    "country": "Europe", "flag": "🥈", "confederation": "UEFA", "rating": 95.0},
-    {"rank": 0, "id": 848, "name": "UEFA Conference League","country": "Europe", "flag": "🥉", "confederation": "UEFA", "rating": 90.0},
-]
+# EXTRA_LEAGUES eliminat — UCL/EL/ECL vin direct din leagues.py fără duplicate
 
 
 def get_fixtures_with_real_dates(league_id: int) -> list:
@@ -288,7 +283,7 @@ async def root():
 
 @app.get("/api/leagues")
 async def get_leagues():
-    all_leagues = EXTRA_LEAGUES + LEAGUES_LIST
+    all_leagues = LEAGUES_LIST
     return {"leagues": all_leagues}
 
 
