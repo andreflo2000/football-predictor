@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 
-interface SavedMatch {
+interface TrackedMatch {
   id: string
   home: string
   away: string
@@ -11,214 +11,283 @@ interface SavedMatch {
   date: string
   time: string
   prediction: string
-  result: 'correct' | 'wrong' | null
+  market: string
+  home_win: number
+  draw: number
+  away_win: number
+  result: 'correct' | 'wrong' | 'pending'
   addedAt: string
 }
 
-function getMatches(): SavedMatch[] {
-  try { return JSON.parse(localStorage.getItem('fp_saved_matches') || '[]') } catch { return [] }
+function loadMatches(): TrackedMatch[] {
+  if (typeof window === 'undefined') return []
+  try { return JSON.parse(localStorage.getItem('fp_tracked_v2') || '[]') } catch { return [] }
 }
-function saveMatches(matches: SavedMatch[]) {
-  localStorage.setItem('fp_saved_matches', JSON.stringify(matches))
+function saveMatches(m: TrackedMatch[]) {
+  localStorage.setItem('fp_tracked_v2', JSON.stringify(m))
 }
-function getResults(): Record<string, 'correct' | 'wrong'> {
-  try { return JSON.parse(localStorage.getItem('fp_results') || '{}') } catch { return {} }
+function today() { return new Date().toISOString().split('T')[0] }
+function fmtDate(d: string) {
+  if (!d) return ''
+  const [y,m,day] = d.split('-')
+  return `${day}.${m}.${y}`
 }
-function saveResult(id: string, val: 'correct' | 'wrong' | null) {
-  const r = getResults()
-  if (val === null) delete r[id]
-  else r[id] = val
-  localStorage.setItem('fp_results', JSON.stringify(r))
+function dateLabel(d: string) {
+  const t = today()
+  const tm = new Date(Date.now()+86400000).toISOString().split('T')[0]
+  if (d === t) return '📅 Azi'
+  if (d === tm) return '📅 Mâine'
+  return `📅 ${fmtDate(d)}`
+}
+function groupByDate(matches: TrackedMatch[]) {
+  const groups: Record<string, TrackedMatch[]> = {}
+  for (const m of matches) {
+    const d = m.date || 'fără dată'
+    if (!groups[d]) groups[d] = []
+    groups[d].push(m)
+  }
+  return groups
 }
 
-const DEMO_SAVED: SavedMatch[] = [
-  { id: 'd1', home: 'Tottenham', away: 'Arsenal', league: 'Premier League', flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿', date: '22.02.2026', time: '18:30', prediction: 'Arsenal 58%', result: null, addedAt: '2026-02-22' },
-  { id: 'd2', home: 'PSG', away: 'Lens', league: 'Ligue 1', flag: '🇫🇷', date: '22.02.2026', time: '21:05', prediction: 'PSG 72%', result: null, addedAt: '2026-02-22' },
-  { id: 'd3', home: 'FCSB', away: 'CFR Cluj', league: 'Superliga', flag: '🇷🇴', date: '22.02.2026', time: '20:30', prediction: 'FCSB 48%', result: null, addedAt: '2026-02-22' },
-  { id: 'd4', home: 'Atletico Madrid', away: 'Club Brugge', league: 'Champions League', flag: '🏆', date: '24.02.2026', time: '19:45', prediction: 'Atletico 61%', result: null, addedAt: '2026-02-22' },
-  { id: 'd5', home: 'Real Madrid', away: 'Benfica', league: 'Champions League', flag: '🏆', date: '25.02.2026', time: '22:00', prediction: 'Real Madrid 68%', result: null, addedAt: '2026-02-22' },
-]
-
-function StatsBar({ matches, results }: { matches: SavedMatch[]; results: Record<string, 'correct' | 'wrong'> }) {
-  const total = matches.length
-  const correct = matches.filter(m => results[m.id] === 'correct').length
-  const wrong = matches.filter(m => results[m.id] === 'wrong').length
-  const pending = total - correct - wrong
-  const rate = (correct + wrong) > 0 ? Math.round((correct / (correct + wrong)) * 100) : null
-  if (total === 0) return null
+function StatsPanel({ matches }: { matches: TrackedMatch[] }) {
+  const resolved = matches.filter(m => m.result !== 'pending')
+  const correct  = resolved.filter(m => m.result === 'correct').length
+  const wrong    = resolved.filter(m => m.result === 'wrong').length
+  const pending  = matches.filter(m => m.result === 'pending').length
+  const rate     = resolved.length > 0 ? Math.round((correct / resolved.length) * 100) : null
+  const rateColor = rate === null ? '#6b7280' : rate >= 60 ? '#10b981' : rate >= 45 ? '#f59e0b' : '#ef4444'
+  if (matches.length === 0) return null
   return (
-    <div className="card p-5 mb-6 fade-in">
-      <div className="flex items-center justify-between mb-4">
-        <span className="text-xs font-mono uppercase tracking-widest text-gray-400">Statistici predicții</span>
-        {rate !== null && (
-          <span className={`badge ${rate >= 60 ? 'badge-green' : rate >= 40 ? 'badge-amber' : 'badge-red'}`}>
-            {rate}% rată succes
-          </span>
-        )}
-      </div>
-      <div className="flex gap-6">
+    <div className="card p-5 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
         {[
-          { label: 'Total', value: total, color: 'text-white' },
-          { label: 'Corecte ✓', value: correct, color: 'text-green-400' },
-          { label: 'Greșite ✗', value: wrong, color: 'text-red-400' },
-          { label: 'Așteptare', value: pending, color: 'text-gray-400' },
+          { label: 'Total', value: matches.length, color: '#60a5fa' },
+          { label: '✅ Corecte', value: correct, color: '#10b981' },
+          { label: '❌ Greșite', value: wrong, color: '#ef4444' },
+          { label: '⏳ Așteptare', value: pending, color: '#f59e0b' },
         ].map(s => (
-          <div key={s.label} className="text-center">
-            <div className={`font-display text-3xl ${s.color}`}>{s.value}</div>
-            <div className="text-[10px] font-mono text-gray-600 uppercase mt-0.5">{s.label}</div>
+          <div key={s.label} className="bg-gray-800/50 rounded-xl p-3 text-center">
+            <div className="text-2xl font-bold font-mono" style={{ color: s.color }}>{s.value}</div>
+            <div className="text-[10px] text-gray-500 uppercase tracking-widest mt-1">{s.label}</div>
           </div>
         ))}
       </div>
-      {(correct + wrong) > 0 && (
-        <div className="flex h-2 rounded-full overflow-hidden mt-4">
-          <div className="bg-green-500 transition-all rounded-l-full" style={{ flex: correct }} />
-          <div className="bg-red-500 transition-all rounded-r-full" style={{ flex: wrong }} />
-          <div className="bg-gray-700 transition-all" style={{ flex: pending }} />
+      {resolved.length > 0 && (
+        <div>
+          <div className="flex justify-between text-xs font-mono mb-1">
+            <span className="text-gray-500">Rată de succes</span>
+            <span className="font-bold text-lg" style={{ color: rateColor }}>{rate}%</span>
+          </div>
+          <div className="h-3 bg-gray-800 rounded-full overflow-hidden">
+            <div className="h-full rounded-full transition-all duration-700"
+              style={{ width: `${rate}%`, backgroundColor: rateColor }} />
+          </div>
+          <div className="text-[10px] text-gray-600 font-mono mt-1 text-right">
+            {correct} corecte din {resolved.length} finalizate
+          </div>
+          <div className="flex items-center gap-2 mt-3">
+            <span className="text-[10px] text-gray-600 uppercase tracking-widest">Ultimele:</span>
+            {[...resolved].slice(-7).map((m, i) => (
+              <div key={i} className={`w-6 h-6 rounded text-xs flex items-center justify-center font-bold
+                ${m.result==='correct' ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'}`}>
+                {m.result==='correct' ? '✓' : '✗'}
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>
   )
 }
 
-function MatchCard({ match, result, onResult, onDelete }: {
-  match: SavedMatch; result: 'correct' | 'wrong' | null
-  onResult: (id: string, val: 'correct' | 'wrong' | null) => void
+function MatchCard({ match, onResult, onDelete }: {
+  match: TrackedMatch
+  onResult: (id: string, r: 'correct' | 'wrong' | 'pending') => void
   onDelete: (id: string) => void
 }) {
-  const borderColor = result === 'correct' ? 'border-green-500/50' : result === 'wrong' ? 'border-red-500/50' : 'border-green-900/30'
-  const shadow = result === 'correct' ? '0 0 16px rgba(16,185,129,0.10)' : result === 'wrong' ? '0 0 16px rgba(239,68,68,0.10)' : ''
+  const isCorrect = match.result === 'correct'
+  const isWrong   = match.result === 'wrong'
+  const isPending = match.result === 'pending'
   return (
-    <div className={`card p-4 border ${borderColor} fade-in`} style={{ boxShadow: shadow }}>
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-xs font-mono text-gray-500">{match.flag} {match.league}</span>
+    <div className={`card p-4 mb-3 border-l-4 transition-all
+      ${isCorrect ? 'border-l-emerald-500' : isWrong ? 'border-l-red-500' : 'border-l-blue-600'}`}>
+      <div className="flex justify-between items-start mb-2">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-mono text-gray-600">📅 {match.date} · 🕐 {match.time}</span>
-          <button onClick={() => onDelete(match.id)} className="text-gray-700 hover:text-red-400 transition-colors text-xs ml-1">✕</button>
+          <span>{match.flag}</span>
+          <span className="text-[10px] text-gray-500 uppercase tracking-widest">{match.league}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-mono text-gray-600">
+            {fmtDate(match.date)}{match.time ? ` · ${match.time}` : ''}
+          </span>
+          <button onClick={() => onDelete(match.id)}
+            className="text-gray-700 hover:text-red-500 transition-colors text-xs">✕</button>
         </div>
       </div>
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex-1">
-          <p className="font-display text-xl text-white tracking-wide">{match.home} <span className="text-gray-600 text-sm font-sans">vs</span> {match.away}</p>
-        </div>
-        <div className="text-xs font-mono text-green-400 bg-green-950/50 border border-green-900/40 rounded-lg px-3 py-1.5 shrink-0 ml-3">
-          🔮 {match.prediction}
-        </div>
+      <div className="flex items-center justify-center gap-3 mb-3">
+        <span className="font-display text-white text-sm tracking-wide text-right flex-1">{match.home}</span>
+        <span className="text-gray-600 font-mono text-xs">VS</span>
+        <span className="font-display text-white text-sm tracking-wide flex-1">{match.away}</span>
       </div>
-      <div className="flex items-center gap-2 pt-3 border-t border-green-900/20">
-        <span className="text-[11px] font-mono text-gray-600 uppercase tracking-wider">Predicție corectă?</span>
-        <div className="flex gap-2 ml-auto">
-          <button
-            onClick={() => onResult(match.id, result === 'correct' ? null : 'correct')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${result === 'correct' ? 'bg-green-500 text-white shadow-lg shadow-green-500/25' : 'bg-green-500/10 text-green-400 border border-green-500/25 hover:bg-green-500/20'}`}
-          >✓ Da</button>
-          <button
-            onClick={() => onResult(match.id, result === 'wrong' ? null : 'wrong')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${result === 'wrong' ? 'bg-red-500 text-white shadow-lg shadow-red-500/25' : 'bg-red-500/10 text-red-400 border border-red-500/25 hover:bg-red-500/20'}`}
-          >✗ Nu</button>
-        </div>
+      <div className="flex items-center justify-center gap-2 mb-4">
+        <span className="text-[10px] text-gray-600 uppercase tracking-widest">Pronostic:</span>
+        <span className="px-3 py-1 rounded-full bg-blue-600/20 border border-blue-600/30 text-blue-300 text-xs font-mono font-bold">
+          {match.prediction}
+        </span>
+        <span className="text-[10px] text-gray-700">[{match.market}]</span>
+      </div>
+      <div className="flex gap-2">
+        <button onClick={() => onResult(match.id, isCorrect ? 'pending' : 'correct')}
+          className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all
+            ${isCorrect ? 'bg-emerald-600 text-white' : 'bg-gray-800 text-gray-500 hover:bg-emerald-900/40 hover:text-emerald-400 border border-gray-700'}`}>
+          ✅ Corect
+        </button>
+        <button onClick={() => onResult(match.id, isWrong ? 'pending' : 'wrong')}
+          className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all
+            ${isWrong ? 'bg-red-600 text-white' : 'bg-gray-800 text-gray-500 hover:bg-red-900/40 hover:text-red-400 border border-gray-700'}`}>
+          ❌ Greșit
+        </button>
+        {!isPending && (
+          <button onClick={() => onResult(match.id, 'pending')}
+            className="px-3 py-2 rounded-lg text-xs text-gray-600 hover:text-gray-400 bg-gray-800/50 border border-gray-800 transition-all"
+            title="Resetează">↩</button>
+        )}
       </div>
     </div>
   )
 }
 
-function AddMatchModal({ onAdd, onClose }: { onAdd: (m: SavedMatch) => void; onClose: () => void }) {
-  const [form, setForm] = useState({ home: '', away: '', league: '', flag: '⚽', date: '', time: '', prediction: '' })
-  const handleSubmit = () => {
-    if (!form.home || !form.away) return
-    onAdd({ ...form, id: `m-${Date.now()}`, result: null, addedAt: new Date().toISOString().split('T')[0] })
+function AddModal({ onAdd, onClose }: { onAdd: (m: TrackedMatch) => void; onClose: () => void }) {
+  const [form, setForm] = useState({
+    home: '', away: '', league: '', flag: '⚽',
+    date: today(), time: '21:00',
+    prediction: '', market: '1X2',
+  })
+  const flagOptions: Record<string, string> = {
+    '🏴󠁧󠁢󠁥󠁮󠁧󠁿': 'Premier League', '🇪🇸': 'La Liga', '🇩🇪': 'Bundesliga',
+    '🇮🇹': 'Serie A', '🇫🇷': 'Ligue 1', '🏆': 'Champions League',
+    '🥈': 'Europa League', '🥉': 'Conference League', '🇷🇴': 'Superliga',
+    '🇵🇹': 'Primeira Liga', '🇳🇱': 'Eredivisie', '⚽': 'Altă ligă',
+  }
+  const markets = ['1X2','Over 2.5','Under 2.5','BTTS Da','BTTS Nu',
+    'Șansă dublă 1X','Șansă dublă X2','Over 1.5','Over 3.5','Cornere +9.5','Alt pariu']
+
+  function submit() {
+    if (!form.home || !form.away || !form.prediction) return
+    onAdd({
+      id: Date.now().toString(),
+      home: form.home, away: form.away,
+      league: form.league || flagOptions[form.flag] || 'Ligă',
+      flag: form.flag, date: form.date, time: form.time,
+      prediction: form.prediction, market: form.market,
+      home_win: 45, draw: 27, away_win: 28,
+      result: 'pending', addedAt: today(),
+    })
     onClose()
   }
-  const fields = [
-    { key: 'home', label: 'Echipă gazdă', placeholder: 'ex: Manchester City' },
-    { key: 'away', label: 'Echipă oaspete', placeholder: 'ex: Arsenal' },
-    { key: 'league', label: 'Ligă / Competiție', placeholder: 'ex: Premier League' },
-    { key: 'date', label: 'Data (ZZ.LL.AAAA)', placeholder: 'ex: 22.02.2026' },
-    { key: 'time', label: 'Ora (România)', placeholder: 'ex: 22:00' },
-    { key: 'prediction', label: 'Predicția ta', placeholder: 'ex: Manchester City 65%' },
-  ]
+
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="card p-6 w-full max-w-md fade-in">
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="font-display text-xl text-white tracking-wide">➕ Adaugă Meci</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors text-lg">✕</button>
+      <div className="card p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-5">
+          <h3 className="font-display text-lg text-white tracking-wide">+ Adaugă pronostic</h3>
+          <button onClick={onClose} className="text-gray-600 hover:text-white text-xl">✕</button>
         </div>
         <div className="space-y-3">
-          {fields.map(f => (
-            <div key={f.key}>
-              <label className="block text-[11px] font-mono text-gray-500 uppercase tracking-wider mb-1">{f.label}</label>
-              <input type="text" placeholder={f.placeholder}
-                value={(form as any)[f.key]}
-                onChange={e => setForm(prev => ({ ...prev, [f.key]: e.target.value }))}
-                className="w-full select-styled text-sm" />
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="block text-[10px] text-gray-500 uppercase tracking-widest mb-1">Ligă</label>
+              <select className="select-styled text-sm" value={form.flag}
+                onChange={e => setForm({...form, flag: e.target.value, league: flagOptions[e.target.value]||''})}>
+                {Object.entries(flagOptions).map(([f,l]) => <option key={f} value={f}>{f} {l}</option>)}
+              </select>
             </div>
-          ))}
+            <div>
+              <label className="block text-[10px] text-gray-500 uppercase tracking-widest mb-1">Ligă (custom)</label>
+              <input className="input-styled text-sm" value={form.league}
+                onChange={e => setForm({...form, league: e.target.value})} placeholder="Premier League..." />
+            </div>
+          </div>
+          <div>
+            <label className="block text-[10px] text-gray-500 uppercase tracking-widest mb-1">Echipă gazdă</label>
+            <input className="input-styled" value={form.home}
+              onChange={e => setForm({...form, home: e.target.value})} placeholder="Arsenal" />
+          </div>
+          <div>
+            <label className="block text-[10px] text-gray-500 uppercase tracking-widest mb-1">Echipă oaspete</label>
+            <input className="input-styled" value={form.away}
+              onChange={e => setForm({...form, away: e.target.value})} placeholder="Chelsea" />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="block text-[10px] text-gray-500 uppercase tracking-widest mb-1">Data</label>
+              <input type="date" className="input-styled text-sm" value={form.date}
+                onChange={e => setForm({...form, date: e.target.value})} />
+            </div>
+            <div>
+              <label className="block text-[10px] text-gray-500 uppercase tracking-widest mb-1">Ora</label>
+              <input type="time" className="input-styled text-sm" value={form.time}
+                onChange={e => setForm({...form, time: e.target.value})} />
+            </div>
+          </div>
+          <div>
+            <label className="block text-[10px] text-gray-500 uppercase tracking-widest mb-1">Tip pariu</label>
+            <select className="select-styled text-sm" value={form.market}
+              onChange={e => setForm({...form, market: e.target.value})}>
+              {markets.map(m => <option key={m} value={m}>{m}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-[10px] text-gray-500 uppercase tracking-widest mb-1">Pronosticul tău</label>
+            <input className="input-styled" value={form.prediction}
+              onChange={e => setForm({...form, prediction: e.target.value})}
+              placeholder="ex: Arsenal câștigă 58% | Over 2.5 — 67%" />
+          </div>
         </div>
-        <div className="flex gap-3 mt-5">
-          <button onClick={onClose} className="btn-secondary flex-1">Anulează</button>
-          <button onClick={handleSubmit} disabled={!form.home || !form.away} className="btn-accent flex-1">Salvează</button>
-        </div>
+        <button onClick={submit} disabled={!form.home || !form.away || !form.prediction}
+          className="btn-accent w-full mt-5 disabled:opacity-40 disabled:cursor-not-allowed">
+          ✅ Adaugă pronostic
+        </button>
       </div>
     </div>
   )
 }
 
-const FILTERS = [
-  { key: 'all', label: 'Toate' },
-  { key: 'pending', label: '⏳ Așteptare' },
-  { key: 'correct', label: '✓ Corecte' },
-  { key: 'wrong', label: '✗ Greșite' },
-]
-
-export default function ResultatePage() {
-  const [matches, setMatches] = useState<SavedMatch[]>([])
-  const [results, setResults] = useState<Record<string, 'correct' | 'wrong'>>({})
-  const [filter, setFilter] = useState('all')
+export default function Weekly() {
+  const [matches, setMatches] = useState<TrackedMatch[]>([])
   const [showAdd, setShowAdd] = useState(false)
-  const [initialized, setInitialized] = useState(false)
+  const [filter, setFilter] = useState<'all'|'pending'|'correct'|'wrong'>('all')
+  const [mounted, setMounted] = useState(false)
 
-  useEffect(() => {
-    const saved = getMatches()
-    if (saved.length === 0) { saveMatches(DEMO_SAVED); setMatches(DEMO_SAVED) }
-    else setMatches(saved)
-    setResults(getResults())
-    setInitialized(true)
-  }, [])
+  useEffect(() => { setMounted(true); setMatches(loadMatches()) }, [])
 
-  const handleResult = (id: string, val: 'correct' | 'wrong' | null) => {
-    saveResult(id, val); setResults(getResults())
+  function addMatch(m: TrackedMatch) {
+    const u = [m, ...matches]; setMatches(u); saveMatches(u)
   }
-  const handleAdd = (m: SavedMatch) => {
-    const updated = [m, ...matches]; saveMatches(updated); setMatches(updated)
+  function setResult(id: string, result: 'correct'|'wrong'|'pending') {
+    const u = matches.map(m => m.id===id ? {...m, result} : m); setMatches(u); saveMatches(u)
   }
-  const handleDelete = (id: string) => {
-    const updated = matches.filter(m => m.id !== id); saveMatches(updated); setMatches(updated)
-    const r = getResults(); delete r[id]; localStorage.setItem('fp_results', JSON.stringify(r)); setResults(r)
+  function deleteMatch(id: string) {
+    if (!confirm('Ștergi acest pronostic?')) return
+    const u = matches.filter(m => m.id!==id); setMatches(u); saveMatches(u)
   }
-  const handleClearAll = () => {
-    if (!confirm('Ștergi toate meciurile înregistrate?')) return
-    saveMatches([]); setMatches([]); localStorage.removeItem('fp_results'); setResults({})
+  function clearAll() {
+    if (!confirm('Ștergi toate pronosticurile?')) return
+    setMatches([]); saveMatches([])
   }
 
-  const filtered = matches.filter(m => {
-    if (filter === 'pending') return !results[m.id]
-    if (filter === 'correct') return results[m.id] === 'correct'
-    if (filter === 'wrong') return results[m.id] === 'wrong'
-    return true
-  })
+  const filtered = filter==='all' ? matches : matches.filter(m => m.result===filter)
+  const grouped = groupByDate(filtered)
+  const sortedDates = Object.keys(grouped).sort((a,b) => b.localeCompare(a))
 
-  if (!initialized) return (
-    <div className="app-bg grid-bg min-h-screen flex items-center justify-center">
-      <div className="spinner" />
-    </div>
-  )
+  if (!mounted) return null
 
   return (
     <div className="app-bg grid-bg min-h-screen">
       <header className="header">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-green-700 flex items-center justify-center text-sm">⚽</div>
+            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-sm">⚽</div>
             <span className="font-display text-xl text-white tracking-widest">FOOTPREDICT</span>
           </div>
           <nav className="flex items-center gap-1">
@@ -229,67 +298,83 @@ export default function ResultatePage() {
       </header>
 
       <main className="max-w-4xl mx-auto px-4 py-8">
-        <div className="flex items-start justify-between mb-6 fade-in">
-          <div>
-            <h1 className="font-display text-4xl text-white tracking-widest mb-1">REZULTATE ÎNREGISTRATE</h1>
-            <p className="text-xs font-mono text-green-400 uppercase tracking-widest">
-              Urmărește-ți predicțiile și rata de succes
-            </p>
+        <div className="text-center mb-8 fade-in">
+          <h1 className="font-display text-4xl sm:text-5xl text-white tracking-widest mb-2">EVIDENȚA PRONOSTICURILOR</h1>
+          <p className="text-blue-300 text-sm font-mono uppercase tracking-widest">Urmărește rata de succes a predicțiilor tale</p>
+        </div>
+
+        <StatsPanel matches={matches} />
+
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
+          <div className="flex gap-1 flex-wrap">
+            {([
+              {key:'all',label:'Toate'},
+              {key:'pending',label:'⏳ Așteptare'},
+              {key:'correct',label:'✅ Corecte'},
+              {key:'wrong',label:'❌ Greșite'},
+            ] as const).map(f => (
+              <button key={f.key} onClick={() => setFilter(f.key)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all
+                  ${filter===f.key ? 'bg-blue-600 text-white' : 'bg-gray-800/60 text-gray-500 hover:text-gray-300 border border-gray-700/50'}`}>
+                {f.label}
+                <span className="ml-1 opacity-70 text-[10px]">
+                  ({f.key==='all' ? matches.length : matches.filter(m=>m.result===f.key).length})
+                </span>
+              </button>
+            ))}
           </div>
-          <div className="flex gap-2 shrink-0 ml-4">
-            <button onClick={() => setShowAdd(true)} className="btn-accent text-sm">➕ Adaugă</button>
-            {matches.length > 0 && (
-              <button onClick={handleClearAll} className="btn-secondary text-sm">🗑</button>
+          <div className="flex gap-2">
+            {matches.length>0 && (
+              <button onClick={clearAll}
+                className="px-3 py-1.5 rounded-lg text-xs text-gray-600 hover:text-red-400 bg-gray-800/50 border border-gray-800 transition-all">
+                🗑 Șterge tot
+              </button>
             )}
+            <button onClick={() => setShowAdd(true)} className="btn-accent px-4 py-1.5 text-sm">
+              + Adaugă pronostic
+            </button>
           </div>
         </div>
 
-        <StatsBar matches={matches} results={results} />
-
-        {matches.length > 0 && (
-          <div className="tab-bar mb-5 fade-in">
-            {FILTERS.map(f => {
-              const count = f.key === 'all' ? matches.length
-                : f.key === 'pending' ? matches.filter(m => !results[m.id]).length
-                : matches.filter(m => results[m.id] === f.key).length
-              return (
-                <button key={f.key} onClick={() => setFilter(f.key)} className={`tab ${filter === f.key ? 'active' : ''}`}>
-                  {f.label} <span className="ml-1 text-[10px] opacity-60">{count}</span>
-                </button>
-              )
-            })}
-          </div>
-        )}
-
-        {filtered.length === 0 ? (
-          <div className="text-center py-24 fade-in">
-            <div className="text-6xl opacity-10 mb-4">📋</div>
-            <p className="font-display text-2xl text-gray-600 tracking-widest mb-2">
-              {matches.length === 0 ? 'NICIUN MECI ÎNREGISTRAT' : 'NICIUN MECI ÎN ACEASTĂ CATEGORIE'}
+        {sortedDates.length > 0 ? (
+          sortedDates.map(date => (
+            <div key={date} className="mb-6 fade-in">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="h-px flex-1 bg-blue-900/30" />
+                <span className="text-xs font-bold text-blue-500 uppercase tracking-widest">{dateLabel(date)}</span>
+                <span className="text-[10px] text-gray-700 font-mono">{grouped[date].length} meciuri</span>
+                <div className="h-px flex-1 bg-blue-900/30" />
+              </div>
+              {grouped[date].map(m => (
+                <MatchCard key={m.id} match={m} onResult={setResult} onDelete={deleteMatch} />
+              ))}
+            </div>
+          ))
+        ) : (
+          <div className="text-center py-20 fade-in">
+            <div className="text-6xl opacity-10 mb-4">📊</div>
+            <p className="font-display text-xl text-gray-600 tracking-widest mb-2">
+              {filter==='all' ? 'NICIUN PRONOSTIC ÎNREGISTRAT' : 'NICIUN PRONOSTIC'}
             </p>
             <p className="text-gray-700 text-sm font-mono mb-6">
-              {matches.length === 0 ? 'Apasă ➕ Adaugă pentru prima predicție' : 'Schimbă filtrul'}
+              {filter==='all' ? 'Adaugă primul tău pronostic și urmărește-ți succesul' : 'Încearcă alt filtru'}
             </p>
-            {matches.length === 0 && (
-              <button onClick={() => setShowAdd(true)} className="btn-accent">➕ Adaugă primul meci</button>
+            {filter==='all' && (
+              <button onClick={() => setShowAdd(true)} className="btn-accent px-6 py-2">
+                + Adaugă primul pronostic
+              </button>
             )}
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {filtered.map(m => (
-              <MatchCard key={m.id} match={m} result={results[m.id] || null} onResult={handleResult} onDelete={handleDelete} />
-            ))}
           </div>
         )}
       </main>
 
-      {showAdd && <AddMatchModal onAdd={handleAdd} onClose={() => setShowAdd(false)} />}
-
-      <footer className="border-t border-green-900/30 mt-12 py-4">
+      <footer className="border-t border-blue-900/40 mt-12 py-6">
         <div className="max-w-4xl mx-auto px-4 text-center">
-          <p className="text-[11px] font-mono text-gray-700">FootPredict — Scop educațional. Nu reprezintă sfaturi de pariuri.</p>
+          <p className="text-xs font-mono text-gray-700">FootPredict — Scop educațional. Nu reprezintă sfaturi de pariuri.</p>
         </div>
       </footer>
+
+      {showAdd && <AddModal onAdd={addMatch} onClose={() => setShowAdd(false)} />}
     </div>
   )
 }
