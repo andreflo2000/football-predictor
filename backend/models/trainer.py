@@ -178,11 +178,22 @@ async def fetch_season(session, code, season, key):
     headers = {"X-Auth-Token": key}
     params = {"season": season, "status": "FINISHED"}
     try:
-        async with session.get(url, headers=headers, params=params, timeout=20) as r:
-            if r.status != 200:
-                print(f"  ⚠ {code}/{season}: HTTP {r.status}")
-                return []
-            data = await r.json()
+        # Retry la 429 cu backoff
+        for attempt in range(3):
+            async with session.get(url, headers=headers, params=params, timeout=20) as r:
+                if r.status == 429:
+                    wait = 12 + attempt * 8
+                    print(f"  ⏳ Rate limit {code}/{season} — aștept {wait}s...")
+                    await asyncio.sleep(wait)
+                    continue
+                if r.status != 200:
+                    print(f"  ⚠ {code}/{season}: HTTP {r.status}")
+                    return []
+                data = await r.json()
+                break
+        else:
+            print(f"  ⚠ {code}/{season}: 3 retry-uri eșuate")
+            return []
         matches = []
         for m in data.get("matches", []):
             s  = m.get("score",{}).get("fullTime",{})
@@ -200,7 +211,7 @@ async def fetch_season(session, code, season, key):
                 "comp":       code,
                 "season":     season,
             })
-        await asyncio.sleep(0.4)  # respectăm rate limit
+        await asyncio.sleep(2.0)  # respectăm rate limit football-data.org
         return matches
     except Exception as e:
         print(f"  ⚠ {code}/{season}: {e}")
@@ -261,9 +272,13 @@ async def run_training():
                 meta = json.load(f)
             trained = datetime.fromisoformat(meta.get("trained_at","2000-01-01"))
             age_days = (datetime.now()-trained).days
-            if age_days < 7 and os.path.exists(MODEL_PATH):
-                print(f"✅ Model recent ({age_days} zile) — skip reantrenare")
+            n_train = meta.get("n_train", 0)
+            # Reantrenăm dacă modelul e vechi SAU dacă are prea puține date
+            if age_days < 7 and n_train > 6000 and os.path.exists(MODEL_PATH):
+                print(f"✅ Model recent ({age_days} zile, {n_train} meciuri) — skip reantrenare")
                 return meta
+            elif age_days < 7 and n_train <= 6000:
+                print(f"⚠ Model recent dar insuficient ({n_train} meciuri) — reantrenare cu mai multe date")
         except:
             pass
 
