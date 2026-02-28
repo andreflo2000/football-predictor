@@ -126,14 +126,16 @@ function MarketRow({ market }: { market: any }) {
 
 // ─── Market Section ───────────────────────────────────────────────────────────
 function MarketSection({ market }: { market: any }) {
+  const items = market.items || market.markets || []
+  if (!items.length) return null
   return (
-    <div className="mb-4">
+    <div className="mb-5">
       <div className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-2 flex items-center gap-2">
         <div className="h-px flex-1 bg-blue-900/40" />
-        {market.category}
+        <span>{market.icon || '📊'} {market.category || market.label}</span>
         <div className="h-px flex-1 bg-blue-900/40" />
       </div>
-      {market.items?.map((m: any, i: number) => <MarketRow key={i} market={m} />)}
+      {items.map((m: any, i: number) => <MarketRow key={i} market={m} />)}
     </div>
   )
 }
@@ -340,15 +342,20 @@ function PredictionDisplay({ prediction, fixture, standings }: { prediction: Pre
       {/* Tab: Pariuri */}
       {activeTab === 'markets' && (
         <div className="card p-5 fade-in">
-          {prediction.markets?.length > 0
+          {(prediction.markets && prediction.markets.length > 0)
             ? prediction.markets.map((m: any, i: number) => <MarketSection key={i} market={m} />)
             : (
-              <div className="space-y-2">
-                {[
-                  { name: `Victorie ${prediction.home_team}`, probability: home_w, odds: (100/Math.max(home_w,1)).toFixed(2) },
-                  { name: 'Egal', probability: draw, odds: (100/Math.max(draw,1)).toFixed(2) },
-                  { name: `Victorie ${prediction.away_team}`, probability: away_w, odds: (100/Math.max(away_w,1)).toFixed(2) },
-                ].map((m, i) => <MarketRow key={i} market={m} />)}
+              <div>
+                <div className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-3 text-center">
+                  📊 Rezultat meci
+                </div>
+                <div className="space-y-1">
+                  {[
+                    { name: `1 — Victorie ${prediction.home_team}`, probability: home_w, odds: (100/Math.max(home_w,1)).toFixed(2) },
+                    { name: 'X — Egal', probability: draw, odds: (100/Math.max(draw,1)).toFixed(2) },
+                    { name: `2 — Victorie ${prediction.away_team}`, probability: away_w, odds: (100/Math.max(away_w,1)).toFixed(2) },
+                  ].map((m, i) => <MarketRow key={i} market={m} />)}
+                </div>
               </div>
             )
           }
