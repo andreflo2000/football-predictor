@@ -29,14 +29,15 @@ META_PATH  = os.path.join(os.path.dirname(__file__), "model_meta.json")
 
 # 8 ligi disponibile gratuit × 5 sezoane = ~20.000 meciuri
 COMPETITIONS = {
-    "PL":  {"name": "Premier League",  "seasons": [2019,2020,2021,2022,2023,2024]},
-    "PD":  {"name": "La Liga",         "seasons": [2019,2020,2021,2022,2023,2024]},
-    "BL1": {"name": "Bundesliga",      "seasons": [2019,2020,2021,2022,2023,2024]},
-    "SA":  {"name": "Serie A",         "seasons": [2019,2020,2021,2022,2023,2024]},
-    "FL1": {"name": "Ligue 1",         "seasons": [2019,2020,2021,2022,2023,2024]},
-    "DED": {"name": "Eredivisie",      "seasons": [2020,2021,2022,2023,2024]},
-    "PPL": {"name": "Primeira Liga",   "seasons": [2020,2021,2022,2023,2024]},
-    "BSA": {"name": "Brasileirao",     "seasons": [2020,2021,2022,2023]},
+    "PL":  {"name": "Premier League",  "seasons": [2020,2021,2022,2023,2024]},
+    "PD":  {"name": "La Liga",         "seasons": [2020,2021,2022,2023,2024]},
+    "BL1": {"name": "Bundesliga",      "seasons": [2020,2021,2022,2023,2024]},
+    "SA":  {"name": "Serie A",         "seasons": [2020,2021,2022,2023,2024]},
+    "FL1": {"name": "Ligue 1",         "seasons": [2020,2021,2022,2023,2024]},
+    "CL":  {"name": "Champions League","seasons": [2021,2022,2023,2024]},
+    "DED": {"name": "Eredivisie",      "seasons": [2021,2022,2023,2024]},
+    "PPL": {"name": "Primeira Liga",   "seasons": [2021,2022,2023,2024]},
+    "BSA": {"name": "Brasileirao",     "seasons": [2021,2022,2023]},
 }
 
 FEATURE_COLS = [
@@ -50,6 +51,7 @@ FEATURE_COLS = [
     "home_btts_rate","away_btts_rate",
     "home_over25_rate","away_over25_rate",
     "h2h_home_wins","h2h_draws","h2h_away_wins",
+    "home_momentum","away_momentum","elo_home_advantage",
 ]
 
 
@@ -129,6 +131,13 @@ class FeatureBuilder:
             h2h_aw = sum(1 for x in hx if x==away)
 
             label = {"H":0,"D":1,"A":2}[m["result"]]
+            # Features noi: momentum (formă ultimele 3) și home advantage relativ
+            h_last3 = hist.get(home, [])[-3:]
+            a_last3 = hist.get(away, [])[-3:]
+            home_momentum = sum(3 if r["res"]=="W" else 1 if r["res"]=="D" else 0 for r in h_last3) / max(len(h_last3)*3, 1)
+            away_momentum = sum(3 if r["res"]=="W" else 1 if r["res"]=="D" else 0 for r in a_last3) / max(len(a_last3)*3, 1)
+            elo_home_adv = (he + elo.HOME_ADV - ae) / 400  # diferența Elo normalizată
+
             rows.append({
                 "home_elo": he, "away_elo": ae,
                 "elo_diff": ed, "elo_draw_prob": dp,
@@ -157,6 +166,9 @@ class FeatureBuilder:
                 "h2h_home_wins": h2h_hw,
                 "h2h_draws": h2h_d,
                 "h2h_away_wins": h2h_aw,
+                "home_momentum": home_momentum,
+                "away_momentum": away_momentum,
+                "elo_home_advantage": elo_home_adv,
                 "label": label,
             })
 
@@ -301,9 +313,18 @@ async def run_training():
 
     if model is not None:
         model.save_model(MODEL_PATH)
+        # Salvăm și ratingurile Elo finale din antrenament
+        elo_tracker = EloTracker()
+        for m in matches:
+            elo_tracker.update(m["home"], m["away"], m["result"])
+        # Top 200 echipe după rating
+        top_elos = dict(sorted(elo_tracker.ratings.items(), key=lambda x: x[1], reverse=True)[:200])
+        metrics["elo_ratings"] = top_elos
+        metrics["n_teams"] = len(elo_tracker.ratings)
         with open(META_PATH,"w") as f:
             json.dump(metrics, f, indent=2)
         print(f"✅ Model salvat: {MODEL_PATH}")
+        print(f"✅ Elo ratings salvate: {len(top_elos)} echipe")
         return metrics
 
     return {}
