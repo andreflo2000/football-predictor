@@ -592,13 +592,13 @@ export default function Home() {
           <div className="flex justify-center mb-5">
             <div className="relative">
               <img src="/logo.jpg" alt="Flopi San Forecast Academy"
-                className="w-28 h-28 rounded-full object-cover border-4 border-blue-600/50 shadow-2xl shadow-blue-900/60" />
-              <div className="absolute -bottom-1 -right-1 w-7 h-7 bg-emerald-500 rounded-full flex items-center justify-center text-xs border-2 border-gray-900">
+                className="w-44 h-44 rounded-full object-cover border-4 border-blue-600/50 shadow-2xl shadow-blue-900/60" />
+              <div className="absolute -bottom-1 -right-2 w-9 h-9 bg-emerald-500 rounded-full flex items-center justify-center text-base border-2 border-gray-900">
                 🔮
               </div>
             </div>
           </div>
-          <h1 className="font-display text-5xl sm:text-6xl text-white tracking-widest mb-1">
+          <h1 className="font-display text-5xl sm:text-7xl text-white tracking-widest mb-1">
             FLOPI SAN
           </h1>
           <div className="text-blue-400 text-sm font-mono uppercase tracking-[0.3em] mb-3">
