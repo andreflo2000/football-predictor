@@ -49,56 +49,117 @@ function groupByDate(matches: TrackedMatch[]) {
   return groups
 }
 
-function StatsPanel({ matches }: { matches: TrackedMatch[] }) {
-  const resolved = matches.filter(m => m.result !== 'pending')
-  const correct  = resolved.filter(m => m.result === 'correct').length
-  const wrong    = resolved.filter(m => m.result === 'wrong').length
-  const pending  = matches.filter(m => m.result === 'pending').length
-  const rate     = resolved.length > 0 ? Math.round((correct / resolved.length) * 100) : null
-  const rateColor = rate === null ? '#6b7280' : rate >= 60 ? '#10b981' : rate >= 45 ? '#f59e0b' : '#ef4444'
-  if (matches.length === 0) return null
+function rateColor(rate: number | null) {
+  if (rate === null) return '#6b7280'
+  return rate >= 60 ? '#10b981' : rate >= 45 ? '#f59e0b' : '#ef4444'
+}
+
+function RateBar({ label, correct, total, highlight }: { label: string; correct: number; total: number; highlight?: boolean }) {
+  const rate = total > 0 ? Math.round((correct / total) * 100) : null
+  const color = rateColor(rate)
   return (
-    <div className="card p-5 mb-6">
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-        {[
-          { label: 'Total', value: matches.length, color: '#60a5fa' },
-          { label: '✅ Corecte', value: correct, color: '#10b981' },
-          { label: '❌ Greșite', value: wrong, color: '#ef4444' },
-          { label: '⏳ Așteptare', value: pending, color: '#f59e0b' },
-        ].map(s => (
-          <div key={s.label} className="bg-gray-800/50 rounded-xl p-3 text-center">
-            <div className="text-2xl font-bold font-mono" style={{ color: s.color }}>{s.value}</div>
-            <div className="text-[10px] text-gray-500 uppercase tracking-widest mt-1">{s.label}</div>
-          </div>
-        ))}
+    <div className={`rounded-xl p-4 ${highlight ? 'bg-blue-900/20 border border-blue-600/30' : 'bg-gray-800/40'}`}>
+      <div className="flex justify-between items-center mb-2">
+        <span className={`text-xs font-bold uppercase tracking-widest ${highlight ? 'text-blue-300' : 'text-gray-400'}`}>{label}</span>
+        <span className="text-2xl font-bold font-mono" style={{ color: rate !== null ? color : '#4b5563' }}>
+          {rate !== null ? `${rate}%` : '—'}
+        </span>
       </div>
-      {resolved.length > 0 && (
-        <div>
-          <div className="flex justify-between text-xs font-mono mb-1">
-            <span className="text-gray-500">Rată de succes</span>
-            <span className="font-bold text-lg" style={{ color: rateColor }}>{rate}%</span>
-          </div>
-          <div className="h-3 bg-gray-800 rounded-full overflow-hidden">
-            <div className="h-full rounded-full transition-all duration-700"
-              style={{ width: `${rate}%`, backgroundColor: rateColor }} />
-          </div>
-          <div className="text-[10px] text-gray-600 font-mono mt-1 text-right">
-            {correct} corecte din {resolved.length} finalizate
-          </div>
-          <div className="flex items-center gap-2 mt-3">
-            <span className="text-[10px] text-gray-600 uppercase tracking-widest">Ultimele:</span>
-            {[...resolved].slice(-7).map((m, i) => (
-              <div key={i} className={`w-6 h-6 rounded text-xs flex items-center justify-center font-bold
-                ${m.result==='correct' ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'}`}>
-                {m.result==='correct' ? '✓' : '✗'}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      <div className="h-2 bg-gray-800 rounded-full overflow-hidden mb-1">
+        {rate !== null && (
+          <div className="h-full rounded-full transition-all duration-700"
+            style={{ width: `${rate}%`, backgroundColor: color }} />
+        )}
+      </div>
+      <div className="text-[10px] text-gray-600 font-mono">
+        {total === 0 ? 'Niciun pronostic finalizat' : `${correct} corecte din ${total} finalizate`}
+      </div>
     </div>
   )
 }
+
+function StatsPanel({ matches }: { matches: TrackedMatch[] }) {
+  const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]
+  const todayStr  = today()
+
+  // ── Total general ──
+  const resolved     = matches.filter(m => m.result !== 'pending')
+  const correct      = resolved.filter(m => m.result === 'correct').length
+  const wrong        = resolved.filter(m => m.result === 'wrong').length
+  const pending      = matches.filter(m => m.result === 'pending').length
+
+  // ── Ieri (pronosticuri cu data de ieri, finalizate azi) ──
+  const yesterdayAll      = matches.filter(m => m.date === yesterday)
+  const yesterdayResolved = yesterdayAll.filter(m => m.result !== 'pending')
+  const yesterdayCorrect  = yesterdayResolved.filter(m => m.result === 'correct').length
+
+  // ── Azi (pronosticuri cu data de azi, finalizate) ──
+  const todayAll      = matches.filter(m => m.date === todayStr)
+  const todayResolved = todayAll.filter(m => m.result !== 'pending')
+  const todayCorrect  = todayResolved.filter(m => m.result === 'correct').length
+
+  if (matches.length === 0) return null
+
+  return (
+    <div className="space-y-4 mb-6">
+      {/* Carduri cifre */}
+      <div className="card p-5">
+        <div className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-3 text-center">
+          📊 Statistici generale
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+          {[
+            { label: 'Total pronosticuri', value: matches.length, color: '#60a5fa' },
+            { label: '✅ Corecte', value: correct, color: '#10b981' },
+            { label: '❌ Greșite', value: wrong, color: '#ef4444' },
+            { label: '⏳ Așteptare', value: pending, color: '#f59e0b' },
+          ].map(s => (
+            <div key={s.label} className="bg-gray-800/50 rounded-xl p-3 text-center">
+              <div className="text-2xl font-bold font-mono" style={{ color: s.color }}>{s.value}</div>
+              <div className="text-[10px] text-gray-500 uppercase tracking-widest mt-1">{s.label}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Bare rate */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <RateBar
+            label="🏆 Rată totală"
+            correct={correct}
+            total={resolved.length}
+            highlight
+          />
+          <RateBar
+            label={`📅 Selecțiile de ieri (${fmtDate(yesterday)})`}
+            correct={yesterdayCorrect}
+            total={yesterdayResolved.length}
+          />
+          <RateBar
+            label={`📅 Selecțiile de azi (${fmtDate(todayStr)})`}
+            correct={todayCorrect}
+            total={todayResolved.length}
+          />
+        </div>
+
+        {/* Streak */}
+        {resolved.length >= 2 && (
+          <div className="flex items-center gap-2 mt-4 pt-4 border-t border-gray-800">
+            <span className="text-[10px] text-gray-600 uppercase tracking-widest shrink-0">Ultimele 7:</span>
+            <div className="flex gap-1">
+              {[...resolved].slice(-7).map((m, i) => (
+                <div key={i} className={`w-6 h-6 rounded text-xs flex items-center justify-center font-bold
+                  ${m.result==='correct' ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'}`}>
+                  {m.result==='correct' ? '✓' : '✗'}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 
 function MatchCard({ match, onResult, onDelete }: {
   match: TrackedMatch
