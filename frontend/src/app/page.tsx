@@ -570,10 +570,13 @@ export default function Home() {
     <div className="app-bg grid-bg min-h-screen">
       {/* Header */}
       <header className="header">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-4 py-2 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-sm">⚽</div>
-            <span className="font-display text-xl text-white tracking-widest">FOOTPREDICT</span>
+            <img src="/logo.jpg" alt="Flopi San" className="w-10 h-10 rounded-full object-cover border-2 border-blue-500/60" />
+            <div>
+              <div className="font-display text-lg text-white tracking-widest leading-none">FLOPI SAN</div>
+              <div className="text-[9px] font-mono text-blue-400 tracking-[0.2em] uppercase">Forecast Academy</div>
+            </div>
             <div className="pulse-dot ml-2 hidden sm:block" />
           </div>
           <nav className="flex items-center gap-1">
@@ -586,11 +589,23 @@ export default function Home() {
       <main className="max-w-6xl mx-auto px-4 py-8">
         {/* Hero */}
         <div className="text-center mb-10 fade-in">
-          <h1 className="font-display text-5xl sm:text-6xl text-white tracking-widest mb-3">
-            PREDICȚII FOTBAL
+          <div className="flex justify-center mb-5">
+            <div className="relative">
+              <img src="/logo.jpg" alt="Flopi San Forecast Academy"
+                className="w-28 h-28 rounded-full object-cover border-4 border-blue-600/50 shadow-2xl shadow-blue-900/60" />
+              <div className="absolute -bottom-1 -right-1 w-7 h-7 bg-emerald-500 rounded-full flex items-center justify-center text-xs border-2 border-gray-900">
+                🔮
+              </div>
+            </div>
+          </div>
+          <h1 className="font-display text-5xl sm:text-6xl text-white tracking-widest mb-1">
+            FLOPI SAN
           </h1>
-          <p className="text-blue-300 text-sm font-mono uppercase tracking-widest">
-            xG · Elo · XGBoost · Poisson · Clasament Live — 100 Ligi
+          <div className="text-blue-400 text-sm font-mono uppercase tracking-[0.3em] mb-3">
+            Forecast Academy
+          </div>
+          <p className="text-gray-500 text-xs font-mono uppercase tracking-widest">
+            xG · Elo · XGBoost · Poisson · 100 Ligi
           </p>
         </div>
 
@@ -741,7 +756,7 @@ export default function Home() {
       <footer className="border-t border-blue-900/40 mt-12 py-6">
         <div className="max-w-6xl mx-auto px-4 text-center">
           <p className="text-xs font-mono text-gray-700">
-            FootPredict — Scop educațional. Nu reprezintă sfaturi de pariuri.
+            Flopi San Forecast Academy — Scop educațional. Nu reprezintă sfaturi de pariuri.
           </p>
         </div>
       </footer>
