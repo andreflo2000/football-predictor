@@ -26,7 +26,13 @@ function loadMatches(): TrackedMatch[] {
 function saveMatches(m: TrackedMatch[]) {
   localStorage.setItem('fp_tracked_v2', JSON.stringify(m))
 }
-function today() { return new Date().toISOString().split('T')[0] }
+function today() {
+  const d = new Date()
+  const y = d.getFullYear()
+  const m = String(d.getMonth()+1).padStart(2,'0')
+  const day = String(d.getDate()).padStart(2,'0')
+  return `${y}-${m}-${day}`
+}
 function fmtDate(d: string) {
   if (!d) return ''
   const [y,m,day] = d.split('-')
@@ -34,9 +40,15 @@ function fmtDate(d: string) {
 }
 function dateLabel(d: string) {
   const t = today()
-  const tm = new Date(Date.now()+86400000).toISOString().split('T')[0]
+  const tmDate = new Date()
+  tmDate.setDate(tmDate.getDate() + 1)
+  const tm = `${tmDate.getFullYear()}-${String(tmDate.getMonth()+1).padStart(2,'0')}-${String(tmDate.getDate()).padStart(2,'0')}`
+  const ydDate = new Date()
+  ydDate.setDate(ydDate.getDate() - 1)
+  const yd = `${ydDate.getFullYear()}-${String(ydDate.getMonth()+1).padStart(2,'0')}-${String(ydDate.getDate()).padStart(2,'0')}`
   if (d === t) return '📅 Azi'
   if (d === tm) return '📅 Mâine'
+  if (d === yd) return '📅 Ieri'
   return `📅 ${fmtDate(d)}`
 }
 function groupByDate(matches: TrackedMatch[]) {
@@ -79,7 +91,11 @@ function RateBar({ label, correct, total, highlight }: { label: string; correct:
 }
 
 function StatsPanel({ matches }: { matches: TrackedMatch[] }) {
-  const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]
+  const yesterday = (() => {
+    const d = new Date()
+    d.setDate(d.getDate() - 1)
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+  })()
   const todayStr  = today()
 
   // ── Total general ──
@@ -221,7 +237,7 @@ function MatchCard({ match, onResult, onDelete }: {
 function AddModal({ onAdd, onClose }: { onAdd: (m: TrackedMatch) => void; onClose: () => void }) {
   const [form, setForm] = useState({
     home: '', away: '', league: '', flag: '⚽',
-    date: today(), time: '21:00',
+    date: today(), time: '',
     prediction: '', market: '1X2',
   })
   const flagOptions: Record<string, string> = {
@@ -283,12 +299,14 @@ function AddModal({ onAdd, onClose }: { onAdd: (m: TrackedMatch) => void; onClos
             <div>
               <label className="block text-[10px] text-gray-500 uppercase tracking-widest mb-1">Data</label>
               <input type="date" className="input-styled text-sm" value={form.date}
-                onChange={e => setForm({...form, date: e.target.value})} />
+                onChange={e => setForm({...form, date: e.target.value})}
+                min={new Date(Date.now()-30*86400000).toISOString().split('T')[0]} />
             </div>
             <div>
               <label className="block text-[10px] text-gray-500 uppercase tracking-widest mb-1">Ora</label>
               <input type="time" className="input-styled text-sm" value={form.time}
-                onChange={e => setForm({...form, time: e.target.value})} />
+                onChange={e => setForm({...form, time: e.target.value})}
+                placeholder="21:00" />
             </div>
           </div>
           <div>
