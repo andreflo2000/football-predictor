@@ -211,6 +211,49 @@ class DataFetcher:
         logger.info(f"Cache SET form echipa {team_id} (3h) — forma: {form}")
         return result
 
+    # ─── H2H REAL ─────────────────────────────────────────────────────────────
+    async def get_h2h(self, home_id: int, away_id: int) -> dict:
+        """Head-to-head din ultimele 10 meciuri directe, cache 24h."""
+        if not home_id or not away_id or not FOOTBALL_DATA_KEY:
+            return {"h2h_home_wins": 2, "h2h_draws": 2, "h2h_away_wins": 2, "h2h_matches": []}
+
+        cache_key = f"fd_h2h_{min(home_id,away_id)}_{max(home_id,away_id)}"
+        cached = _cache.get(cache_key)
+        if cached is not None:
+            return cached
+
+        data = await self._get(f"teams/{home_id}/matches", {"status": "FINISHED", "limit": 40})
+        matches = data.get("matches", [])
+
+        h2h_matches = []
+        for m in matches:
+            ht_id = m.get("homeTeam", {}).get("id")
+            at_id = m.get("awayTeam", {}).get("id")
+            if set([ht_id, at_id]) == set([home_id, away_id]):
+                score = m.get("score", {}).get("fullTime", {})
+                hg = score.get("home") or 0
+                ag = score.get("away") or 0
+                h2h_matches.append({
+                    "date": m.get("utcDate", "")[:10],
+                    "home_id": ht_id, "away_id": at_id,
+                    "home_goals": int(hg), "away_goals": int(ag),
+                })
+
+        h2h_home_wins = sum(1 for m in h2h_matches if m["home_id"] == home_id and m["home_goals"] > m["away_goals"])
+        h2h_draws     = sum(1 for m in h2h_matches if m["home_goals"] == m["away_goals"])
+        h2h_away_wins = sum(1 for m in h2h_matches if m["away_id"] == away_id and m["away_goals"] > m["home_goals"])
+
+        result = {
+            "h2h_home_wins": h2h_home_wins or 2,
+            "h2h_draws":     h2h_draws or 2,
+            "h2h_away_wins": h2h_away_wins or 2,
+            "h2h_matches":   h2h_matches[:10],
+            "h2h_total":     len(h2h_matches),
+        }
+        _cache.set(cache_key, result, 24 * 3600)
+        logger.info(f"H2H {home_id} vs {away_id}: {h2h_home_wins}W-{h2h_draws}D-{h2h_away_wins}L")
+        return result
+
     # ─── MAIN GETTER ──────────────────────────────────────────────────────────
     async def get_team_data(self, team_name: str, team_id: int = None, league_id: int = 39) -> dict:
         """Date reale cu fallback la demo."""
@@ -229,6 +272,30 @@ class DataFetcher:
                 logger.warning(f"FD failed {team_name}: {e}")
 
         return data
+
+    async def get_team_data_with_h2h(self, home_name: str, away_name: str,
+                                      home_id: int = None, away_id: int = None,
+                                      league_id: int = 39) -> tuple:
+        """Fetch date ambele echipe + H2H în paralel."""
+        home_task = self.get_team_data(home_name, home_id, league_id)
+        away_task = self.get_team_data(away_name, away_id, league_id)
+        h2h_task  = self.get_h2h(home_id, away_id) if home_id and away_id else None
+
+        if h2h_task:
+            home_data, away_data, h2h = await asyncio.gather(home_task, away_task, h2h_task)
+        else:
+            home_data, away_data = await asyncio.gather(home_task, away_task)
+            h2h = {"h2h_home_wins": 2, "h2h_draws": 2, "h2h_away_wins": 2}
+
+        # Injectăm H2H în datele echipelor
+        home_data["h2h_home_wins"] = h2h["h2h_home_wins"]
+        home_data["h2h_draws"]     = h2h["h2h_draws"]
+        home_data["h2h_away_wins"] = h2h["h2h_away_wins"]
+        away_data["h2h_home_wins"] = h2h["h2h_home_wins"]
+        away_data["h2h_draws"]     = h2h["h2h_draws"]
+        away_data["h2h_away_wins"] = h2h["h2h_away_wins"]
+
+        return home_data, away_data, h2h
 
     async def get_team_stats(self, team_id: int, league_id: int, season: int) -> dict:
         return await self.get_team_form(team_id, league_id)
