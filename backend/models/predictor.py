@@ -241,6 +241,7 @@ class XGBoostPredictor:
         "home_btts_rate","away_btts_rate",
         "home_over25_rate","away_over25_rate",
         "h2h_home_wins","h2h_draws","h2h_away_wins",
+        "home_momentum","away_momentum","elo_home_advantage",
     ]
 
     def __init__(self):
@@ -345,6 +346,7 @@ class XGBoostPredictor:
             "home_btts_rate":0.52,"away_btts_rate":0.52,
             "home_over25_rate":0.55,"away_over25_rate":0.55,
             "h2h_home_wins":2,"h2h_draws":2,"h2h_away_wins":2,
+            "home_momentum":0.5,"away_momentum":0.5,"elo_home_advantage":0.25,
         }
 
         vals = [features.get(k, defaults[k]) for k in self.FEATURE_COLS]
@@ -405,6 +407,23 @@ class FootballPredictor:
         }
         self.elo.ratings.update(seed_ratings)
 
+    def _update_elo_from_standings(self, home_team, home_id, away_team, away_id, league_id):
+        """Actualizează Elo din poziția în clasament dacă e disponibilă."""
+        try:
+            import os, json
+            meta_path = os.path.join(os.path.dirname(__file__), "model_meta.json")
+            if not os.path.exists(meta_path):
+                return
+            with open(meta_path) as f:
+                meta = json.load(f)
+            elo_ratings = meta.get("elo_ratings", {})
+            if elo_ratings:
+                # Actualizăm ratingurile din modelul antrenat
+                for team, rating in elo_ratings.items():
+                    self.elo.ratings[team] = float(rating)
+        except Exception:
+            pass  # Fallback la seed ratings
+
     async def predict(
         self,
         home_team: str,
@@ -413,16 +432,18 @@ class FootballPredictor:
         home_team_id: int = None,
         away_team_id: int = None,
     ) -> dict:
-        """Predicție completă integrând toate modelele."""
+        """Predicție completă integrând toate modelele cu H2H real."""
 
         from data.fetcher import DataFetcher
         fetcher = DataFetcher()
 
-        # 1. Date echipe
-        home_data = await fetcher.get_team_data(home_team, home_team_id, league_id)
-        away_data = await fetcher.get_team_data(away_team, away_team_id, league_id)
+        # 1. Date echipe + H2H în paralel (fetch simultan)
+        home_data, away_data, h2h_data = await fetcher.get_team_data_with_h2h(
+            home_team, away_team, home_team_id, away_team_id, league_id
+        )
 
-        # 2. Elo probabilities
+        # 2. Elo dinamic: actualizăm din clasament dacă avem date
+        self._update_elo_from_standings(home_team, home_team_id, away_team, away_team_id, league_id)
         elo_probs = self.elo.predict_probabilities(home_team, away_team)
 
         # 3. Form scores
@@ -493,9 +514,13 @@ class FootballPredictor:
             "away_btts_rate": sum(1 for gf,ga in zip(a_xg_for_hist,a_xg_ag_hist) if gf>0.5 and ga>0.5)/max(len(a_xg_for_hist),1),
             "home_over25_rate": sum(1 for gf,ga in zip(h_xg_for_hist,h_xg_ag_hist) if gf+ga>2.5)/max(len(h_xg_for_hist),1),
             "away_over25_rate": sum(1 for gf,ga in zip(a_xg_for_hist,a_xg_ag_hist) if gf+ga>2.5)/max(len(a_xg_for_hist),1),
-            "h2h_home_wins": home_data.get("h2h_home_wins", 2),
-            "h2h_draws": home_data.get("h2h_draws", 2),
-            "h2h_away_wins": home_data.get("h2h_away_wins", 2),
+            "h2h_home_wins": h2h_data.get("h2h_home_wins", home_data.get("h2h_home_wins", 2)),
+            "h2h_draws":     h2h_data.get("h2h_draws",     home_data.get("h2h_draws", 2)),
+            "h2h_away_wins": h2h_data.get("h2h_away_wins", home_data.get("h2h_away_wins", 2)),
+            # Features noi
+            "home_momentum": sum(3 if r=="W" else 1 if r=="D" else 0 for r in home_data.get("last_5",[])[-3:]) / max(len(home_data.get("last_5",[])[-3:])*3, 1),
+            "away_momentum": sum(3 if r=="W" else 1 if r=="D" else 0 for r in away_data.get("last_5",[])[-3:]) / max(len(away_data.get("last_5",[])[-3:])*3, 1),
+            "elo_home_advantage": (self.elo.get_rating(home_team) + 85 - self.elo.get_rating(away_team)) / 400,
         }
         xgb_probs = self.xgb_model.predict_proba(features)
 
@@ -535,6 +560,13 @@ class FootballPredictor:
             "expected_goals": {
                 "home": poisson_result["expected_home_goals"],
                 "away": poisson_result["expected_away_goals"],
+            },
+            "h2h": {
+                "home_wins": h2h_data.get("h2h_home_wins", 2),
+                "draws":     h2h_data.get("h2h_draws", 2),
+                "away_wins": h2h_data.get("h2h_away_wins", 2),
+                "total":     h2h_data.get("h2h_total", 0),
+                "source":    "live" if h2h_data.get("h2h_total", 0) > 0 else "demo",
             },
             "model_breakdown": {
                 "elo": {
