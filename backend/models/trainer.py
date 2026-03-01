@@ -297,22 +297,12 @@ async def run_training():
     real_matches = await collect_all_data()
     print(f"✅ Meciuri reale colectate: {len(real_matches)}")
 
-    # Completăm cu date sintetice de calitate până la 12000 meciuri
-    # Datele sintetice sunt calibrate pe distribuțiile reale
-    TARGET = 12000
-    synthetic_needed = max(0, TARGET - len(real_matches))
-    if synthetic_needed > 0:
-        print(f"🔄 Completez cu {synthetic_needed} meciuri sintetice calibrate...")
-        synthetic = _synthetic(synthetic_needed)
-        matches = real_matches + synthetic
-        print(f"✅ Total antrenament: {len(real_matches)} reale + {synthetic_needed} sintetice = {len(matches)}")
-    else:
-        matches = real_matches
-        print(f"✅ Total: {len(matches)} meciuri reale")
+    # Antrenăm DOAR pe date reale — synthetic diluează semnalul
+    matches = real_matches
 
-    if len(matches) < 500:
-        print("⚠ Date insuficiente — fallback complet sintetic")
-        matches = _synthetic(12000)
+    if len(matches) < 300:
+        print("⚠ Date insuficiente — fallback sintetic minimal")
+        matches = _synthetic(5000)
 
     print(f"\n⚙ Construire features...")
     df = FeatureBuilder().build(matches)
