@@ -364,10 +364,13 @@ export default function Weekly() {
   return (
     <div className="app-bg grid-bg min-h-screen">
       <header className="header">
-        <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="max-w-4xl mx-auto px-4 py-2 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-sm">⚽</div>
-            <span className="font-display text-xl text-white tracking-widest">FOOTPREDICT</span>
+            <img src="/logo.jpg" alt="Flopi San" className="w-10 h-10 rounded-full object-cover border-2 border-blue-500/60" />
+            <div>
+              <div className="font-display text-lg text-white tracking-widest leading-none">FLOPI SAN</div>
+              <div className="text-[9px] font-mono text-blue-400 tracking-[0.2em] uppercase">Forecast Academy</div>
+            </div>
           </div>
           <nav className="flex items-center gap-1">
             <a href="/" className="nav-link">Predicții</a>
@@ -378,8 +381,13 @@ export default function Weekly() {
 
       <main className="max-w-4xl mx-auto px-4 py-8">
         <div className="text-center mb-8 fade-in">
-          <h1 className="font-display text-4xl sm:text-5xl text-white tracking-widest mb-2">EVIDENȚA PRONOSTICURILOR</h1>
-          <p className="text-blue-300 text-sm font-mono uppercase tracking-widest">Urmărește rata de succes a predicțiilor tale</p>
+          <div className="flex justify-center mb-4">
+            <img src="/logo.jpg" alt="Flopi San"
+              className="w-20 h-20 rounded-full object-cover border-4 border-blue-600/50 shadow-2xl shadow-blue-900/60" />
+          </div>
+          <h1 className="font-display text-4xl sm:text-5xl text-white tracking-widest mb-1">EVIDENȚA PRONOSTICURILOR</h1>
+          <div className="text-blue-400 text-xs font-mono uppercase tracking-[0.25em] mb-1">Flopi San · Forecast Academy</div>
+          <p className="text-gray-600 text-xs font-mono uppercase tracking-widest">Urmărește rata de succes a predicțiilor tale</p>
         </div>
 
         <StatsPanel matches={matches} />
@@ -449,7 +457,7 @@ export default function Weekly() {
 
       <footer className="border-t border-blue-900/40 mt-12 py-6">
         <div className="max-w-4xl mx-auto px-4 text-center">
-          <p className="text-xs font-mono text-gray-700">FootPredict — Scop educațional. Nu reprezintă sfaturi de pariuri.</p>
+          <p className="text-xs font-mono text-gray-700">Flopi San Forecast Academy — Scop educațional. Nu reprezintă sfaturi de pariuri.</p>
         </div>
       </footer>
 
