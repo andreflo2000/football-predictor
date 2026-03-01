@@ -343,30 +343,31 @@ async def run_training():
 
 
 def _synthetic(n):
-    """Meciuri sintetice calibrate pe distribuțiile reale din top ligi.
-    Home win 46%, Draw 26%, Away win 28% — distribuite pe 3 sezoane.
+    """Meciuri sintetice calibrate.
+    Folosim 20 echipe cu mult istoric (n/20 meciuri fiecare) astfel încât
+    FeatureBuilder să aibă suficient context pentru toate rândurile.
     """
     np.random.seed(42)
+    # 20 echipe = fiecare echipă apare de ~n/10 ori ca gazdă → istoric bogat
+    teams = [f"S{i:02d}" for i in range(20)]
     matches = []
-    # 80 echipe cu nivele variate (simulăm 4 ligi)
-    teams = [f"T{i:02d}" for i in range(80)]
-    seasons = [2022, 2023, 2024]
 
     for i in range(n):
-        h = np.random.choice(teams)
-        a = np.random.choice([t for t in teams if t != h])
+        h = teams[i % 20]
+        a = teams[(i + 1 + (i // 20)) % 20]
+        if h == a:
+            a = teams[(i + 2) % 20]
         r = np.random.choice(["H","D","A"], p=[0.46, 0.26, 0.28])
-        # Scoruri cu distribuție Poisson calibrată pe meciuri reale
         hg = int(np.random.poisson({"H":1.75,"D":1.10,"A":0.85}[r]))
         ag = int(np.random.poisson({"H":0.85,"D":1.10,"A":1.75}[r]))
-        season = seasons[i % 3]
-        month = np.random.randint(1, 12)
-        day = np.random.randint(1, 28)
+        year = 2022 + (i % 3)
+        month = (i % 11) + 1
+        day = (i % 27) + 1
         matches.append({
-            "date": f"{season}-{month:02d}-{day:02d}",
+            "date": f"{year}-{month:02d}-{day:02d}",
             "home": h, "away": a,
             "home_goals": hg, "away_goals": ag,
-            "result": r, "comp": "SYN", "season": season
+            "result": r, "comp": "SYN", "season": year
         })
     return matches
 
