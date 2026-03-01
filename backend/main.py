@@ -407,6 +407,7 @@ async def predict_match(
     # Convertim markets dict → listă ordonată pentru frontend
     MARKET_ORDER = [
         "match_result", "double_chance", "over_under", "btts",
+        "team_totals", "goal_both_halves", "ht_ft",
         "halftime_result", "halftime_over_under", "halftime_goal",
         "combo", "exact_score", "corners", "cards",
     ]
