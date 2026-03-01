@@ -41,6 +41,9 @@ class BettingCalculator:
             "double_chance": self._market_double_chance(matrix),
             "over_under": self._market_over_under(lambda_, mu),
             "btts": self._market_btts(matrix),
+            "team_totals": self._market_team_totals(matrix, home_team, away_team),
+            "goal_both_halves": self._market_goal_both_halves(lambda_, mu),
+            "ht_ft": self._market_ht_ft(matrix, matrix_ht),
             "halftime_goal": self._market_halftime_goal(lambda_ht, mu_ht),
             "halftime_over_under": self._market_halftime_ou(lambda_ht, mu_ht),
             "halftime_result": self._market_1x2(matrix_ht, label="Rezultat pauză"),
@@ -340,3 +343,142 @@ class BettingCalculator:
             "icon": "🟨",
             "markets": markets
         }
+
+    # ─── 12. TOTAL INDIVIDUAL ECHIPE ────────────────────────────────────────────
+
+    def _market_team_totals(self, matrix: np.ndarray, home_team: str, away_team: str) -> dict:
+        """
+        Total goluri individuale gazdă și oaspete.
+        P(gazdă marchează peste X) = P(home_goals > X)
+        """
+        max_g = matrix.shape[0]
+
+        def team_over(col_or_row: str, line: float) -> float:
+            """Probabilitate ca echipa să marcheze mai mult de `line` goluri."""
+            if col_or_row == 'home':
+                # suma pe rânduri (home_goals = rând)
+                probs = [matrix[i, :].sum() for i in range(max_g)]
+            else:
+                probs = [matrix[:, j].sum() for j in range(max_g)]
+            p_over = sum(probs[k] for k in range(int(line) + 1, max_g))
+            return float(p_over)
+
+        markets = []
+        home_label = home_team.split()[-1] if home_team else 'Gazdă'
+        away_label = away_team.split()[-1] if away_team else 'Oaspete'
+
+        for line in [0.5, 1.5, 2.5]:
+            # Gazdă
+            p_h = team_over('home', line)
+            markets.append({
+                "name": f"{home_label} peste {line} goluri",
+                "probability": round(p_h * 100, 1),
+                "odds": round(1 / max(p_h, 0.01), 2)
+            })
+            markets.append({
+                "name": f"{home_label} sub {line} goluri",
+                "probability": round((1 - p_h) * 100, 1),
+                "odds": round(1 / max(1 - p_h, 0.01), 2)
+            })
+            # Oaspete
+            p_a = team_over('away', line)
+            markets.append({
+                "name": f"{away_label} peste {line} goluri",
+                "probability": round(p_a * 100, 1),
+                "odds": round(1 / max(p_a, 0.01), 2)
+            })
+            markets.append({
+                "name": f"{away_label} sub {line} goluri",
+                "probability": round((1 - p_a) * 100, 1),
+                "odds": round(1 / max(1 - p_a, 0.01), 2)
+            })
+
+        return {
+            "label": "Total individual echipe",
+            "icon": "🎯",
+            "markets": markets
+        }
+
+    # ─── 13. GOL ÎN AMBELE REPRIZE ──────────────────────────────────────────────
+
+    def _market_goal_both_halves(self, lambda_: float, mu: float) -> dict:
+        """
+        P(gol în repriza 1 ȘI gol în repriza 2).
+        Repriza 1: ~42% din goluri | Repriza 2: ~58% din goluri
+        """
+        lam1 = lambda_ * 0.42
+        mu1  = mu * 0.42
+        lam2 = lambda_ * 0.58
+        mu2  = mu * 0.58
+
+        from scipy.stats import poisson
+
+        # P(cel puțin un gol în repriza 1)
+        p_goal_r1 = 1 - float(poisson.pmf(0, lam1) * poisson.pmf(0, mu1))
+        # P(cel puțin un gol în repriza 2)
+        p_goal_r2 = 1 - float(poisson.pmf(0, lam2) * poisson.pmf(0, mu2))
+
+        # Independent → înmulțim (aproximare rezonabilă)
+        p_both = p_goal_r1 * p_goal_r2
+        p_not  = 1 - p_both
+
+        return {
+            "label": "Gol în ambele reprize",
+            "icon": "⚽⚽",
+            "markets": [
+                {"name": "Gol în ambele reprize - Da", "probability": round(p_both * 100, 1), "odds": round(1 / max(p_both, 0.01), 2)},
+                {"name": "Gol în ambele reprize - Nu", "probability": round(p_not  * 100, 1), "odds": round(1 / max(p_not,  0.01), 2)},
+            ]
+        }
+
+    # ─── 14. PAUZĂ / FINAL (HT/FT) ──────────────────────────────────────────────
+
+    def _market_ht_ft(self, matrix: np.ndarray, matrix_ht: np.ndarray) -> dict:
+        """
+        Pauză/Final — combinații rezultat la pauză cu rezultat final.
+        Folosim independența aproximativă între HT și FT (ajustată).
+        """
+        # Probabilități la pauză
+        p_ht_home = float(np.tril(matrix_ht, -1).sum())
+        p_ht_draw = float(np.trace(matrix_ht))
+        p_ht_away = float(np.triu(matrix_ht, 1).sum())
+
+        # Probabilități finale
+        p_ft_home = float(np.tril(matrix, -1).sum())
+        p_ft_draw = float(np.trace(matrix))
+        p_ft_away = float(np.triu(matrix, 1).sum())
+
+        ht = {'1': p_ht_home, 'X': p_ht_draw, '2': p_ht_away}
+        ft = {'1': p_ft_home, 'X': p_ft_draw, '2': p_ft_away}
+
+        # Corecție: dacă la pauză e 1, la final e mai probabil să rămână 1
+        # Folosim factori de corelație bazați pe statistici reale
+        corr = {
+            ('1','1'): 1.45, ('1','X'): 0.65, ('1','2'): 0.35,
+            ('X','1'): 0.85, ('X','X'): 1.15, ('X','2'): 0.85,
+            ('2','1'): 0.35, ('2','X'): 0.65, ('2','2'): 1.45,
+        }
+
+        combos = []
+        for ht_res in ['1','X','2']:
+            for ft_res in ['1','X','2']:
+                raw = ht[ht_res] * ft[ft_res] * corr.get((ht_res, ft_res), 1.0)
+                combos.append((f"{ht_res}/{ft_res}", raw))
+
+        # Normalizăm
+        total = sum(p for _, p in combos)
+        markets = [
+            {
+                "name": f"Pauză/Final {label}",
+                "probability": round(min(p / total, 1.0) * 100, 1),
+                "odds": round(total / max(p, 0.001), 2)
+            }
+            for label, p in sorted(combos, key=lambda x: x[1], reverse=True)
+        ]
+
+        return {
+            "label": "Pauză / Final",
+            "icon": "⏱🏁",
+            "markets": markets
+        }
+
