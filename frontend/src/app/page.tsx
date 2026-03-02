@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { detectLang, t } from './i18n'
 import axios from 'axios'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -502,6 +503,9 @@ function PredictionDisplay({ prediction, fixture, standings }: { prediction: Pre
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function Home() {
+  const [lang, setLang] = useState<'ro'|'en'>('ro')
+  const tr = t[lang]
+  useEffect(() => { setLang(detectLang()) }, [])
   const [leagues, setLeagues] = useState<League[]>([])
   const [selectedLeague, setSelectedLeague] = useState<number | null>(null)
   const [fixtures, setFixtures] = useState<Fixture[]>([])
@@ -580,8 +584,8 @@ export default function Home() {
             <div className="pulse-dot ml-2 hidden sm:block" />
           </div>
           <nav className="flex items-center gap-1">
-            <a href="/" className="nav-link active">Predicții</a>
-            <a href="/weekly" className="nav-link">Rezultate</a>
+            <a href="/" className="nav-link active">{tr.predictions}</a>
+            <a href="/weekly" className="nav-link">{tr.results}</a>
           </nav>
         </div>
       </header>
@@ -605,7 +609,7 @@ export default function Home() {
             Forecast Academy
           </div>
           <p className="text-gray-500 text-xs font-mono uppercase tracking-widest">
-            xG · Elo · XGBoost · Poisson · 100 Ligi
+            {tr.hero_sub}
           </p>
         </div>
 
@@ -658,7 +662,7 @@ export default function Home() {
                   disabled={fixtures.length === 0}
                 >
                   <option value="">
-                    {fixtures.length === 0 ? 'Selectează liga mai întâi...' : 'Selectează meciul...'}
+                    {fixtures.length === 0 ? {tr.select_match_placeholder} : {tr.select_match_placeholder2}}
                   </option>
                   {hasDatedFixtures ? (
                     nextDays.map(day => (
@@ -745,9 +749,9 @@ export default function Home() {
         {!prediction && !loading && !selectedLeague && (
           <div className="text-center py-20 fade-in">
             <div className="text-6xl opacity-10 mb-4">⚽</div>
-            <p className="font-display text-2xl text-gray-600 tracking-widest mb-2">SELECTEAZĂ O LIGĂ ȘI UN MECI</p>
+            <p className="font-display text-2xl text-gray-600 tracking-widest mb-2">{tr.empty_title}</p>
             <p className="text-gray-700 text-sm font-mono">
-              Meciurile din următoarele 3 zile · Clasament live · Statistici detaliate
+              {tr.empty_sub}
             </p>
           </div>
         )}
@@ -756,7 +760,7 @@ export default function Home() {
       <footer className="border-t border-blue-900/40 mt-12 py-6">
         <div className="max-w-6xl mx-auto px-4 text-center">
           <p className="text-xs font-mono text-gray-700">
-            Flopi San Forecast Academy — Scop educațional. Nu reprezintă sfaturi de pariuri.
+            {tr.footer}
           </p>
         </div>
       </footer>
