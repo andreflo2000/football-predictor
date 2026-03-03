@@ -662,7 +662,7 @@ export default function Home() {
                   disabled={fixtures.length === 0}
                 >
                   <option value="">
-                    {fixtures.length === 0 ? {tr.select_match_placeholder} : {tr.select_match_placeholder2}}
+                    {fixtures.length === 0 ? tr.select_match_placeholder : tr.select_match_placeholder2}
                   </option>
                   {hasDatedFixtures ? (
                     nextDays.map(day => (
