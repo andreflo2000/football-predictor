@@ -334,7 +334,7 @@ function AddModal({ onAdd, onClose }: { onAdd: (m: TrackedMatch) => void; onClos
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="card p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-5">
-          <h3 className="font-display text-lg text-white tracking-wide">{tr.modal_title}</h3>
+          <h3 className="font-display text-lg text-white tracking-wide">➕ Adaugă pronostic</h3>
           <button onClick={onClose} className="text-gray-600 hover:text-white text-xl">✕</button>
         </div>
         <div className="space-y-3">
