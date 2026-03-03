@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { detectLang, t } from '../i18n'
 
 interface TrackedMatch {
   id: string
@@ -39,14 +40,14 @@ function fmtDate(d: string) {
   return `${day}.${m}.${y}`
 }
 function dateLabel(d: string) {
-  const t = today()
+  const todayStr = today()
   const tmDate = new Date()
   tmDate.setDate(tmDate.getDate() + 1)
   const tm = `${tmDate.getFullYear()}-${String(tmDate.getMonth()+1).padStart(2,'0')}-${String(tmDate.getDate()).padStart(2,'0')}`
   const ydDate = new Date()
   ydDate.setDate(ydDate.getDate() - 1)
   const yd = `${ydDate.getFullYear()}-${String(ydDate.getMonth()+1).padStart(2,'0')}-${String(ydDate.getDate()).padStart(2,'0')}`
-  if (d === t) return '📅 Azi'
+  if (d === todayStr) return '📅 Azi'
   if (d === tm) return '📅 Mâine'
   if (d === yd) return '📅 Ieri'
   return `📅 ${fmtDate(d)}`
@@ -59,6 +60,22 @@ function groupByDate(matches: TrackedMatch[]) {
     groups[d].push(m)
   }
   return groups
+}
+
+/**
+ * Un meci rezolvat (✅/❌) se arhivează dacă:
+ *   - data meciului < azi, SAU
+ *   - e azi și ora curentă ≥ 23:55
+ */
+function shouldArchive(match: TrackedMatch): boolean {
+  if (match.result === 'pending') return false
+  const todayStr = today()
+  if (match.date < todayStr) return true
+  if (match.date === todayStr) {
+    const now = new Date()
+    if (now.getHours() > 23 || (now.getHours() === 23 && now.getMinutes() >= 55)) return true
+  }
+  return false
 }
 
 function rateColor(rate: number | null) {
@@ -96,29 +113,23 @@ function StatsPanel({ matches }: { matches: TrackedMatch[] }) {
     d.setDate(d.getDate() - 1)
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
   })()
-  const todayStr  = today()
+  const todayStr = today()
 
-  // ── Total general ──
-  const resolved     = matches.filter(m => m.result !== 'pending')
-  const correct      = resolved.filter(m => m.result === 'correct').length
-  const wrong        = resolved.filter(m => m.result === 'wrong').length
-  const pending      = matches.filter(m => m.result === 'pending').length
+  const resolved    = matches.filter(m => m.result !== 'pending')
+  const correct     = resolved.filter(m => m.result === 'correct').length
+  const wrong       = resolved.filter(m => m.result === 'wrong').length
+  const pending     = matches.filter(m => m.result === 'pending').length
 
-  // ── Ieri (pronosticuri cu data de ieri, finalizate azi) ──
-  const yesterdayAll      = matches.filter(m => m.date === yesterday)
-  const yesterdayResolved = yesterdayAll.filter(m => m.result !== 'pending')
+  const yesterdayResolved = matches.filter(m => m.date === yesterday && m.result !== 'pending')
   const yesterdayCorrect  = yesterdayResolved.filter(m => m.result === 'correct').length
 
-  // ── Azi (pronosticuri cu data de azi, finalizate) ──
-  const todayAll      = matches.filter(m => m.date === todayStr)
-  const todayResolved = todayAll.filter(m => m.result !== 'pending')
+  const todayResolved = matches.filter(m => m.date === todayStr && m.result !== 'pending')
   const todayCorrect  = todayResolved.filter(m => m.result === 'correct').length
 
   if (matches.length === 0) return null
 
   return (
     <div className="space-y-4 mb-6">
-      {/* Carduri cifre */}
       <div className="card p-5">
         <div className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-3 text-center">
           📊 Statistici generale
@@ -136,28 +147,11 @@ function StatsPanel({ matches }: { matches: TrackedMatch[] }) {
             </div>
           ))}
         </div>
-
-        {/* Bare rate */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <RateBar
-            label="🏆 Rată totală"
-            correct={correct}
-            total={resolved.length}
-            highlight
-          />
-          <RateBar
-            label={`📅 Selecțiile de ieri (${fmtDate(yesterday)})`}
-            correct={yesterdayCorrect}
-            total={yesterdayResolved.length}
-          />
-          <RateBar
-            label={`📅 Selecțiile de azi (${fmtDate(todayStr)})`}
-            correct={todayCorrect}
-            total={todayResolved.length}
-          />
+          <RateBar label="🏆 Rată totală" correct={correct} total={resolved.length} highlight />
+          <RateBar label={`📅 Selecțiile de ieri (${fmtDate(yesterday)})`} correct={yesterdayCorrect} total={yesterdayResolved.length} />
+          <RateBar label={`📅 Selecțiile de azi (${fmtDate(todayStr)})`} correct={todayCorrect} total={todayResolved.length} />
         </div>
-
-        {/* Streak */}
         {resolved.length >= 2 && (
           <div className="flex items-center gap-2 mt-4 pt-4 border-t border-gray-800">
             <span className="text-[10px] text-gray-600 uppercase tracking-widest shrink-0">Ultimele 7:</span>
@@ -175,7 +169,6 @@ function StatsPanel({ matches }: { matches: TrackedMatch[] }) {
     </div>
   )
 }
-
 
 function MatchCard({ match, onResult, onDelete }: {
   match: TrackedMatch
@@ -197,8 +190,7 @@ function MatchCard({ match, onResult, onDelete }: {
           <span className="text-[10px] font-mono text-gray-600">
             {fmtDate(match.date)}{match.time ? ` · ${match.time}` : ''}
           </span>
-          <button onClick={() => onDelete(match.id)}
-            className="text-gray-700 hover:text-red-500 transition-colors text-xs">✕</button>
+          <button onClick={() => onDelete(match.id)} className="text-gray-700 hover:text-red-500 transition-colors text-xs">✕</button>
         </div>
       </div>
       <div className="flex items-center justify-center gap-3 mb-3">
@@ -234,11 +226,86 @@ function MatchCard({ match, onResult, onDelete }: {
   )
 }
 
+// ── ARHIVĂ COLAPSABILĂ ────────────────────────────────────────────────────────
+function ArchiveSection({ matches, onResult, onDelete }: {
+  matches: TrackedMatch[]
+  onResult: (id: string, r: 'correct' | 'wrong' | 'pending') => void
+  onDelete: (id: string) => void
+}) {
+  const [open, setOpen] = useState(false)
+  if (matches.length === 0) return null
+
+  const correct = matches.filter(m => m.result === 'correct').length
+  const rate    = Math.round((correct / matches.length) * 100)
+  const grouped = groupByDate(matches)
+  const sortedDates = Object.keys(grouped).sort((a, b) => b.localeCompare(a))
+
+  return (
+    <div className="mt-10 fade-in">
+      <div className="flex items-center gap-3 mb-4">
+        <div className="h-px flex-1 bg-gray-800" />
+        <span className="text-[10px] font-bold text-gray-600 uppercase tracking-widest">Arhivă</span>
+        <div className="h-px flex-1 bg-gray-800" />
+      </div>
+
+      <button
+        onClick={() => setOpen(v => !v)}
+        className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-gray-800/40 border border-gray-700/40 hover:border-gray-600/60 transition-all group"
+      >
+        <div className="flex items-center gap-3">
+          <span className="text-lg">🗄️</span>
+          <div className="text-left">
+            <div className="text-sm font-bold text-gray-300 group-hover:text-white transition-colors">
+              Arhivă meciuri finalizate
+            </div>
+            <div className="text-[10px] text-gray-600 font-mono mt-0.5">
+              {matches.length} meciuri · {correct} ✅ corecte · {matches.length - correct} ❌ greșite
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <span
+            className="text-xs font-bold font-mono px-2 py-0.5 rounded-full"
+            style={{
+              backgroundColor: `${rateColor(rate)}20`,
+              color: rateColor(rate),
+              border: `1px solid ${rateColor(rate)}40`,
+            }}
+          >
+            {rate}%
+          </span>
+          <span className={`text-gray-500 text-sm transition-transform duration-300 ${open ? 'rotate-180' : ''}`}>▼</span>
+        </div>
+      </button>
+
+      {open && (
+        <div className="mt-4 space-y-6 fade-in">
+          {sortedDates.map(date => (
+            <div key={date}>
+              <div className="flex items-center gap-3 mb-3">
+                <div className="h-px flex-1 bg-gray-800/60" />
+                <span className="text-xs font-bold text-gray-600 uppercase tracking-widest">{dateLabel(date)}</span>
+                <span className="text-[10px] text-gray-700 font-mono">{grouped[date].length} meciuri</span>
+                <div className="h-px flex-1 bg-gray-800/60" />
+              </div>
+              {grouped[date].map(m => (
+                <div key={m.id} className="opacity-70 hover:opacity-100 transition-opacity">
+                  <MatchCard match={m} onResult={onResult} onDelete={onDelete} />
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 function AddModal({ onAdd, onClose }: { onAdd: (m: TrackedMatch) => void; onClose: () => void }) {
   const [form, setForm] = useState({
     home: '', away: '', league: '', flag: '⚽',
-    date: today(), time: '',
-    prediction: '', market: '1X2',
+    date: today(), time: '', prediction: '', market: '1X2',
   })
   const flagOptions: Record<string, string> = {
     '🏴󠁧󠁢󠁥󠁮󠁧󠁿': 'Premier League', '🇪🇸': 'La Liga', '🇩🇪': 'Bundesliga',
@@ -267,7 +334,7 @@ function AddModal({ onAdd, onClose }: { onAdd: (m: TrackedMatch) => void; onClos
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="card p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-5">
-          <h3 className="font-display text-lg text-white tracking-wide">+ Adaugă pronostic</h3>
+          <h3 className="font-display text-lg text-white tracking-wide">{tr.modal_title}</h3>
           <button onClick={onClose} className="text-gray-600 hover:text-white text-xl">✕</button>
         </div>
         <div className="space-y-3">
@@ -305,8 +372,7 @@ function AddModal({ onAdd, onClose }: { onAdd: (m: TrackedMatch) => void; onClos
             <div>
               <label className="block text-[10px] text-gray-500 uppercase tracking-widest mb-1">Ora</label>
               <input type="time" className="input-styled text-sm" value={form.time}
-                onChange={e => setForm({...form, time: e.target.value})}
-                placeholder="21:00" />
+                onChange={e => setForm({...form, time: e.target.value})} placeholder="21:00" />
             </div>
           </div>
           <div>
@@ -333,12 +399,21 @@ function AddModal({ onAdd, onClose }: { onAdd: (m: TrackedMatch) => void; onClos
 }
 
 export default function Weekly() {
+  const [lang, setLang] = useState<'ro'|'en'>('ro')
+  const tr = t[lang]
   const [matches, setMatches] = useState<TrackedMatch[]>([])
   const [showAdd, setShowAdd] = useState(false)
   const [filter, setFilter] = useState<'all'|'pending'|'correct'|'wrong'>('all')
   const [mounted, setMounted] = useState(false)
 
-  useEffect(() => { setMounted(true); setMatches(loadMatches()) }, [])
+  useEffect(() => { setLang(detectLang()); setMounted(true); setMatches(loadMatches()) }, [])
+
+  // Re-render la fiecare minut pentru a detecta ora 23:55 automat
+  useEffect(() => {
+    if (!mounted) return
+    const interval = setInterval(() => setMatches(prev => [...prev]), 60_000)
+    return () => clearInterval(interval)
+  }, [mounted])
 
   function addMatch(m: TrackedMatch) {
     const u = [m, ...matches]; setMatches(u); saveMatches(u)
@@ -355,8 +430,12 @@ export default function Weekly() {
     setMatches([]); saveMatches([])
   }
 
-  const filtered = filter==='all' ? matches : matches.filter(m => m.result===filter)
-  const grouped = groupByDate(filtered)
+  // Separă activi vs arhivați
+  const activeMatches   = matches.filter(m => !shouldArchive(m))
+  const archivedMatches = matches.filter(m => shouldArchive(m))
+
+  const filteredActive = filter==='all' ? activeMatches : activeMatches.filter(m => m.result===filter)
+  const grouped = groupByDate(filteredActive)
   const sortedDates = Object.keys(grouped).sort((a,b) => b.localeCompare(a))
 
   if (!mounted) return null
@@ -373,8 +452,8 @@ export default function Weekly() {
             </div>
           </div>
           <nav className="flex items-center gap-1">
-            <a href="/" className="nav-link">Predicții</a>
-            <a href="/weekly" className="nav-link active">Rezultate</a>
+            <a href="/" className="nav-link">{tr.predictions}</a>
+            <a href="/weekly" className="nav-link active">{tr.results}</a>
           </nav>
         </div>
       </header>
@@ -385,27 +464,28 @@ export default function Weekly() {
             <img src="/logo.jpg" alt="Flopi San"
               className="w-20 h-20 rounded-full object-cover border-4 border-blue-600/50 shadow-2xl shadow-blue-900/60" />
           </div>
-          <h1 className="font-display text-4xl sm:text-5xl text-white tracking-widest mb-1">EVIDENȚA PRONOSTICURILOR</h1>
+          <h1 className="font-display text-4xl sm:text-5xl text-white tracking-widest mb-1">{tr.weekly_title}</h1>
           <div className="text-blue-400 text-xs font-mono uppercase tracking-[0.25em] mb-1">Flopi San · Forecast Academy</div>
-          <p className="text-gray-600 text-xs font-mono uppercase tracking-widest">Urmărește rata de succes a predicțiilor tale</p>
+          <p className="text-gray-600 text-xs font-mono uppercase tracking-widest">{tr.weekly_sub}</p>
         </div>
 
+        {/* StatsPanel primește TOATE meciurile — statistici mereu corecte */}
         <StatsPanel matches={matches} />
 
         <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
           <div className="flex gap-1 flex-wrap">
             {([
-              {key:'all',label:'Toate'},
-              {key:'pending',label:'⏳ Așteptare'},
-              {key:'correct',label:'✅ Corecte'},
-              {key:'wrong',label:'❌ Greșite'},
-            ] as const).map(f => (
+              {key:'all' as const,     label: tr.filter_all},
+              {key:'pending' as const, label: tr.filter_pending},
+              {key:'correct' as const, label: tr.filter_correct},
+              {key:'wrong' as const,   label: tr.filter_wrong},
+            ]).map(f => (
               <button key={f.key} onClick={() => setFilter(f.key)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all
                   ${filter===f.key ? 'bg-blue-600 text-white' : 'bg-gray-800/60 text-gray-500 hover:text-gray-300 border border-gray-700/50'}`}>
                 {f.label}
                 <span className="ml-1 opacity-70 text-[10px]">
-                  ({f.key==='all' ? matches.length : matches.filter(m=>m.result===f.key).length})
+                  ({f.key==='all' ? activeMatches.length : activeMatches.filter(m=>m.result===f.key).length})
                 </span>
               </button>
             ))}
@@ -418,7 +498,7 @@ export default function Weekly() {
               </button>
             )}
             <button onClick={() => setShowAdd(true)} className="btn-accent px-4 py-1.5 text-sm">
-              + Adaugă pronostic
+              {tr.add_prediction}
             </button>
           </div>
         </div>
@@ -440,24 +520,23 @@ export default function Weekly() {
         ) : (
           <div className="text-center py-20 fade-in">
             <div className="text-6xl opacity-10 mb-4">📊</div>
-            <p className="font-display text-xl text-gray-600 tracking-widest mb-2">
-              {filter==='all' ? 'NICIUN PRONOSTIC ÎNREGISTRAT' : 'NICIUN PRONOSTIC'}
-            </p>
+            <p className="font-display text-xl text-gray-600 tracking-widest mb-2">{tr.no_predictions}</p>
             <p className="text-gray-700 text-sm font-mono mb-6">
-              {filter==='all' ? 'Adaugă primul tău pronostic și urmărește-ți succesul' : 'Încearcă alt filtru'}
+              {filter==='all' ? tr.no_predictions_sub : tr.filter_all}
             </p>
-            {filter==='all' && (
-              <button onClick={() => setShowAdd(true)} className="btn-accent px-6 py-2">
-                + Adaugă primul pronostic
-              </button>
+            {filter==='all' && activeMatches.length === 0 && archivedMatches.length === 0 && (
+              <button onClick={() => setShowAdd(true)} className="btn-accent px-6 py-2">{tr.add_first}</button>
             )}
           </div>
         )}
+
+        {/* Arhiva — mereu jos, colapsabilă */}
+        <ArchiveSection matches={archivedMatches} onResult={setResult} onDelete={deleteMatch} />
       </main>
 
       <footer className="border-t border-blue-900/40 mt-12 py-6">
         <div className="max-w-4xl mx-auto px-4 text-center">
-          <p className="text-xs font-mono text-gray-700">Flopi San Forecast Academy — Scop educațional. Nu reprezintă sfaturi de pariuri.</p>
+          <p className="text-xs font-mono text-gray-700">{tr.footer}</p>
         </div>
       </footer>
 
