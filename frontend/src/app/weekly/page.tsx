@@ -6,7 +6,7 @@ import { detectLang, t } from '../i18n'
 
 const supabase = createClient(
   'https://njjxnkbqfpkqxzyzctlm.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5qanhua2JxZnBrcXh6eXpjdGxtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1NTc2NjgsImV4cCI6MjA4ODEzMzY2OH0.zroQdLRj0vPmNjkgGhGUz-3aEI2FEQ9Y0Oo9_eZ-zPE'
+  'sb_publishable_6NXEeDpcdPgcS7KH6vZD2w_NHzT7PZl'
 )
 
 interface TrackedMatch {
