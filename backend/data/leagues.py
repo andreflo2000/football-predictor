@@ -119,7 +119,7 @@ LEAGUES_LIST = [
 
 # Sortare după rank
 LEAGUES_LIST = sorted(LEAGUES_LIST, key=lambda x: x["rank"])
-
+LEAGUES_LIST = [l for l in LEAGUES_LIST if l.get("fd_code")]
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def get_league_by_id(league_id: int):
