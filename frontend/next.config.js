@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'export',
+  trailingSlash: true,
+  images: { unoptimized: true },
   async rewrites() {
     return [
       {
@@ -9,5 +12,9 @@ const nextConfig = {
     ]
   },
 }
-
 module.exports = nextConfig
+```
+
+Commit pe GitHub, apoi în CMD:
+```
+npm run build
