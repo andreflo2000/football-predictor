@@ -426,7 +426,7 @@ export default function Weekly() {
 
   return (
     <div className="app-bg grid-bg min-h-screen">
-      <header className="header">
+      <header className="header sticky top-0 z-50">
         <div className="max-w-4xl mx-auto px-4 py-2 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img src="/logo.jpg" alt="Flopi San" className="w-10 h-10 rounded-full object-cover border-2 border-blue-500/60" />
