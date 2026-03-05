@@ -3,7 +3,11 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
+/* Safe area pentru telefoane (Capacitor) */
+body {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
 :root {
   /* Verde gazon - culori principale */
   --blue-950: #061a0a;
