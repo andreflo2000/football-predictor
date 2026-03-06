@@ -682,12 +682,12 @@ setFixtures(filtered.length > 0 ? filtered : upcoming.length > 0 ? upcoming : al
                       )
                     ))
                   ) : (
-                    fixtures.map(f => (
-                      <option key={f.id} value={f.id}>
-                        {f.home} vs {f.away}
-                      </option>
-                    ))
-                  )}
+    fixtures.map(f => (
+      <option key={f.id} value={f.id}>
+        {f.home} vs {f.away}{f.date ? ` · ${formatDateRO(f.date)}` : ''}{f.time ? ` · ${f.time}` : ''}
+      </option>
+    ))
+  )}
                   {hasDatedFixtures && fixturesWithoutDate.length > 0 && (
                     <optgroup label="── Alte meciuri ──">
                       {fixturesWithoutDate.map(f => (
