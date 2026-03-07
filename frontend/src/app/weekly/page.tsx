@@ -425,7 +425,7 @@ export default function Weekly() {
   if (!mounted) return null
 
   return (
-    <div className="app-bg grid-bg min-h-screen">
+    <div className="app-bg grid-bg min-h-screen flex flex-col">
       <header className="header sticky top-0 z-50">
         <div className="max-w-4xl mx-auto px-4 py-2 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -442,7 +442,7 @@ export default function Weekly() {
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 py-8">
+      <main className="max-w-4xl mx-auto px-4 py-8 flex-1 overflow-y-auto">
         <div className="text-center mb-8 fade-in">
           <div className="flex justify-center mb-4">
             <img src="/logo.jpg" alt="Flopi San"
