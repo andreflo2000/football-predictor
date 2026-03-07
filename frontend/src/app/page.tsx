@@ -590,7 +590,7 @@ setFixtures(filtered.length > 0 ? filtered : upcoming.length > 0 ? upcoming : al
           </div>
           <nav className="flex items-center gap-1">
             <a href="/" className="nav-link active">{tr.predictions}</a>
-            <button onClick={() => window.location.href='/weekly/index.html'} className="nav-link">{tr.results}</button>
+            <button onClick={() => window.location.href='/weekly/'} className="nav-link">{tr.results}</button>
           </nav>
         </div>
       </header>
