@@ -436,7 +436,7 @@ export default function Weekly() {
             </div>
           </div>
           <nav className="flex items-center gap-1">
-            <a href="/" className="nav-link">{tr.predictions}</a>
+            <button onClick={() => window.location.href='/index.html'} className="nav-link">{tr.predictions}</button>
             <a href="/weekly" className="nav-link active">{tr.results}</a>
           </nav>
         </div>
