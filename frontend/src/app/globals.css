@@ -5,7 +5,7 @@
 @tailwind utilities;
 /* Safe area pentru telefoane (Capacitor) */
 body {
-  padding-top: calc(60px + env(safe-area-inset-top));
+  padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
 }
 :root {
