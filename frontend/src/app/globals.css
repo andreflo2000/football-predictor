@@ -258,11 +258,11 @@ body {
   background: rgba(4,20,8,0.95);
   border-bottom: 1px solid rgba(34,197,94,0.20);
   backdrop-filter: blur(16px);
-  position: fixed;
+  position: sticky;
   top: 0;
-  left: 0;
-  right: 0;
-  z-index: 50;
+  z-index: 9999;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
   position: sticky;
   top: 0;
   z-index: 100;
