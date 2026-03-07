@@ -442,7 +442,7 @@ export default function Weekly() {
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 py-8 flex-1 overflow-y-auto">
+     <main className="max-w-4xl mx-auto px-4 py-8">
         <div className="text-center mb-8 fade-in">
           <div className="flex justify-center mb-4">
             <img src="/logo.jpg" alt="Flopi San"
