@@ -265,9 +265,6 @@ body {
   width: 100%;
   z-index: 9999;
 }
-  z-index: 100;
-}
-
 /* ── MATCH SCORE BAR ────────────────────────────────────────────── */
 .score-bar {
   display: flex;
