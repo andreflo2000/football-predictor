@@ -576,7 +576,7 @@ setFixtures(filtered.length > 0 ? filtered : upcoming.length > 0 ? upcoming : al
   const fixturesWithoutDate = fixtures.filter(f => !f.date || !nextDays.includes(f.date))
 
   return (
-    <div className="app-bg grid-bg min-h-screen flex flex-col">
+    <div className="app-bg grid-bg min-h-screen flex flex-col overflow-x-hidden">
       {/* Header */}
       <header className="header sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 py-2 flex items-center justify-between">
