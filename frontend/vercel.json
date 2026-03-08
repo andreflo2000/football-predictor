@@ -6,6 +6,7 @@
   "devCommand": "npm run dev",
   "rewrites": [
     { "source": "/weekly", "destination": "/weekly" },
-    { "source": "/weekly/", "destination": "/weekly" }
+    { "source": "/weekly/", "destination": "/weekly" },
+    { "source": "/", "destination": "/" }
   ]
 }
