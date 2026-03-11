@@ -747,8 +747,10 @@ setFixtures(filtered.length > 0 ? filtered : upcoming.length > 0 ? upcoming : al
 
         {/* Prediction result */}
         {prediction && !loading && selectedFixture && (
-          <PredictionDisplay prediction={prediction} fixture={selectedFixture} standings={standings} />
-        )}
+  <div style={{overflow: 'hidden', width: '100%', maxWidth: '100%'}}>
+    <PredictionDisplay prediction={prediction} fixture={selectedFixture} standings={standings} />
+  </div>
+)}
 
         {/* Empty state */}
         {!prediction && !loading && !selectedLeague && (
