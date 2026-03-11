@@ -70,6 +70,7 @@ body {
   border-radius: 12px;
   backdrop-filter: blur(12px);
   transition: border-color 0.2s, box-shadow 0.2s;
+  overflow: hidden;
 }
 .card:hover {
   border-color: rgba(74,222,128,0.35);
