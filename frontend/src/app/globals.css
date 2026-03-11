@@ -4,15 +4,7 @@
 @tailwind components;
 @tailwind utilities;
 /* Safe area pentru telefoane (Capacitor) */
-html {
-  overflow-x: hidden;
-  width: 100%;
-}
-
-body {
-  overflow-x: hidden;
-  width: 100%;
-  position: relative;
+html, body {
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
 }
