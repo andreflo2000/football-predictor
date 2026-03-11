@@ -607,10 +607,10 @@ setFixtures(filtered.length > 0 ? filtered : upcoming.length > 0 ? upcoming : al
               </div>
             </div>
           </div>
-          <h1 className="font-display text-5xl sm:text-7xl text-white tracking-widest mb-1">
+          <h1 className="font-display text-4xl sm:text-7xl text-white tracking-wide mb-1">
             FLOPI SAN
           </h1>
-          <div className="text-blue-400 text-sm font-mono uppercase tracking-[0.3em] mb-3">
+          <div className="text-blue-400 text-sm font-mono uppercase tracking-widest mb-3">
             Forecast Academy
           </div>
           <p className="text-gray-500 text-xs font-mono uppercase tracking-widest">
