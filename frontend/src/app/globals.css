@@ -347,3 +347,7 @@ body {
   letter-spacing: 0.1em;
   margin-bottom: 0.25rem;
 }
+main {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
