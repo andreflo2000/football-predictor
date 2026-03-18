@@ -101,7 +101,6 @@ async function dbUpdate(id: string, result: string) {
 async function dbDelete(id: string) {
   await supabase.from('tracked_matches').delete().eq('id', id)
 }
-// ─────────────────────────────────────────────────────────────────────────────
 
 function RateBar({ label, correct, total, highlight }: { label: string; correct: number; total: number; highlight?: boolean }) {
   const rate = total > 0 ? Math.round((correct / total) * 100) : null
@@ -119,6 +118,54 @@ function RateBar({ label, correct, total, highlight }: { label: string; correct:
       </div>
       <div className="text-[10px] text-gray-600 font-mono">
         {total === 0 ? 'Niciun pronostic finalizat' : `${correct} corecte din ${total} finalizate`}
+      </div>
+    </div>
+  )
+}
+
+// ── Grafic performanță săptămânal ─────────────────────────────────────────────
+function WeeklyChart({ matches }: { matches: TrackedMatch[] }) {
+  const weeks: { label: string; correct: number; total: number }[] = []
+  for (let i = 3; i >= 0; i--) {
+    const start = new Date()
+    start.setDate(start.getDate() - (i + 1) * 7)
+    const end = new Date()
+    end.setDate(end.getDate() - i * 7)
+    const startStr = start.toISOString().split('T')[0]
+    const endStr = end.toISOString().split('T')[0]
+    const weekMatches = matches.filter(m => m.result !== 'pending' && m.date >= startStr && m.date < endStr)
+    const correct = weekMatches.filter(m => m.result === 'correct').length
+    const weekNum = `S-${i === 0 ? 'asta' : i}`
+    weeks.push({ label: weekNum, correct, total: weekMatches.length })
+  }
+
+  if (weeks.every(w => w.total === 0)) return null
+
+  const maxTotal = Math.max(...weeks.map(w => w.total), 1)
+
+  return (
+    <div className="card p-5 mt-4">
+      <div className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-4 text-center">
+        📈 Performanță săptămânală
+      </div>
+      <div className="flex items-end justify-around gap-2" style={{ height: '80px' }}>
+        {weeks.map((w, i) => {
+          const rate = w.total > 0 ? Math.round((w.correct / w.total) * 100) : null
+          const color = rateColor(rate)
+          const height = w.total > 0 ? Math.max((w.total / maxTotal) * 70, 10) : 4
+          return (
+            <div key={i} className="flex flex-col items-center gap-1 flex-1">
+              <div className="text-[9px] font-mono font-bold" style={{ color: rate !== null ? color : '#4b5563' }}>
+                {rate !== null ? `${rate}%` : '—'}
+              </div>
+              <div className="w-full rounded-t-md transition-all duration-700 relative"
+                style={{ height: `${height}px`, backgroundColor: rate !== null ? color : '#374151', opacity: 0.8 }}>
+              </div>
+              <div className="text-[9px] text-gray-600 font-mono">{w.label}</div>
+              <div className="text-[8px] text-gray-700 font-mono">{w.total > 0 ? `${w.correct}/${w.total}` : '—'}</div>
+            </div>
+          )
+        })}
       </div>
     </div>
   )
@@ -172,6 +219,8 @@ function StatsPanel({ matches }: { matches: TrackedMatch[] }) {
           </div>
         )}
       </div>
+      {/* Grafic săptămânal */}
+      <WeeklyChart matches={matches} />
     </div>
   )
 }
@@ -425,8 +474,8 @@ export default function Weekly() {
   if (!mounted) return null
 
   return (
-    <div className="app-bg grid-bg min-h-screen flex flex-col">
-      <header className="header sticky top-0 z-50">
+    <div className="app-bg grid-bg min-h-screen" style={{ overflowX: 'hidden' }}>
+      <header className="header">
         <div className="max-w-4xl mx-auto px-4 py-2 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img src="/logo.jpg" alt="Flopi San" className="w-10 h-10 rounded-full object-cover border-2 border-blue-500/60" />
@@ -441,8 +490,9 @@ export default function Weekly() {
           </nav>
         </div>
       </header>
-<div className="header-spacer" />
-     <main className="max-w-4xl mx-auto px-4 py-8">
+      <div className="header-spacer" />
+
+      <main className="max-w-4xl mx-auto px-4 py-8" style={{ overflowX: 'hidden' }}>
         <div className="text-center mb-8 fade-in">
           <div className="flex justify-center mb-4">
             <img src="/logo.jpg" alt="Flopi San"
