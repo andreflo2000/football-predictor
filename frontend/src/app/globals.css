@@ -13,7 +13,6 @@ html, body {
 }
 
 :root {
-  /* Verde gazon - culori principale */
   --blue-950: #061a0a;
   --blue-900: #0a2410;
   --blue-800: #0f3318;
@@ -37,7 +36,7 @@ html, body {
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
-html { scroll-behavior: smooth; }
+html { scroll-behavior: smooth; overflow-x: hidden; }
 
 body {
   background-color: #071a0c;
@@ -269,11 +268,22 @@ select, input, textarea, button {
 }
 .market-row:hover { background: rgba(37,99,235,0.08); }
 
-/* ── HEADER ─────────────────────────────────────────────────────── */
+/* ── HEADER FIX ─────────────────────────────────────────────────── */
 .header {
   background: rgba(4,20,8,0.95);
   border-bottom: 1px solid rgba(34,197,94,0.20);
   backdrop-filter: blur(16px);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  z-index: 9999;
+}
+
+/* Spatiu sub header pentru continut */
+.header-spacer {
+  height: 56px;
 }
 
 /* ── MATCH SCORE BAR ────────────────────────────────────────────── */
@@ -294,11 +304,9 @@ select, input, textarea, button {
 /* ── DIVIDER ────────────────────────────────────────────────────── */
 .divider { border: none; border-top: 1px solid rgba(37,99,235,0.15); }
 
-/* ── SCROLLBAR ──────────────────────────────────────────────────── */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: var(--blue-900); }
-::-webkit-scrollbar-thumb { background: var(--blue-600); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--blue-500); }
+/* ── SCROLLBAR ASCUNS ───────────────────────────────────────────── */
+::-webkit-scrollbar { width: 0px; height: 0px; display: none; }
+* { scrollbar-width: none; -ms-overflow-style: none; }
 
 /* ── LOADING SPINNER ────────────────────────────────────────────── */
 .spinner {
@@ -336,6 +344,9 @@ select, input, textarea, button {
   transition: all 0.15s;
   text-decoration: none;
   touch-action: manipulation;
+  background: none;
+  border: none;
+  cursor: pointer;
 }
 .nav-link:hover { color: white; background: rgba(37,99,235,0.12); }
 .nav-link.active { color: var(--blue-300); background: rgba(37,99,235,0.15); }
@@ -357,6 +368,7 @@ select, input, textarea, button {
   box-shadow: 0 0 0 2px rgba(59,130,246,0.15);
 }
 .input-styled::placeholder { color: #4b5563; }
+
 .label-sm {
   display: block;
   font-size: 0.625rem;
@@ -365,12 +377,10 @@ select, input, textarea, button {
   letter-spacing: 0.1em;
   margin-bottom: 0.25rem;
 }
+
 main {
   overflow-x: hidden;
   max-width: 100vw;
-}
-html {
-  overflow-x: hidden;
 }
 
 .overflow-x-auto {
