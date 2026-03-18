@@ -350,12 +350,27 @@ function PredictionDisplay({ prediction, fixture, standings }: { prediction: Pre
         />
 
         {/* Buton Share WhatsApp */}
-        <button
-          onClick={() => shareOnWhatsApp(prediction, fixture)}
-          className="w-full mt-4 py-2.5 rounded-xl text-sm font-bold transition-all"
-          style={{ background: 'linear-gradient(135deg, #25D366, #128C7E)', color: 'white' }}>
-          📤 Share pe WhatsApp
-        </button>
+<div className="flex gap-2 mt-4">
+  <button
+    onClick={() => shareOnWhatsApp(prediction, fixture)}
+    className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all"
+    style={{ background: 'linear-gradient(135deg, #25D366, #128C7E)', color: 'white' }}>
+    📤 WhatsApp
+  </button>
+  <button
+    onClick={() => {
+      const pred = prediction.prediction || {}
+      const home_w = pred.home_win ?? 0
+      const draw = pred.draw ?? 0
+      const away_w = pred.away_win ?? 0
+      const text = `⚽ *FLOPI SAN — Predicție*\n\n🏟️ *${prediction.home_team}* vs *${prediction.away_team}*\n📅 ${getDayLabel(fixture.date)} · ${formatDateRO(fixture.date)}${fixture.time ? ` · 🕐 ${fixture.time}` : ''}\n\n📊 *Probabilități:*\n1️⃣ ${prediction.home_team}: *${home_w}%* (cotă ~${(100/Math.max(home_w,1)).toFixed(2)})\n🤝 Egal: *${draw}%* (cotă ~${(100/Math.max(draw,1)).toFixed(2)})\n2️⃣ ${prediction.away_team}: *${away_w}%* (cotă ~${(100/Math.max(away_w,1)).toFixed(2)})\n\n🔮 _Generat de Flopi San Forecast Academy_\n🌐 fotbal-predictor-ro.vercel.app`
+      window.open(`https://t.me/share/url?url=fotbal-predictor-ro.vercel.app&text=${encodeURIComponent(text)}`, '_blank')
+    }}
+    className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all"
+    style={{ background: 'linear-gradient(135deg, #2AABEE, #229ED9)', color: 'white' }}>
+    ✈️ Telegram
+  </button>
+</div>
       </div>
 
       <div className="flex gap-1 mb-4" style={{ overflowX: 'auto' }}>
