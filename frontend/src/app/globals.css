@@ -274,7 +274,7 @@ select, input, textarea, button {
   border-bottom: 1px solid rgba(34,197,94,0.20);
   backdrop-filter: blur(16px);
   position: fixed;
-  top: 0;
+  top: env(safe-area-inset-top);
   left: 0;
   right: 0;
   width: 100%;
@@ -283,7 +283,7 @@ select, input, textarea, button {
 
 /* Spatiu sub header pentru continut */
 .header-spacer {
-  height: 56px;
+  height: 72px;
 }
 
 /* ── MATCH SCORE BAR ────────────────────────────────────────────── */
