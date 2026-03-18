@@ -12,7 +12,7 @@ export function detectLang(): Lang {
 export const t = {
   ro: {
     // Header / Nav
-    predictions: 'Predicții',
+    predictions: 'Predicții AI',
     results: 'Rezultate',
     tagline: 'Forecast Academy',
 
@@ -117,7 +117,7 @@ export const t = {
   },
 
   en: {
-    predictions: 'Predictions',
+    predictions: 'AI Predictions',
     results: 'Results',
     tagline: 'Forecast Academy',
     hero_sub: 'xG · Elo · XGBoost · Poisson · 100 Leagues',
