@@ -6,7 +6,6 @@ import axios from 'axios'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
-// ─── Date helpers ─────────────────────────────────────────────────────────────
 function getNextDays(n: number): string[] {
   const days = []
   for (let i = 0; i < n; i++) {
@@ -33,7 +32,6 @@ function getDayLabel(isoDate: string): string {
   return formatDateRO(isoDate)
 }
 
-// ─── Types ────────────────────────────────────────────────────────────────────
 interface League { id: number; name: string; country: string; flag: string; confederation: string; rating: number }
 interface Fixture { id: number; home: string; away: string; home_id: number; away_id: number; date: string; time?: string }
 interface StandingRow {
@@ -57,7 +55,6 @@ function getProbColor(p: number) {
   return '#ef4444'
 }
 
-// ─── Form Badge ───────────────────────────────────────────────────────────────
 function FormBadge({ result }: { result: string }) {
   const cfg: Record<string, string> = {
     W: 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30',
@@ -71,7 +68,6 @@ function FormBadge({ result }: { result: string }) {
   )
 }
 
-// ─── Stat Bar ─────────────────────────────────────────────────────────────────
 function StatBar({ label, homeVal, awayVal, format = (v: number) => v.toFixed(2) }: {
   label: string; homeVal: number; awayVal: number; format?: (v: number) => string
 }) {
@@ -94,10 +90,9 @@ function StatBar({ label, homeVal, awayVal, format = (v: number) => v.toFixed(2)
   )
 }
 
-// ─── Probability Bar ──────────────────────────────────────────────────────────
 function ProbBar({ label, value, color }: { label: string; value: number; color: string }) {
   return (
-    <div className="text-center">
+    <div className="text-center" style={{ maxWidth: '30%' }}>
       <div className="relative h-24 flex items-end justify-center mb-2">
         <div
           className="w-12 rounded-t-lg transition-all duration-700"
@@ -105,12 +100,11 @@ function ProbBar({ label, value, color }: { label: string; value: number; color:
         />
       </div>
       <div className="text-xl font-bold font-mono" style={{ color }}>{value}%</div>
-      <div className="text-xs text-gray-500 uppercase tracking-widest mt-1">{label}</div>
+      <div className="text-xs text-gray-500 uppercase tracking-widest mt-1" style={{ fontSize: '9px', wordBreak: 'break-word' }}>{label}</div>
     </div>
   )
 }
 
-// ─── Market Row ───────────────────────────────────────────────────────────────
 function MarketRow({ market }: { market: any }) {
   const color = getProbColor(market.probability)
   return (
@@ -125,7 +119,6 @@ function MarketRow({ market }: { market: any }) {
   )
 }
 
-// ─── Market Section ───────────────────────────────────────────────────────────
 function MarketSection({ market }: { market: any }) {
   const items = market.items || market.markets || []
   if (!items.length) return null
@@ -141,7 +134,6 @@ function MarketSection({ market }: { market: any }) {
   )
 }
 
-// ─── Standings Table ──────────────────────────────────────────────────────────
 function StandingsTable({ standings, highlightTeams }: { standings: StandingRow[]; highlightTeams: string[] }) {
   if (!standings.length) return (
     <div className="text-center py-8 text-gray-600 text-sm">
@@ -149,8 +141,8 @@ function StandingsTable({ standings, highlightTeams }: { standings: StandingRow[
     </div>
   )
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-xs font-mono">
+    <div style={{ overflowX: 'auto', width: '100%' }}>
+      <table style={{ width: '100%', tableLayout: 'fixed' }} className="text-xs font-mono">
         <thead>
           <tr className="text-gray-600 uppercase tracking-widest border-b border-gray-800">
             <th className="text-left pb-2 w-6">#</th>
@@ -161,7 +153,6 @@ function StandingsTable({ standings, highlightTeams }: { standings: StandingRow[
             <th className="text-center pb-2 w-8">Î</th>
             <th className="text-center pb-2 w-12">GD</th>
             <th className="text-center pb-2 w-8 font-bold text-blue-500">Pct</th>
-            <th className="text-center pb-2 w-20 hidden sm:table-cell">Formă</th>
           </tr>
         </thead>
         <tbody>
@@ -176,7 +167,7 @@ function StandingsTable({ standings, highlightTeams }: { standings: StandingRow[
                 className={`border-b border-gray-800/30 transition-colors ${isHighlighted ? 'bg-blue-900/20 text-white' : 'text-gray-400 hover:bg-gray-800/20'}`}
               >
                 <td className="py-1.5 text-gray-600">{row.position}</td>
-                <td className="py-1.5 font-semibold truncate max-w-[120px]">
+                <td className="py-1.5 font-semibold truncate max-w-[100px]">
                   {isHighlighted && <span className="text-blue-400 mr-1">›</span>}
                   {row.team}
                 </td>
@@ -188,14 +179,6 @@ function StandingsTable({ standings, highlightTeams }: { standings: StandingRow[
                   {row.goal_diff > 0 ? '+' : ''}{row.goal_diff}
                 </td>
                 <td className="py-1.5 text-center font-bold text-white">{row.points}</td>
-                <td className="py-1.5 hidden sm:table-cell">
-                  <div className="flex gap-0.5 justify-center">
-                    {row.form?.split('').slice(-5).map((r: string, i: number) => (
-                      <div key={i} className={`w-3 h-3 rounded-sm text-[8px] flex items-center justify-center font-bold
-                        ${r==='W'?'bg-emerald-600':r==='D'?'bg-gray-600':'bg-red-600'}`}>{r}</div>
-                    ))}
-                  </div>
-                </td>
               </tr>
             )
           })}
@@ -205,7 +188,6 @@ function StandingsTable({ standings, highlightTeams }: { standings: StandingRow[
   )
 }
 
-// ─── Team Stats Card ──────────────────────────────────────────────────────────
 function TeamStatsCard({ stats, teamName, color }: { stats: any; teamName: string; color: string }) {
   if (!stats) return null
   const form = stats.form || []
@@ -222,8 +204,6 @@ function TeamStatsCard({ stats, teamName, color }: { stats: any; teamName: strin
         <div className="w-2 h-6 rounded-full" style={{ backgroundColor: color }} />
         <h3 className="font-display text-base text-white tracking-wide truncate">{teamName}</h3>
       </div>
-
-      {/* Formă */}
       {form.length > 0 && (
         <div className="mb-4">
           <div className="text-[10px] text-gray-600 uppercase tracking-widest mb-2">Ultimele meciuri</div>
@@ -238,8 +218,6 @@ function TeamStatsCard({ stats, teamName, color }: { stats: any; teamName: strin
           </div>
         </div>
       )}
-
-      {/* Statistici */}
       <div className="grid grid-cols-2 gap-2 mb-4">
         {[
           { label: 'xG For', value: avgXgFor.toFixed(2), icon: '⚽' },
@@ -253,8 +231,6 @@ function TeamStatsCard({ stats, teamName, color }: { stats: any; teamName: strin
           </div>
         ))}
       </div>
-
-      {/* Mini xG chart */}
       {Array.isArray(xgFor) && xgFor.length > 0 && (
         <div>
           <div className="text-[10px] text-gray-600 uppercase tracking-widest mb-2">xG ultimele meciuri</div>
@@ -272,7 +248,6 @@ function TeamStatsCard({ stats, teamName, color }: { stats: any; teamName: strin
   )
 }
 
-// ─── Prediction Display ────────────────────────────────────────────────────────
 function PredictionDisplay({ prediction, fixture, standings }: { prediction: Prediction; fixture: Fixture; standings: StandingRow[] }) {
   const [activeTab, setActiveTab] = useState('markets')
   const pred = prediction.prediction || {}
@@ -283,66 +258,60 @@ function PredictionDisplay({ prediction, fixture, standings }: { prediction: Pre
   const tabs = [
     { key: 'markets',   label: '🎯 Pariuri' },
     { key: 'scores',    label: '⚽ Scoruri' },
-    { key: 'stats',     label: '📊 Statistici' },
-    { key: 'standings', label: '🏆 Clasament' },
+    { key: 'stats',     label: '📊 Stats' },
+    { key: 'standings', label: '🏆 Clas.' },
     { key: 'models',    label: '🤖 Modele' },
   ]
 
   const breakdown = prediction.model_breakdown || {}
 
   return (
-    <div className="fade-in">
-      {/* Header meci */}
-      <div className="card p-6 mb-4">
-        <div className="text-center mb-6">
+    <div className="fade-in" style={{ width: '100%', overflow: 'hidden' }}>
+      <div className="card p-4 mb-4" style={{ overflow: 'hidden' }}>
+        <div className="text-center mb-4">
           <div className="text-xs font-mono text-gray-600 uppercase tracking-widest mb-3">
             {getDayLabel(fixture.date)} · {formatDateRO(fixture.date)}{fixture.time ? ` · 🕐 ${fixture.time}` : ''}
           </div>
-          <div className="flex items-center justify-center gap-4 md:gap-8">
-            <div className="text-right flex-1">
-              <div className="font-display text-lg md:text-2xl text-white tracking-wide">{prediction.home_team}</div>
+          <div className="flex items-center justify-center gap-2">
+            <div className="text-right" style={{ flex: 1, minWidth: 0 }}>
+              <div className="font-display text-base text-white tracking-wide truncate">{prediction.home_team}</div>
               <div className="text-xs text-gray-600 font-mono mt-1">GAZDĂ</div>
             </div>
-            <div className="shrink-0 px-3 py-1.5 rounded-lg bg-gray-800/60 border border-gray-700">
+            <div className="shrink-0 px-2 py-1 rounded-lg bg-gray-800/60 border border-gray-700">
               <span className="font-mono text-gray-500 text-sm">VS</span>
             </div>
-            <div className="text-left flex-1">
-              <div className="font-display text-lg md:text-2xl text-white tracking-wide">{prediction.away_team}</div>
+            <div className="text-left" style={{ flex: 1, minWidth: 0 }}>
+              <div className="font-display text-base text-white tracking-wide truncate">{prediction.away_team}</div>
               <div className="text-xs text-gray-600 font-mono mt-1">OASPETE</div>
             </div>
           </div>
         </div>
-
-        {/* Bare probabilitate principale */}
         <div className="flex justify-around items-end mt-4">
           <ProbBar label={prediction.home_team.split(' ')[0]} value={home_w} color="#3b82f6" />
           <ProbBar label="Egal" value={draw} color="#6b7280" />
           <ProbBar label={prediction.away_team.split(' ')[0]} value={away_w} color="#f97316" />
         </div>
-
         <div className="mt-4 text-center text-xs font-mono text-gray-700">
           {pred.method || 'XGBoost + Poisson + Elo'}
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 mb-4 overflow-x-auto scrollbar-hide">
-        {tabs.map(t => (
-          <button key={t.key}
+      <div className="flex gap-1 mb-4" style={{ overflowX: 'auto' }}>
+        {tabs.map(tab => (
+          <button key={tab.key}
             className={`px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all
-              ${activeTab === t.key
+              ${activeTab === tab.key
                 ? 'bg-blue-600 text-white'
                 : 'bg-gray-800/60 text-gray-500 hover:text-gray-300 border border-gray-700/50'
               }`}
-            onClick={() => setActiveTab(t.key)}>
-            {t.label}
+            onClick={() => setActiveTab(tab.key)}>
+            {tab.label}
           </button>
         ))}
       </div>
 
-      {/* Tab: Pariuri */}
       {activeTab === 'markets' && (
-        <div className="card p-5 fade-in">
+        <div className="card p-5 fade-in" style={{ overflow: 'hidden' }}>
           {(prediction.markets && prediction.markets.length > 0)
             ? prediction.markets.map((m: any, i: number) => <MarketSection key={i} market={m} />)
             : (
@@ -363,9 +332,8 @@ function PredictionDisplay({ prediction, fixture, standings }: { prediction: Pre
         </div>
       )}
 
-      {/* Tab: Scoruri */}
       {activeTab === 'scores' && (
-        <div className="card p-5 fade-in">
+        <div className="card p-5 fade-in" style={{ overflow: 'hidden' }}>
           <div className="flex gap-4 mb-4 text-center">
             {[
               { label: 'xG Gazdă', value: prediction.expected_goals?.home?.toFixed(2) ?? '—', color: '#3b82f6' },
@@ -391,72 +359,47 @@ function PredictionDisplay({ prediction, fixture, standings }: { prediction: Pre
         </div>
       )}
 
-      {/* Tab: Statistici */}
       {activeTab === 'stats' && (
-        <div className="fade-in space-y-4">
-          {/* Comparație */}
+        <div className="fade-in space-y-4" style={{ overflow: 'hidden' }}>
           {prediction.home_stats && prediction.away_stats && (
             <div className="card p-5">
               <div className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-4 text-center">
                 Comparație directă
               </div>
               <div className="flex justify-between text-xs font-mono text-gray-500 mb-3">
-                <span className="text-blue-400 font-bold">{prediction.home_team.split(' ').slice(-1)[0]}</span>
+                <span className="text-blue-400 font-bold truncate">{prediction.home_team.split(' ').slice(-1)[0]}</span>
                 <span></span>
-                <span className="text-orange-400 font-bold">{prediction.away_team.split(' ').slice(-1)[0]}</span>
+                <span className="text-orange-400 font-bold truncate">{prediction.away_team.split(' ').slice(-1)[0]}</span>
               </div>
-              <StatBar
-                label="xG For"
-                homeVal={prediction.home_stats.xg_for ?? 1.5}
-                awayVal={prediction.away_stats.xg_for ?? 1.2}
-              />
-              <StatBar
-                label="xG Against"
-                homeVal={prediction.home_stats.xg_against ?? 1.2}
-                awayVal={prediction.away_stats.xg_against ?? 1.5}
-              />
-              <StatBar
-                label="Goluri/meci"
-                homeVal={prediction.home_stats.goals_avg ?? 1.5}
-                awayVal={prediction.away_stats.goals_avg ?? 1.2}
-              />
-              <StatBar
-                label="Elo Rating"
-                homeVal={prediction.home_stats.elo_rating ?? 1500}
-                awayVal={prediction.away_stats.elo_rating ?? 1500}
-                format={(v) => Math.round(v).toString()}
-              />
+              <StatBar label="xG For" homeVal={prediction.home_stats.xg_for ?? 1.5} awayVal={prediction.away_stats.xg_for ?? 1.2} />
+              <StatBar label="xG Against" homeVal={prediction.home_stats.xg_against ?? 1.2} awayVal={prediction.away_stats.xg_against ?? 1.5} />
+              <StatBar label="Goluri/meci" homeVal={prediction.home_stats.goals_avg ?? 1.5} awayVal={prediction.away_stats.goals_avg ?? 1.2} />
+              <StatBar label="Elo Rating" homeVal={prediction.home_stats.elo_rating ?? 1500} awayVal={prediction.away_stats.elo_rating ?? 1500} format={(v) => Math.round(v).toString()} />
             </div>
           )}
-          {/* Carduri individuale */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4">
             <TeamStatsCard stats={prediction.home_stats} teamName={prediction.home_team} color="#3b82f6" />
             <TeamStatsCard stats={prediction.away_stats} teamName={prediction.away_team} color="#f97316" />
           </div>
         </div>
       )}
 
-      {/* Tab: Clasament */}
       {activeTab === 'standings' && (
-        <div className="card p-5 fade-in">
+        <div className="card p-5 fade-in" style={{ overflow: 'hidden' }}>
           <div className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-4 text-center">
             Clasament · Sezon curent
           </div>
-          <StandingsTable
-            standings={standings}
-            highlightTeams={[prediction.home_team, prediction.away_team]}
-          />
+          <StandingsTable standings={standings} highlightTeams={[prediction.home_team, prediction.away_team]} />
           {standings.length === 0 && (
             <p className="text-center text-xs text-gray-600 mt-2">
-              Clasamentul e disponibil pentru: Premier League, La Liga, Bundesliga, Serie A, Ligue 1, Eredivisie, Primeira Liga, Brasileirao
+              Clasamentul e disponibil pentru ligile majore
             </p>
           )}
         </div>
       )}
 
-      {/* Tab: Modele */}
       {activeTab === 'models' && (
-        <div className="card p-5 fade-in">
+        <div className="card p-5 fade-in" style={{ overflow: 'hidden' }}>
           <div className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-4 text-center">
             Detalii modele predicție
           </div>
@@ -486,11 +429,6 @@ function PredictionDisplay({ prediction, fixture, standings }: { prediction: Pre
                       </div>
                     ))}
                   </div>
-                  {key === 'elo' && breakdown.elo && (
-                    <div className="mt-2 text-xs text-gray-600 font-mono text-center">
-                      Elo: {prediction.home_team.split(' ').slice(-1)[0]} {breakdown.elo.home_rating} vs {breakdown.elo.away_rating} {prediction.away_team.split(' ').slice(-1)[0]}
-                    </div>
-                  )}
                 </div>
               )
             })}
@@ -501,7 +439,6 @@ function PredictionDisplay({ prediction, fixture, standings }: { prediction: Pre
   )
 }
 
-// ─── Main page ────────────────────────────────────────────────────────────────
 export default function Home() {
   const [lang, setLang] = useState<'ro'|'en'>('ro')
   const tr = t[lang]
@@ -525,20 +462,18 @@ export default function Home() {
     if (!selectedLeague) return
     setFixtures([]); setSelectedFixture(null); setPrediction(null); setStandings([])
     setLoadingFixtures(true)
-
-    // Fetch meciuri + clasament în paralel
     Promise.all([
       axios.get(`${API_BASE}/api/fixtures/${selectedLeague}`),
       axios.get(`${API_BASE}/api/standings/${selectedLeague}`).catch(() => ({ data: { standings: [] } })),
     ]).then(([fixtRes, standRes]) => {
       const all: Fixture[] = fixtRes.data.fixtures || []
       const todayStr = new Date().toISOString().split('T')[0]
-const upcoming = all
-  .filter(f => f.date && f.date >= todayStr)
-  .sort((a, b) => (a.date || '').localeCompare(b.date || ''))
-  .slice(0, 30)
-const filtered = all.filter(f => nextDays.includes(f.date))
-setFixtures(filtered.length > 0 ? filtered : upcoming.length > 0 ? upcoming : all.slice(0, 30))
+      const upcoming = all
+        .filter(f => f.date && f.date >= todayStr)
+        .sort((a, b) => (a.date || '').localeCompare(b.date || ''))
+        .slice(0, 30)
+      const filtered = all.filter(f => nextDays.includes(f.date))
+      setFixtures(filtered.length > 0 ? filtered : upcoming.length > 0 ? upcoming : all.slice(0, 30))
       setStandings(standRes.data.standings || [])
     }).finally(() => setLoadingFixtures(false))
   }, [selectedLeague])
@@ -576,8 +511,7 @@ setFixtures(filtered.length > 0 ? filtered : upcoming.length > 0 ? upcoming : al
   const fixturesWithoutDate = fixtures.filter(f => !f.date || !nextDays.includes(f.date))
 
   return (
-    <div className="app-bg grid-bg min-h-screen flex flex-col">
-      {/* Header */}
+    <div style={{ width: '100vw', maxWidth: '100vw', overflowX: 'hidden', minHeight: '100vh' }} className="app-bg grid-bg">
       <header className="header sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 py-2 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -595,19 +529,18 @@ setFixtures(filtered.length > 0 ? filtered : upcoming.length > 0 ? upcoming : al
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 py-8 overflow-x-hidden">
-        {/* Hero */}
+      <main style={{ maxWidth: '100%', overflowX: 'hidden', padding: '0 16px' }} className="mx-auto py-8">
         <div className="text-center mb-10 fade-in">
           <div className="flex justify-center mb-5">
             <div className="relative">
               <img src="/logo.jpg" alt="Flopi San Forecast Academy"
-                className="w-44 h-44 rounded-full object-cover border-4 border-blue-600/50 shadow-2xl shadow-blue-900/60" />
+                className="w-36 h-36 rounded-full object-cover border-4 border-blue-600/50 shadow-2xl shadow-blue-900/60" />
               <div className="absolute -bottom-1 -right-2 w-9 h-9 bg-emerald-500 rounded-full flex items-center justify-center text-base border-2 border-gray-900">
                 🔮
               </div>
             </div>
           </div>
-          <h1 className="font-display text-4xl sm:text-7xl text-white tracking-wide mb-1">
+          <h1 className="font-display text-4xl text-white mb-1" style={{ letterSpacing: '0.05em' }}>
             FLOPI SAN
           </h1>
           <div className="text-blue-400 text-sm font-mono uppercase tracking-widest mb-3">
@@ -618,10 +551,8 @@ setFixtures(filtered.length > 0 ? filtered : upcoming.length > 0 ? upcoming : al
           </p>
         </div>
 
-        {/* Selector card */}
         <div className="card p-6 mb-6 fade-in">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Liga */}
+          <div className="grid grid-cols-1 gap-4">
             <div>
               <label className="block text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2">
                 Ligă / Competiție
@@ -646,7 +577,6 @@ setFixtures(filtered.length > 0 ? filtered : upcoming.length > 0 ? upcoming : al
               </select>
             </div>
 
-            {/* Meci */}
             <div>
               <label className="block text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2">
                 Meci {fixtures.length > 0 && <span className="text-blue-500 ml-1">({fixtures.length} disponibile)</span>}
@@ -682,12 +612,12 @@ setFixtures(filtered.length > 0 ? filtered : upcoming.length > 0 ? upcoming : al
                       )
                     ))
                   ) : (
-    fixtures.map(f => (
-      <option key={f.id} value={f.id}>
-        {f.home} vs {f.away}{f.date ? ` · ${formatDateRO(f.date)}` : ''}{f.time ? ` · ${f.time}` : ''}
-      </option>
-    ))
-  )}
+                    fixtures.map(f => (
+                      <option key={f.id} value={f.id}>
+                        {f.home} vs {f.away}{f.date ? ` · ${formatDateRO(f.date)}` : ''}{f.time ? ` · ${f.time}` : ''}
+                      </option>
+                    ))
+                  )}
                   {hasDatedFixtures && fixturesWithoutDate.length > 0 && (
                     <optgroup label="── Alte meciuri ──">
                       {fixturesWithoutDate.map(f => (
@@ -701,8 +631,7 @@ setFixtures(filtered.length > 0 ? filtered : upcoming.length > 0 ? upcoming : al
               )}
             </div>
 
-            {/* Predicție */}
-            <div className="flex flex-col justify-end">
+            <div>
               <button
                 className="btn-accent w-full"
                 onClick={predict}
@@ -719,7 +648,6 @@ setFixtures(filtered.length > 0 ? filtered : upcoming.length > 0 ? upcoming : al
             </div>
           </div>
 
-          {/* Standings preview când e ligă selectată dar nu e meci */}
           {standings.length > 0 && !prediction && !loading && (
             <div className="mt-5 pt-5 border-t border-gray-800">
               <div className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-3 text-center">
@@ -733,42 +661,35 @@ setFixtures(filtered.length > 0 ? filtered : upcoming.length > 0 ? upcoming : al
           )}
         </div>
 
-        {/* Loading */}
         {loading && (
           <div className="flex items-center justify-center py-16 fade-in">
             <div className="text-center">
               <div className="spinner mx-auto mb-4" />
               <p className="text-blue-300 text-sm font-mono uppercase tracking-widest">
-                Calculez predicțiile pentru {selectedFixture?.home} vs {selectedFixture?.away}...
+                Calculez predicțiile...
               </p>
             </div>
           </div>
         )}
 
-        {/* Prediction result */}
         {prediction && !loading && selectedFixture && (
-  <div style={{overflow: 'hidden', width: '100%', maxWidth: '100%'}}>
-    <PredictionDisplay prediction={prediction} fixture={selectedFixture} standings={standings} />
-  </div>
-)}
+          <div style={{ width: '100%', maxWidth: '100%', overflow: 'hidden' }}>
+            <PredictionDisplay prediction={prediction} fixture={selectedFixture} standings={standings} />
+          </div>
+        )}
 
-        {/* Empty state */}
         {!prediction && !loading && !selectedLeague && (
           <div className="text-center py-20 fade-in">
             <div className="text-6xl opacity-10 mb-4">⚽</div>
             <p className="font-display text-2xl text-gray-600 tracking-widest mb-2">{tr.empty_title}</p>
-            <p className="text-gray-700 text-sm font-mono">
-              {tr.empty_sub}
-            </p>
+            <p className="text-gray-700 text-sm font-mono">{tr.empty_sub}</p>
           </div>
         )}
       </main>
 
       <footer className="border-t border-blue-900/40 mt-12 py-6">
         <div className="max-w-6xl mx-auto px-4 text-center">
-          <p className="text-xs font-mono text-gray-700">
-            {tr.footer}
-          </p>
+          <p className="text-xs font-mono text-gray-700">{tr.footer}</p>
         </div>
       </footer>
     </div>
