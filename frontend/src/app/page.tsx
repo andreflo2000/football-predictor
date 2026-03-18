@@ -528,7 +528,7 @@ export default function Home() {
           </nav>
         </div>
       </header>
-
+<div className="header-spacer" />
       <main style={{ maxWidth: '100%', overflowX: 'hidden', padding: '0 16px' }} className="mx-auto py-8">
         <div className="text-center mb-10 fade-in">
           <div className="flex justify-center mb-5">
