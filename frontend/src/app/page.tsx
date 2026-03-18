@@ -55,6 +55,26 @@ function getProbColor(p: number) {
   return '#ef4444'
 }
 
+// ── Share pe WhatsApp ─────────────────────────────────────────────────────────
+function shareOnWhatsApp(prediction: Prediction, fixture: Fixture) {
+  const pred = prediction.prediction || {}
+  const home_w = pred.home_win ?? 0
+  const draw = pred.draw ?? 0
+  const away_w = pred.away_win ?? 0
+  const bestOdds = (100 / Math.max(home_w, 1)).toFixed(2)
+  const text = `⚽ *FLOPI SAN — Predicție*\n\n` +
+    `🏟️ *${prediction.home_team}* vs *${prediction.away_team}*\n` +
+    `📅 ${getDayLabel(fixture.date)} · ${formatDateRO(fixture.date)}${fixture.time ? ` · 🕐 ${fixture.time}` : ''}\n\n` +
+    `📊 *Probabilități:*\n` +
+    `1️⃣ ${prediction.home_team}: *${home_w}%* (cotă ~${(100/Math.max(home_w,1)).toFixed(2)})\n` +
+    `🤝 Egal: *${draw}%* (cotă ~${(100/Math.max(draw,1)).toFixed(2)})\n` +
+    `2️⃣ ${prediction.away_team}: *${away_w}%* (cotă ~${(100/Math.max(away_w,1)).toFixed(2)})\n\n` +
+    `🔮 _Generat de Flopi San Forecast Academy_\n` +
+    `🌐 fotbal-predictor-ro.vercel.app`
+  const url = `https://wa.me/?text=${encodeURIComponent(text)}`
+  window.open(url, '_blank')
+}
+
 function FormBadge({ result }: { result: string }) {
   const cfg: Record<string, string> = {
     W: 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30',
@@ -162,10 +182,8 @@ function StandingsTable({ standings, highlightTeams }: { standings: StandingRow[
               t.toLowerCase().includes(row.team.toLowerCase().slice(0, 5))
             )
             return (
-              <tr
-                key={row.position}
-                className={`border-b border-gray-800/30 transition-colors ${isHighlighted ? 'bg-blue-900/20 text-white' : 'text-gray-400 hover:bg-gray-800/20'}`}
-              >
+              <tr key={row.position}
+                className={`border-b border-gray-800/30 transition-colors ${isHighlighted ? 'bg-blue-900/20 text-white' : 'text-gray-400 hover:bg-gray-800/20'}`}>
                 <td className="py-1.5 text-gray-600">{row.position}</td>
                 <td className="py-1.5 font-semibold truncate max-w-[100px]">
                   {isHighlighted && <span className="text-blue-400 mr-1">›</span>}
@@ -212,9 +230,7 @@ function TeamStatsCard({ stats, teamName, color }: { stats: any; teamName: strin
           </div>
           <div className="text-xs text-gray-500 mt-2 font-mono">
             {wins}V · {draws}E · {form.length - wins - draws}Î
-            <span className="ml-2 text-blue-400">
-              {Math.round((wins / (form.length || 1)) * 100)}% win rate
-            </span>
+            <span className="ml-2 text-blue-400">{Math.round((wins / (form.length || 1)) * 100)}% win rate</span>
           </div>
         </div>
       )}
@@ -244,6 +260,38 @@ function TeamStatsCard({ stats, teamName, color }: { stats: any; teamName: strin
           <div className="text-[9px] text-gray-700 text-center mt-1 font-mono">meciuri recente →</div>
         </div>
       )}
+    </div>
+  )
+}
+
+// ── Cote Bookmakers ───────────────────────────────────────────────────────────
+function BookmakerOdds({ home_w, draw, away_w, homeTeam, awayTeam }: {
+  home_w: number; draw: number; away_w: number; homeTeam: string; awayTeam: string
+}) {
+  const margin = 1.08
+  const homeOdd = ((100 / Math.max(home_w, 1)) * margin).toFixed(2)
+  const drawOdd = ((100 / Math.max(draw, 1)) * margin).toFixed(2)
+  const awayOdd = ((100 / Math.max(away_w, 1)) * margin).toFixed(2)
+  return (
+    <div className="mt-4 pt-4 border-t border-gray-800/60">
+      <div className="text-[10px] font-bold text-amber-500 uppercase tracking-widest mb-3 text-center">
+        💰 Cote estimate bookmakers
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        {[
+          { label: '1 Gazdă', odd: homeOdd, color: '#3b82f6' },
+          { label: 'X Egal', odd: drawOdd, color: '#6b7280' },
+          { label: '2 Oaspete', odd: awayOdd, color: '#f97316' },
+        ].map(o => (
+          <div key={o.label} className="bg-gray-800/50 rounded-xl p-3 text-center border border-gray-700/30">
+            <div className="text-[10px] text-gray-500 uppercase tracking-widest mb-1">{o.label}</div>
+            <div className="text-xl font-bold font-mono" style={{ color: o.color }}>{o.odd}</div>
+          </div>
+        ))}
+      </div>
+      <div className="text-[9px] text-gray-700 text-center mt-2 font-mono">
+        * Cote estimate cu marjă 8% · Verifică la Betano/bet365
+      </div>
     </div>
   )
 }
@@ -294,6 +342,20 @@ function PredictionDisplay({ prediction, fixture, standings }: { prediction: Pre
         <div className="mt-4 text-center text-xs font-mono text-gray-700">
           {pred.method || 'XGBoost + Poisson + Elo'}
         </div>
+
+        {/* Cote bookmakers */}
+        <BookmakerOdds
+          home_w={home_w} draw={draw} away_w={away_w}
+          homeTeam={prediction.home_team} awayTeam={prediction.away_team}
+        />
+
+        {/* Buton Share WhatsApp */}
+        <button
+          onClick={() => shareOnWhatsApp(prediction, fixture)}
+          className="w-full mt-4 py-2.5 rounded-xl text-sm font-bold transition-all"
+          style={{ background: 'linear-gradient(135deg, #25D366, #128C7E)', color: 'white' }}>
+          📤 Share pe WhatsApp
+        </button>
       </div>
 
       <div className="flex gap-1 mb-4" style={{ overflowX: 'auto' }}>
@@ -512,7 +574,7 @@ export default function Home() {
 
   return (
     <div style={{ width: '100vw', maxWidth: '100vw', overflowX: 'hidden', minHeight: '100vh' }} className="app-bg grid-bg">
-      <header className="header sticky top-0 z-50">
+      <header className="header">
         <div className="max-w-6xl mx-auto px-4 py-2 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img src="/logo.jpg" alt="Flopi San" className="w-10 h-10 rounded-full object-cover border-2 border-blue-500/60" />
@@ -528,7 +590,8 @@ export default function Home() {
           </nav>
         </div>
       </header>
-<div className="header-spacer" />
+      <div className="header-spacer" />
+
       <main style={{ maxWidth: '100%', overflowX: 'hidden', padding: '0 16px' }} className="mx-auto py-8">
         <div className="text-center mb-10 fade-in">
           <div className="flex justify-center mb-5">
@@ -557,19 +620,13 @@ export default function Home() {
               <label className="block text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2">
                 Ligă / Competiție
               </label>
-              <select
-                className="select-styled"
-                value={selectedLeague || ''}
-                onChange={e => setSelectedLeague(Number(e.target.value))}
-              >
+              <select className="select-styled" value={selectedLeague || ''} onChange={e => setSelectedLeague(Number(e.target.value))}>
                 <option value="">Selectează liga...</option>
                 {confGroups.map(conf => (
                   grouped[conf]?.length > 0 && (
                     <optgroup key={conf} label={`── ${conf} ──`}>
                       {grouped[conf].map(l => (
-                        <option key={l.id} value={l.id}>
-                          {l.flag} {l.name} — {l.country}
-                        </option>
+                        <option key={l.id} value={l.id}>{l.flag} {l.name} — {l.country}</option>
                       ))}
                     </optgroup>
                   )
@@ -587,26 +644,19 @@ export default function Home() {
                   Se încarcă meciurile...
                 </div>
               ) : (
-                <select
-                  className="select-styled"
-                  value={selectedFixture?.id || ''}
+                <select className="select-styled" value={selectedFixture?.id || ''}
                   onChange={e => {
                     const f = fixtures.find(x => x.id === Number(e.target.value))
                     setSelectedFixture(f || null); setPrediction(null)
                   }}
-                  disabled={fixtures.length === 0}
-                >
-                  <option value="">
-                    {fixtures.length === 0 ? tr.select_match_placeholder : tr.select_match_placeholder2}
-                  </option>
+                  disabled={fixtures.length === 0}>
+                  <option value="">{fixtures.length === 0 ? tr.select_match_placeholder : tr.select_match_placeholder2}</option>
                   {hasDatedFixtures ? (
                     nextDays.map(day => (
                       fixturesByDay[day]?.length > 0 && (
                         <optgroup key={day} label={`── ${getDayLabel(day)} · ${formatDateRO(day)} ──`}>
                           {fixturesByDay[day].map(f => (
-                            <option key={f.id} value={f.id}>
-                              {f.home} vs {f.away}{f.time ? ` · ${f.time}` : ''}
-                            </option>
+                            <option key={f.id} value={f.id}>{f.home} vs {f.away}{f.time ? ` · ${f.time}` : ''}</option>
                           ))}
                         </optgroup>
                       )
@@ -621,9 +671,7 @@ export default function Home() {
                   {hasDatedFixtures && fixturesWithoutDate.length > 0 && (
                     <optgroup label="── Alte meciuri ──">
                       {fixturesWithoutDate.map(f => (
-                        <option key={f.id} value={f.id}>
-                          {f.home} vs {f.away}
-                        </option>
+                        <option key={f.id} value={f.id}>{f.home} vs {f.away}</option>
                       ))}
                     </optgroup>
                   )}
@@ -632,11 +680,7 @@ export default function Home() {
             </div>
 
             <div>
-              <button
-                className="btn-accent w-full"
-                onClick={predict}
-                disabled={!selectedFixture || loading}
-              >
+              <button className="btn-accent w-full" onClick={predict} disabled={!selectedFixture || loading}>
                 {loading ? '⏳ Se calculează...' : '🔮 Predicție'}
               </button>
               {selectedFixture && (
@@ -665,9 +709,7 @@ export default function Home() {
           <div className="flex items-center justify-center py-16 fade-in">
             <div className="text-center">
               <div className="spinner mx-auto mb-4" />
-              <p className="text-blue-300 text-sm font-mono uppercase tracking-widest">
-                Calculez predicțiile...
-              </p>
+              <p className="text-blue-300 text-sm font-mono uppercase tracking-widest">Calculez predicțiile...</p>
             </div>
           </div>
         )}
