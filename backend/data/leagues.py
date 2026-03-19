@@ -7,8 +7,8 @@ valoarea transferurilor, nivel competitiv și reputație internațională (2024-
 LEAGUES_LIST = [
     # ── UEFA Competiții Europene ──────────────────────────────────────────────
     {"rank": 0,  "id": 2,   "name": "UEFA Champions League",            "country": "Europe",          "flag": "🏆", "confederation": "UEFA",     "rating": 99.00, "fd_code": "CL"},
-    {"rank": 0,  "id": 3,   "name": "UEFA Europa League",               "country": "Europe",          "flag": "🥈", "confederation": "UEFA",     "rating": 89.00, "fd_code": "EL"},
-    {"rank": 0,  "id": 848, "name": "UEFA Conference League",           "country": "Europe",          "flag": "🥉", "confederation": "UEFA",     "rating": 75.00, "fd_code": "ECL"},
+    {"rank": 0,  "id": 3,   "name": "UEFA Europa League",               "country": "Europe",          "flag": "🥈", "confederation": "UEFA",     "rating": 89.00, "fd_code": None},
+    {"rank": 0,  "id": 848, "name": "UEFA Conference League",           "country": "Europe",          "flag": "🥉", "confederation": "UEFA",     "rating": 75.00, "fd_code": None},
     # ── UEFA Campionate Naționale ─────────────────────────────────────────────
     {"rank": 1,  "id": 39,  "name": "Premier League",                  "country": "England",        "flag": "🏴󠁧󠁢󠁥󠁮󠁧󠁿", "confederation": "UEFA",     "rating": 94.66, "fd_code": "PL"},
     {"rank": 2,  "id": 140, "name": "La Liga",                         "country": "Spain",           "flag": "🇪🇸", "confederation": "UEFA",     "rating": 88.07, "fd_code": "PD"},
