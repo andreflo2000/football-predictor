@@ -607,7 +607,7 @@ export default function Home() {
       </header>
       <div className="header-spacer" />
 
-      <main style={{ maxWidth: '100%', overflowX: 'hidden', padding: '0 16px' }} className="mx-auto py-8">
+      <main style={{ maxWidth: '72rem', overflowX: 'hidden', padding: '0 16px' }} className="mx-auto py-8">
         <div className="text-center mb-10 fade-in">
           <div className="flex justify-center mb-5">
             <div className="relative">
