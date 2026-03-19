@@ -17,7 +17,7 @@ export const t = {
     tagline: 'Forecast Academy',
 
     // Hero
-    hero_sub: 'xG · Elo · XGBoost · Poisson · 100 Ligi',
+    hero_sub: 'xG · Elo · XGBoost · Poisson · 11 Ligi',
 
     // Selector
     select_league: 'Ligă / Competiție',
@@ -120,7 +120,7 @@ export const t = {
     predictions: 'AI Predictions',
     results: 'Results',
     tagline: 'Forecast Academy',
-    hero_sub: 'xG · Elo · XGBoost · Poisson · 100 Leagues',
+    hero_sub: 'xG · Elo · XGBoost · Poisson · 11 Leagues',
     select_league: 'League / Competition',
     select_league_placeholder: 'Select league...',
     select_match: 'Match',
