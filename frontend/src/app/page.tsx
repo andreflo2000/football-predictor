@@ -588,7 +588,7 @@ export default function Home() {
   const fixturesWithoutDate = fixtures.filter(f => !f.date || !nextDays.includes(f.date))
 
   return (
-    <div style={{ width: '100vw', maxWidth: '100vw', overflowX: 'hidden', minHeight: '100vh' }} className="app-bg grid-bg">
+    <div style={{ overflowX: 'hidden', minHeight: '100vh' }} className="app-bg grid-bg">
       <header className="header">
         <div className="max-w-6xl mx-auto px-4 py-2 flex items-center justify-between">
           <div className="flex items-center gap-3">
