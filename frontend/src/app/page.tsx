@@ -719,6 +719,7 @@ export default function Home() {
           </div>
           <nav className="flex items-center gap-1">
             <a href="/" className="nav-link active">{tr.predictions}</a>
+            <a href="/daily" onClick={(e) => { if ((window as any).Capacitor) { e.preventDefault(); window.location.href='/daily/index.html'; }}} className="nav-link">🎯 Azi</a>
             <a href="/weekly" onClick={(e) => { if ((window as any).Capacitor) { e.preventDefault(); window.location.href='/weekly/index.html'; }}} className="nav-link">{tr.results}</a>
           </nav>
         </div>
