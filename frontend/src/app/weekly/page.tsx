@@ -486,7 +486,7 @@ export default function Weekly() {
           </div>
           <nav className="flex items-center gap-1">
             <a href="/" onClick={(e) => { if ((window as any).Capacitor) { e.preventDefault(); window.location.href='/index.html'; }}} className="nav-link">{tr.predictions}</a>
-            <a href="/weekly" className="nav-link active">{tr.results}</a>
+            <a href="/daily" onClick={(e) => { if ((window as any).Capacitor) { e.preventDefault(); window.location.href='/daily/index.html'; }}} className="nav-link">🎯 Azi</a>
           </nav>
         </div>
       </header>
