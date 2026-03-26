@@ -847,6 +847,7 @@ export default function Home() {
       <footer className="border-t border-blue-900/40 mt-12 py-6">
         <div className="max-w-6xl mx-auto px-4 text-center">
           <p className="text-xs font-mono text-gray-700">{tr.footer}</p>
+<a href="/privacy" className="text-xs font-mono text-blue-600 hover:text-blue-400 mt-1 block">Politică de confidențialitate</a>
         </div>
       </footer>
     </div>
