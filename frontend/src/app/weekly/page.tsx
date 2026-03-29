@@ -67,7 +67,8 @@ function AuthForm({ onAuth }: { onAuth: () => void }) {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
+    const [success, setSuccess] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
 
   async function handleSubmit() {
     if (!email || !password) { setError('Completează email și parola!'); return }
@@ -148,16 +149,24 @@ function AuthForm({ onAuth }: { onAuth: () => void }) {
                 onChange={e => setEmail(e.target.value)}
               />
             </div>
-            <div>
+<div>
               <label className="block text-[10px] text-gray-500 uppercase tracking-widest mb-1">Parolă</label>
-              <input
-                className="input-styled"
-                type="password"
-                placeholder="Minim 6 caractere"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleSubmit()}
-              />
+              <div className="relative">
+                <input
+                  className="input-styled"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Minim 6 caractere"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(v => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 text-sm">
+                  {showPassword ? '🙈' : '👁️'}
+                </button>
+              </div>
             </div>
 
             {error && (
