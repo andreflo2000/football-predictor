@@ -22,14 +22,21 @@ COLS_NEEDED = ["Div", "Date", "HomeTeam", "AwayTeam", "FTHG", "FTAG", "FTR"]
 frames = []
 for fpath in all_files:
     try:
-        df = pd.read_csv(fpath, encoding="utf-8", errors="ignore", usecols=lambda c: c in COLS_NEEDED)
-        # pastreaza doar randurile cu date complete
+        # encoding_errors="ignore" + sep autodetect + BOM fix
+        df = pd.read_csv(fpath, encoding="utf-8-sig", errors="ignore", sep=",")
+        # Curata numele coloanelor (elimina spatii si caractere invizibile)
+        df.columns = [c.strip().replace('\ufeff', '') for c in df.columns]
+        # Pastreaza doar coloanele care exista in fisier
+        cols_prezente = [c for c in COLS_NEEDED if c in df.columns]
+        if "HomeTeam" not in cols_prezente or "FTR" not in cols_prezente:
+            continue
+        df = df[cols_prezente]
         df = df.dropna(subset=["HomeTeam", "AwayTeam", "FTHG", "FTAG", "FTR"])
         df = df[df["FTR"].isin(["H", "D", "A"])]
         if len(df) > 0:
             frames.append(df)
     except Exception:
-        pass  # sarim fisierele corupte
+        pass
 
 data = pd.concat(frames, ignore_index=True)
 print(f"    Total meciuri combinate: {len(data)}")
