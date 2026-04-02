@@ -1,188 +1,135 @@
-"""
-FLOPI SAN — Script antrenare model AI
-Rulează o singură dată: python train.py
-Salvează modelul în models/trained_model.pkl
-"""
-
+import os
+import glob
 import pandas as pd
 import numpy as np
-import joblib
-import os
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder
-from sklearn.metrics import accuracy_score, classification_report
+from sklearn.metrics import accuracy_score
+import joblib
 
-# ─────────────────────────────────────────────
-# 1. ÎNCĂRCĂM DATELE
-# ─────────────────────────────────────────────
-print("📂 Încarc datele CSV...")
+print(">>> Incarc toate fisierele CSV club...")
 
-df = pd.read_csv("data/csv/results.csv")
-df["date"] = pd.to_datetime(df["date"])
+# ── 1. Calea catre folderul cu CSV-uri ──────────────────────────────────────
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+CSV_FOLDER = os.path.join(BASE_DIR, "data", "csv", "club")
+all_files = glob.glob(os.path.join(CSV_FOLDER, "**", "*.csv"), recursive=True) + \
+            glob.glob(os.path.join(CSV_FOLDER, "*.csv"))
+all_files = list(set(all_files))
+print(f"    Gasit {len(all_files)} fisiere CSV.")
 
-# Folosim doar date din 2000 încoace (mai relevante)
-df = df[df["date"] >= "2000-01-01"].copy()
-df = df.sort_values("date").reset_index(drop=True)
+# ── 2. Combinare ─────────────────────────────────────────────────────────────
+COLS_NEEDED = ["Div", "Date", "HomeTeam", "AwayTeam", "FTHG", "FTAG", "FTR"]
+frames = []
+for fpath in all_files:
+    try:
+        df = pd.read_csv(fpath, encoding="utf-8", errors="ignore", usecols=lambda c: c in COLS_NEEDED)
+        # pastreaza doar randurile cu date complete
+        df = df.dropna(subset=["HomeTeam", "AwayTeam", "FTHG", "FTAG", "FTR"])
+        df = df[df["FTR"].isin(["H", "D", "A"])]
+        if len(df) > 0:
+            frames.append(df)
+    except Exception:
+        pass  # sarim fisierele corupte
 
-# Adăugăm coloana rezultat: H = câștigă acasă, A = câștigă oaspete, D = egal
-df["result"] = df.apply(
-    lambda r: "H" if r["home_score"] > r["away_score"]
-    else ("A" if r["away_score"] > r["home_score"] else "D"),
-    axis=1
-)
+data = pd.concat(frames, ignore_index=True)
+print(f"    Total meciuri combinate: {len(data)}")
 
-print(f"✅ {len(df)} meciuri încărcate (2000–2026)")
-print(f"   H={len(df[df['result']=='H'])} | D={len(df[df['result']=='D'])} | A={len(df[df['result']=='A'])}")
+# ── 3. Curatare si sortare dupa data ─────────────────────────────────────────
+data["Date"] = pd.to_datetime(data["Date"], dayfirst=True, errors="coerce")
+data = data.dropna(subset=["Date"])
+data = data.sort_values("Date").reset_index(drop=True)
+data["FTHG"] = pd.to_numeric(data["FTHG"], errors="coerce").fillna(0).astype(int)
+data["FTAG"] = pd.to_numeric(data["FTAG"], errors="coerce").fillna(0).astype(int)
 
-# ─────────────────────────────────────────────
-# 2. CALCULĂM FORMA FIECĂREI ECHIPE
-# ─────────────────────────────────────────────
-print("\n⚙️  Calculez forma echipelor din istoric...")
-print("   (poate dura 1-2 minute, e normal)")
+print(f"    Meciuri dupa curatare: {len(data)}")
+print(f"    Perioada: {data['Date'].min().date()} → {data['Date'].max().date()}")
 
-def build_features(df):
-    """
-    Pentru fiecare meci, calculăm:
-    - Forma echipei (câte puncte au luat în ultimele 6 meciuri)
-    - Media goluri marcate / primite
-    Folosim doar meciurile ÎNAINTE de meciul respectiv (nu trișăm!)
-    """
-    stats = {}  # team -> [(data, puncte, goluri_marcate, goluri_primite)]
+# ── 4. Calculare forma echipe (ultimele 5 meciuri) ───────────────────────────
+print(">>> Calculez forma echipelor...")
 
-    for col in ["home_form", "away_form", "home_goals_scored",
-                "home_goals_conceded", "away_goals_scored", "away_goals_conceded"]:
-        df[col] = 0.0
+# Construiesc un dictionar cu istoricul fiecarei echipe
+team_history = {}  # team -> list of (date, goals_scored, goals_conceded, result_points)
 
-    for idx, row in df.iterrows():
-        ht = row["home_team"]
-        at = row["away_team"]
+def get_form(team, before_date, n=5):
+    """Returneaza statisticile din ultimele n meciuri ale echipei inainte de o data."""
+    history = team_history.get(team, [])
+    past = [(d, gs, gc, pts) for d, gs, gc, pts in history if d < before_date]
+    past = past[-n:]  # ultimele n
+    if len(past) == 0:
+        return 0.4, 1.2, 1.2  # valori neutre daca echipa nu are istoric
+    win_rate = sum(pts for _, _, _, pts in past) / (len(past) * 3)
+    avg_scored = np.mean([gs for _, gs, _, _ in past])
+    avg_conceded = np.mean([gc for _, _, gc, _ in past])
+    return win_rate, avg_scored, avg_conceded
 
-        def get_team_stats(team, n=6):
-            if team not in stats or len(stats[team]) == 0:
-                return 0.33, 1.2, 1.0  # valori default dacă nu avem istoric
-            recent = stats[team][-n:]
-            pts = sum(r[1] for r in recent)
-            max_pts = len(recent) * 3
-            form = pts / max_pts if max_pts > 0 else 0.33
-            avg_scored = float(np.mean([r[2] for r in recent]))
-            avg_conceded = float(np.mean([r[3] for r in recent]))
-            return form, avg_scored, avg_conceded
+def update_history(team, date, goals_scored, goals_conceded, won):
+    pts = 3 if won == "W" else (1 if won == "D" else 0)
+    if team not in team_history:
+        team_history[team] = []
+    team_history[team].append((date, goals_scored, goals_conceded, pts))
 
-        hf, hgs, hgc = get_team_stats(ht)
-        af, ags, agc = get_team_stats(at)
+# Construiesc featuri rand cu rand (in ordine cronologica → fara scurgere de date)
+home_wr, home_gs, home_gc = [], [], []
+away_wr, away_gs, away_gc = [], [], []
 
-        df.at[idx, "home_form"] = hf
-        df.at[idx, "away_form"] = af
-        df.at[idx, "home_goals_scored"] = hgs
-        df.at[idx, "home_goals_conceded"] = hgc
-        df.at[idx, "away_goals_scored"] = ags
-        df.at[idx, "away_goals_conceded"] = agc
+for _, row in data.iterrows():
+    h, a = row["HomeTeam"], row["AwayTeam"]
+    d = row["Date"]
+    fthg, ftag = row["FTHG"], row["FTAG"]
+    ftr = row["FTR"]
 
-        # Actualizăm istoricul DUPĂ ce am folosit datele
-        hs, as_ = row["home_score"], row["away_score"]
-        h_pts = 3 if row["result"] == "H" else (1 if row["result"] == "D" else 0)
-        a_pts = 3 if row["result"] == "A" else (1 if row["result"] == "D" else 0)
+    # Calculez forma INAINTE de meci
+    hwr, hgs, hgc = get_form(h, d)
+    awr, ags, agc = get_form(a, d)
 
-        if ht not in stats: stats[ht] = []
-        if at not in stats: stats[at] = []
-        stats[ht].append((row["date"], h_pts, hs, as_))
-        stats[at].append((row["date"], a_pts, as_, hs))
+    home_wr.append(hwr); home_gs.append(hgs); home_gc.append(hgc)
+    away_wr.append(awr); away_gs.append(ags); away_gc.append(agc)
 
-    return df, stats
+    # Actualizez istoricul DUPA ce am calculat (important!)
+    update_history(h, d, fthg, ftag, "W" if ftr == "H" else ("D" if ftr == "D" else "L"))
+    update_history(a, d, ftag, fthg, "W" if ftr == "A" else ("D" if ftr == "D" else "L"))
 
-df, team_stats = build_features(df)
+data["home_win_rate"] = home_wr
+data["home_avg_scored"] = home_gs
+data["home_avg_conceded"] = home_gc
+data["away_win_rate"] = away_wr
+data["away_avg_scored"] = away_gs
+data["away_avg_conceded"] = away_gc
 
-# Salvăm statisticile echipelor pentru predicții viitoare
-joblib.dump(team_stats, "models/team_stats.pkl")
-print("✅ Forma calculată!")
+# Diferente dintre echipe (feature puternic)
+data["wr_diff"] = data["home_win_rate"] - data["away_win_rate"]
+data["scored_diff"] = data["home_avg_scored"] - data["away_avg_scored"]
+data["conceded_diff"] = data["home_avg_conceded"] - data["away_avg_conceded"]
 
-# ─────────────────────────────────────────────
-# 3. FEATURE ENGINEERING
-# ─────────────────────────────────────────────
-
-def get_tournament_weight(t):
-    """Meciurile importante contează mai mult."""
-    t = str(t)
-    if "World Cup" in t and "qualification" not in t: return 3
-    if "UEFA Euro" in t and "qualification" not in t: return 3
-    if "Copa América" in t: return 3
-    if "qualification" in t: return 2
-    if "Nations League" in t: return 2
-    if "Friendly" in t: return 1
-    return 2
-
-df["tournament_weight"] = df["tournament"].apply(get_tournament_weight)
-df["neutral"] = df["neutral"].astype(int)
-
-# Features derivate
-df["form_diff"] = df["home_form"] - df["away_form"]
-df["attack_vs_defense"] = df["home_goals_scored"] - df["away_goals_conceded"]
-df["away_attack_vs_defense"] = df["away_goals_scored"] - df["home_goals_conceded"]
-
-# Primele 500 de meciuri le ignorăm (echipele nu au istoric suficient)
-df = df.iloc[500:].copy()
-
+# ── 5. Pregatire date pentru antrenament ─────────────────────────────────────
 FEATURES = [
-    "home_form", "away_form",
-    "home_goals_scored", "home_goals_conceded",
-    "away_goals_scored", "away_goals_conceded",
-    "neutral", "tournament_weight",
-    "form_diff", "attack_vs_defense", "away_attack_vs_defense"
+    "home_win_rate", "home_avg_scored", "home_avg_conceded",
+    "away_win_rate", "away_avg_scored", "away_avg_conceded",
+    "wr_diff", "scored_diff", "conceded_diff"
 ]
 
-X = df[FEATURES]
-le = LabelEncoder()
-y = le.fit_transform(df["result"])  # A=0, D=1, H=2
-
-print(f"\n📊 Features pregătite: {X.shape[0]} meciuri, {X.shape[1]} variabile")
-
-# ─────────────────────────────────────────────
-# 4. ANTRENĂM MODELUL
-# ─────────────────────────────────────────────
-print("\n🤖 Antrenez modelul AI...")
+X = data[FEATURES]
+y = data["FTR"]  # H, D, A
 
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42, stratify=y
 )
 
+# ── 6. Antrenament ───────────────────────────────────────────────────────────
+print(">>> Antrenez modelul...")
 model = GradientBoostingClassifier(
-    n_estimators=400,
-    max_depth=5,
-    learning_rate=0.04,
+    n_estimators=300,
+    learning_rate=0.05,
+    max_depth=4,
     subsample=0.8,
     random_state=42
 )
 model.fit(X_train, y_train)
 
-# ─────────────────────────────────────────────
-# 5. EVALUĂM REZULTATELE
-# ─────────────────────────────────────────────
-y_pred = model.predict(X_test)
-acc = accuracy_score(y_test, y_pred)
+acc = accuracy_score(y_test, model.predict(X_test))
+print(f">>> Acuratete model: {acc*100:.2f}%")
 
-print(f"\n{'='*45}")
-print(f"  🎯 ACURATEȚE MODEL: {acc:.2%}")
-print(f"{'='*45}")
-print("\n📋 Raport detaliat:")
-print(classification_report(y_test, y_pred, target_names=le.classes_))
-
-print("\n🔑 Cele mai importante variabile:")
-for feat, imp in sorted(zip(FEATURES, model.feature_importances_), key=lambda x: -x[1]):
-    bar = "█" * int(imp * 40)
-    print(f"  {feat:<30} {bar} {imp:.3f}")
-
-# ─────────────────────────────────────────────
-# 6. SALVĂM MODELUL
-# ─────────────────────────────────────────────
-os.makedirs("models", exist_ok=True)
-
-joblib.dump(model, "models/trained_model.pkl")
-joblib.dump(le, "models/label_encoder.pkl")
-joblib.dump(FEATURES, "models/features_list.pkl")
-
-print(f"\n✅ Model salvat în models/trained_model.pkl")
-print(f"✅ Label encoder salvat în models/label_encoder.pkl")
-print(f"✅ Lista features salvată în models/features_list.pkl")
-print(f"✅ Statistici echipe salvate în models/team_stats.pkl")
-print("\n🚀 Gata! Acum rulează serverul: uvicorn main:app --reload")
+# ── 7. Salvare model ─────────────────────────────────────────────────────────
+model_path = os.path.join(BASE_DIR, "model.pkl")
+joblib.dump({"model": model, "features": FEATURES}, model_path)
+print(f">>> Model salvat la: {model_path}")
