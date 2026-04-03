@@ -20,23 +20,30 @@ print(f"    Gasit {len(all_files)} fisiere CSV.")
 # ── 2. Combinare ─────────────────────────────────────────────────────────────
 COLS_NEEDED = ["Div", "Date", "HomeTeam", "AwayTeam", "FTHG", "FTAG", "FTR"]
 frames = []
+skipped = 0
 for fpath in all_files:
     try:
-        # encoding_errors="ignore" + sep autodetect + BOM fix
         df = pd.read_csv(fpath, encoding="utf-8-sig", errors="ignore", sep=",")
-        # Curata numele coloanelor (elimina spatii si caractere invizibile)
         df.columns = [c.strip().replace('\ufeff', '') for c in df.columns]
-        # Pastreaza doar coloanele care exista in fisier
         cols_prezente = [c for c in COLS_NEEDED if c in df.columns]
         if "HomeTeam" not in cols_prezente or "FTR" not in cols_prezente:
+            skipped += 1
             continue
         df = df[cols_prezente]
         df = df.dropna(subset=["HomeTeam", "AwayTeam", "FTHG", "FTAG", "FTR"])
         df = df[df["FTR"].isin(["H", "D", "A"])]
         if len(df) > 0:
             frames.append(df)
-    except Exception:
-        pass
+        else:
+            skipped += 1
+    except Exception as e:
+        skipped += 1
+
+print(f"    Fisiere incarcate cu succes: {len(frames)}")
+print(f"    Fisiere sarite (fara coloane necesare): {skipped}")
+
+if len(frames) == 0:
+    raise ValueError(f"Niciun CSV valid gasit! Verificati coloanele. Sarite: {skipped}/{len(all_files)}")
 
 data = pd.concat(frames, ignore_index=True)
 print(f"    Total meciuri combinate: {len(data)}")
@@ -49,21 +56,19 @@ data["FTHG"] = pd.to_numeric(data["FTHG"], errors="coerce").fillna(0).astype(int
 data["FTAG"] = pd.to_numeric(data["FTAG"], errors="coerce").fillna(0).astype(int)
 
 print(f"    Meciuri dupa curatare: {len(data)}")
-print(f"    Perioada: {data['Date'].min().date()} → {data['Date'].max().date()}")
+print(f"    Perioada: {data['Date'].min().date()} -> {data['Date'].max().date()}")
 
 # ── 4. Calculare forma echipe (ultimele 5 meciuri) ───────────────────────────
 print(">>> Calculez forma echipelor...")
 
-# Construiesc un dictionar cu istoricul fiecarei echipe
-team_history = {}  # team -> list of (date, goals_scored, goals_conceded, result_points)
+team_history = {}
 
 def get_form(team, before_date, n=5):
-    """Returneaza statisticile din ultimele n meciuri ale echipei inainte de o data."""
     history = team_history.get(team, [])
     past = [(d, gs, gc, pts) for d, gs, gc, pts in history if d < before_date]
-    past = past[-n:]  # ultimele n
+    past = past[-n:]
     if len(past) == 0:
-        return 0.4, 1.2, 1.2  # valori neutre daca echipa nu are istoric
+        return 0.4, 1.2, 1.2
     win_rate = sum(pts for _, _, _, pts in past) / (len(past) * 3)
     avg_scored = np.mean([gs for _, gs, _, _ in past])
     avg_conceded = np.mean([gc for _, _, gc, _ in past])
@@ -75,7 +80,6 @@ def update_history(team, date, goals_scored, goals_conceded, won):
         team_history[team] = []
     team_history[team].append((date, goals_scored, goals_conceded, pts))
 
-# Construiesc featuri rand cu rand (in ordine cronologica → fara scurgere de date)
 home_wr, home_gs, home_gc = [], [], []
 away_wr, away_gs, away_gc = [], [], []
 
@@ -85,14 +89,12 @@ for _, row in data.iterrows():
     fthg, ftag = row["FTHG"], row["FTAG"]
     ftr = row["FTR"]
 
-    # Calculez forma INAINTE de meci
     hwr, hgs, hgc = get_form(h, d)
     awr, ags, agc = get_form(a, d)
 
     home_wr.append(hwr); home_gs.append(hgs); home_gc.append(hgc)
     away_wr.append(awr); away_gs.append(ags); away_gc.append(agc)
 
-    # Actualizez istoricul DUPA ce am calculat (important!)
     update_history(h, d, fthg, ftag, "W" if ftr == "H" else ("D" if ftr == "D" else "L"))
     update_history(a, d, ftag, fthg, "W" if ftr == "A" else ("D" if ftr == "D" else "L"))
 
@@ -103,7 +105,6 @@ data["away_win_rate"] = away_wr
 data["away_avg_scored"] = away_gs
 data["away_avg_conceded"] = away_gc
 
-# Diferente dintre echipe (feature puternic)
 data["wr_diff"] = data["home_win_rate"] - data["away_win_rate"]
 data["scored_diff"] = data["home_avg_scored"] - data["away_avg_scored"]
 data["conceded_diff"] = data["home_avg_conceded"] - data["away_avg_conceded"]
@@ -116,7 +117,7 @@ FEATURES = [
 ]
 
 X = data[FEATURES]
-y = data["FTR"]  # H, D, A
+y = data["FTR"]
 
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42, stratify=y
