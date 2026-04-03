@@ -30,8 +30,19 @@ async def startup_event():
 @app.get("/health")
 def health():
     return {"status": "ok", "service": "Flopi San API"}
-
-
+@app.get("/api/health")
+def api_health():
+    return {"status": "ok", "service": "Flopi San API"}
+@app.get("/api/leagues")
+def api_leagues():
+    return {"leagues": [
+        {"id": "PL", "name": "Premier League"},
+        {"id": "PD", "name": "La Liga"},
+        {"id": "SA", "name": "Serie A"},
+        {"id": "BL1", "name": "Bundesliga"},
+        {"id": "FL1", "name": "Ligue 1"}
+    ]}
+    
 # ─────────────────────────────────────────────
 # PREDICȚIE MECI
 # ─────────────────────────────────────────────
