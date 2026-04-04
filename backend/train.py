@@ -23,7 +23,7 @@ frames = []
 skipped = 0
 for i, fpath in enumerate(all_files):
     try:
-        df = pd.read_csv(fpath, encoding="utf-8-sig", errors="ignore", sep=None, engine="python")
+        df = pd.read_csv(fpath, encoding="utf-8-sig", sep=None, engine="python")
         df.columns = [c.strip().replace('\ufeff', '') for c in df.columns]
         if i < 3:
             print(f"    DEBUG fisier {i}: {os.path.basename(fpath)} | coloane: {list(df.columns[:8])}")
