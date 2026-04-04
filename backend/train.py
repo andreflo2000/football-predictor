@@ -139,5 +139,5 @@ print(f">>> Acuratete model: {acc*100:.2f}%")
 
 # ── 7. Salvare model ─────────────────────────────────────────────────────────
 model_path = os.path.join(BASE_DIR, "model.pkl")
-joblib.dump({"model": model, "features": FEATURES}, model_path)
+joblib.dump({"model": model, "features": FEATURES, "team_stats": team_history}, model_path)
 print(f">>> Model salvat la: {model_path}")
