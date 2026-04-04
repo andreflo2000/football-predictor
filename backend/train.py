@@ -21,10 +21,12 @@ print(f"    Gasit {len(all_files)} fisiere CSV.")
 COLS_NEEDED = ["Div", "Date", "HomeTeam", "AwayTeam", "FTHG", "FTAG", "FTR"]
 frames = []
 skipped = 0
-for fpath in all_files:
+for i, fpath in enumerate(all_files):
     try:
         df = pd.read_csv(fpath, encoding="utf-8-sig", errors="ignore", sep=None, engine="python")
         df.columns = [c.strip().replace('\ufeff', '') for c in df.columns]
+        if i < 3:
+            print(f"    DEBUG fisier {i}: {os.path.basename(fpath)} | coloane: {list(df.columns[:8])}")
         cols_prezente = [c for c in COLS_NEEDED if c in df.columns]
         if "HomeTeam" not in cols_prezente or "FTR" not in cols_prezente:
             skipped += 1
@@ -37,6 +39,8 @@ for fpath in all_files:
         else:
             skipped += 1
     except Exception as e:
+        if i < 3:
+            print(f"    DEBUG eroare {i}: {e}")
         skipped += 1
 
 print(f"    Fisiere incarcate cu succes: {len(frames)}")
