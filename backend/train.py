@@ -2,27 +2,25 @@ import os
 import glob
 import pandas as pd
 import numpy as np
-from sklearn.ensemble import GradientBoostingClassifier
+from xgboost import XGBClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
+from sklearn.preprocessing import LabelEncoder
 import joblib
 
-print(">>> Incarc toate fisierele CSV club...")
-
+print(">>> Incarc CSV-uri...")
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CSV_FOLDER = os.path.join(BASE_DIR, "data", "csv", "club")
-all_files = glob.glob(os.path.join(CSV_FOLDER, "**", "*.csv"), recursive=True) + \
-            glob.glob(os.path.join(CSV_FOLDER, "*.csv"))
-all_files = list(set(all_files))
-print(f"    Gasit {len(all_files)} fisiere CSV.")
+all_files = list(set(
+    glob.glob(os.path.join(CSV_FOLDER, "**", "*.csv"), recursive=True) +
+    glob.glob(os.path.join(CSV_FOLDER, "*.csv"))
+))
+print(f"    Gasit {len(all_files)} fisiere.")
 
-COLS_NEEDED = ["Div", "Date", "HomeTeam", "AwayTeam", "FTHG", "FTAG", "FTR"]
+COLS_NEEDED = ["HomeTeam", "AwayTeam", "FTHG", "FTAG", "FTR", "Date"]
 frames = []
-skipped = 0
-
 for fpath in all_files:
     try:
-        # Incearca TAB mai intai, apoi virgula
         for sep in ["\t", ",", ";"]:
             try:
                 df = pd.read_csv(fpath, encoding="utf-8-sig", sep=sep)
@@ -31,137 +29,112 @@ for fpath in all_files:
                     break
             except:
                 continue
-        df.columns = [c.strip().replace('\ufeff', '') for c in df.columns]
-        cols_prezente = [c for c in COLS_NEEDED if c in df.columns]
-        if "HomeTeam" not in cols_prezente or "FTR" not in cols_prezente:
-            skipped += 1
+        if "HomeTeam" not in df.columns or "FTR" not in df.columns:
             continue
-        df = df[cols_prezente]
-        df = df.dropna(subset=["HomeTeam", "AwayTeam", "FTHG", "FTAG", "FTR"])
+        cols = [c for c in COLS_NEEDED if c in df.columns]
+        df = df[cols].dropna(subset=["HomeTeam", "AwayTeam", "FTR"])
         df = df[df["FTR"].isin(["H", "D", "A"])]
         if len(df) > 0:
             frames.append(df)
-        else:
-            skipped += 1
-    except Exception as e:
-        skipped += 1
-
-print(f"    Fisiere incarcate: {len(frames)}")
-print(f"    Fisiere sarite: {skipped}")
-
-if len(frames) == 0:
-    raise ValueError("Niciun CSV valid gasit!")
+    except:
+        continue
 
 data = pd.concat(frames, ignore_index=True)
-print(f"    Total meciuri: {len(data)}")
-
 data["Date"] = pd.to_datetime(data["Date"], dayfirst=True, errors="coerce", format="mixed")
-data["Date"] = data["Date"].fillna(pd.to_datetime(data["Date"], format="%d/%m/%y", errors="coerce"))
-data = data.dropna(subset=["Date"])
-data = data[data["Date"].dt.year >= 1990]
-data = data.sort_values("Date").reset_index(drop=True)
 data["FTHG"] = pd.to_numeric(data["FTHG"], errors="coerce").fillna(0).astype(int)
 data["FTAG"] = pd.to_numeric(data["FTAG"], errors="coerce").fillna(0).astype(int)
+data = data.dropna(subset=["Date"]).sort_values("Date").reset_index(drop=True)
+print(f"    Total meciuri: {len(data)}")
 
-print(f"    Meciuri dupa curatare: {len(data)}")
-print(f"    Perioada: {data['Date'].min().date()} -> {data['Date'].max().date()}")
-
-print(">>> Calculez forma echipelor...")
-
+print(">>> Calculez forma...")
 team_history = {}
 
 def get_form(team, before_date, n=5):
-    history = team_history.get(team, [])
-    past = [(d, gs, gc, pts) for d, gs, gc, pts in history if d < before_date]
-    past = past[-n:]
-    if len(past) == 0:
-        return 0.4, 1.2, 1.2
-    win_rate = sum(pts for _, _, _, pts in past) / (len(past) * 3)
-    avg_scored = np.mean([gs for _, gs, _, _ in past])
-    avg_conceded = np.mean([gc for _, _, gc, _ in past])
-    return win_rate, avg_scored, avg_conceded
+    hist = [x for x in team_history.get(team, []) if x[0] < before_date][-n:]
+    if len(hist) < n:
+        return None  # nu avem suficient istoric
+    wr = sum(x[3] for x in hist) / (n * 3)
+    gs = np.mean([x[1] for x in hist])
+    gc = np.mean([x[2] for x in hist])
+    return wr, gs, gc, gs - gc
 
-def update_history(team, date, goals_scored, goals_conceded, result):
+def update_history(team, date, gf, ga, result):
     pts = 3 if result == "W" else (1 if result == "D" else 0)
-    if team not in team_history:
-        team_history[team] = []
-    team_history[team].append((date, goals_scored, goals_conceded, pts))
+    team_history.setdefault(team, []).append((date, gf, ga, pts))
 
-home_wr, home_gs, home_gc = [], [], []
-away_wr, away_gs, away_gc = [], [], []
-home_form3, away_form3 = [], []
-goal_diff_home, goal_diff_away = [], []
-
+rows = []
 for _, row in data.iterrows():
     h, a = row["HomeTeam"], row["AwayTeam"]
-    d = row["Date"]
-    fthg, ftag = row["FTHG"], row["FTAG"]
-    ftr = row["FTR"]
+    d, fthg, ftag, ftr = row["Date"], row["FTHG"], row["FTAG"], row["FTR"]
 
-    hwr, hgs, hgc = get_form(h, d, n=5)
-    awr, ags, agc = get_form(a, d, n=5)
-    hwr3, hgs3, hgc3 = get_form(h, d, n=3)
-    awr3, ags3, agc3 = get_form(a, d, n=3)
+    hf = get_form(h, d, 5)
+    af = get_form(a, d, 5)
+    hf3 = get_form(h, d, 3)
+    af3 = get_form(a, d, 3)
 
-    home_wr.append(hwr); home_gs.append(hgs); home_gc.append(hgc)
-    away_wr.append(awr); away_gs.append(ags); away_gc.append(agc)
-    home_form3.append(hwr3)
-    away_form3.append(awr3)
-    goal_diff_home.append(hgs - hgc)
-    goal_diff_away.append(ags - agc)
+    # Sarim meciurile fara suficient istoric
+    if hf is None or af is None or hf3 is None or af3 is None:
+        update_history(h, d, fthg, ftag, "W" if ftr=="H" else ("D" if ftr=="D" else "L"))
+        update_history(a, d, ftag, fthg, "W" if ftr=="A" else ("D" if ftr=="D" else "L"))
+        continue
+
+    hwr, hgs, hgc, hgd = hf
+    awr, ags, agc, agd = af
+    hwr3 = hf3[0]
+    awr3 = af3[0]
+
+    rows.append({
+        "home_win_rate": hwr,
+        "home_avg_scored": hgs,
+        "home_avg_conceded": hgc,
+        "home_gd": hgd,
+        "away_win_rate": awr,
+        "away_avg_scored": ags,
+        "away_avg_conceded": agc,
+        "away_gd": agd,
+        "home_form3": hwr3,
+        "away_form3": awr3,
+        "wr_diff": hwr - awr,
+        "scored_diff": hgs - ags,
+        "conceded_diff": hgc - agc,
+        "gd_diff": hgd - agd,
+        "form3_diff": hwr3 - awr3,
+        "attack_vs_def": hgs - agc,
+        "away_attack_vs_def": ags - hgc,
+        "home_advantage": 1.0,
+        "FTR": ftr
+    })
 
     update_history(h, d, fthg, ftag, "W" if ftr=="H" else ("D" if ftr=="D" else "L"))
     update_history(a, d, ftag, fthg, "W" if ftr=="A" else ("D" if ftr=="D" else "L"))
 
-data["home_win_rate"] = home_wr
-data["home_avg_scored"] = home_gs
-data["home_avg_conceded"] = home_gc
-data["away_win_rate"] = away_wr
-data["away_avg_scored"] = away_gs
-data["away_avg_conceded"] = away_gc
-data["home_form3"] = home_form3
-data["away_form3"] = away_form3
-data["home_goal_diff"] = goal_diff_home
-data["away_goal_diff"] = goal_diff_away
-data["wr_diff"] = data["home_win_rate"] - data["away_win_rate"]
-data["scored_diff"] = data["home_avg_scored"] - data["away_avg_scored"]
-data["conceded_diff"] = data["home_avg_conceded"] - data["away_avg_conceded"]
-data["form3_diff"] = data["home_form3"] - data["away_form3"]
-data["goal_diff_diff"] = data["home_goal_diff"] - data["away_goal_diff"]
-data["attack_vs_defense"] = data["home_avg_scored"] - data["away_avg_conceded"]
-data["away_attack_vs_defense"] = data["away_avg_scored"] - data["home_avg_conceded"]
+feat_data = pd.DataFrame(rows)
+print(f"    Meciuri cu istoric complet: {len(feat_data)}")
 
-FEATURES = [
-    "home_win_rate", "home_avg_scored", "home_avg_conceded",
-    "away_win_rate", "away_avg_scored", "away_avg_conceded",
-    "home_form3", "away_form3",
-    "home_goal_diff", "away_goal_diff",
-    "wr_diff", "scored_diff", "conceded_diff",
-    "form3_diff", "goal_diff_diff",
-    "attack_vs_defense", "away_attack_vs_defense",
-]
+FEATURES = [c for c in feat_data.columns if c != "FTR"]
+X = feat_data[FEATURES]
 
-X = data[FEATURES]
-y = data["FTR"]
+le = LabelEncoder()
+y = le.fit_transform(feat_data["FTR"])
 
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42, stratify=y
-)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
 
-print(">>> Antrenez modelul...")
-model = GradientBoostingClassifier(
+print(">>> Antrenez XGBoost...")
+model = XGBClassifier(
     n_estimators=500,
     learning_rate=0.05,
-    max_depth=5,
+    max_depth=6,
     subsample=0.8,
-    min_samples_leaf=20,
-    random_state=42
+    colsample_bytree=0.8,
+    eval_metric="mlogloss",
+    random_state=42,
+    n_jobs=-1
 )
-model.fit(X_train, y_train)
+model.fit(X_train, y_train, eval_set=[(X_test, y_test)], verbose=False)
 
 acc = accuracy_score(y_test, model.predict(X_test))
 print(f">>> Acuratete model: {acc*100:.2f}%")
 
-model_path = os.path.join(BASE_DIR, "model.pkl")
-joblib.dump({"model": model, "features": FEATURES, "team_stats": team_history}, model_path)
-print(f">>> Model salvat la: {model_path}")
+joblib.dump({"model": model, "features": FEATURES, "team_stats": team_history, "label_encoder": le},
+            os.path.join(BASE_DIR, "model.pkl"))
+print(">>> Model salvat!")
