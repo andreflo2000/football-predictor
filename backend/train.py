@@ -55,8 +55,10 @@ if len(frames) == 0:
 data = pd.concat(frames, ignore_index=True)
 print(f"    Total meciuri: {len(data)}")
 
-data["Date"] = pd.to_datetime(data["Date"], dayfirst=True, errors="coerce")
+data["Date"] = pd.to_datetime(data["Date"], dayfirst=True, errors="coerce", format="mixed")
+data["Date"] = data["Date"].fillna(pd.to_datetime(data["Date"], format="%d/%m/%y", errors="coerce"))
 data = data.dropna(subset=["Date"])
+data = data[data["Date"].dt.year >= 1990]
 data = data.sort_values("Date").reset_index(drop=True)
 data["FTHG"] = pd.to_numeric(data["FTHG"], errors="coerce").fillna(0).astype(int)
 data["FTAG"] = pd.to_numeric(data["FTAG"], errors="coerce").fillna(0).astype(int)
