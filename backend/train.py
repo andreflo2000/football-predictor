@@ -23,7 +23,7 @@ frames = []
 skipped = 0
 for fpath in all_files:
     try:
-        df = pd.read_csv(fpath, encoding="utf-8-sig", errors="ignore", sep="\t")
+        df = pd.read_csv(fpath, encoding="utf-8-sig", errors="ignore", sep=None, engine="python")
         df.columns = [c.strip().replace('\ufeff', '') for c in df.columns]
         cols_prezente = [c for c in COLS_NEEDED if c in df.columns]
         if "HomeTeam" not in cols_prezente or "FTR" not in cols_prezente:
