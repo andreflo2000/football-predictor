@@ -11,5 +11,7 @@ services:
         sync: false
       - key: FOOTBALL_DATA_KEY
         sync: false
+      - key: ODDS_API_KEY
+        sync: false
     rootDir: backend
     healthCheckPath: /api/health

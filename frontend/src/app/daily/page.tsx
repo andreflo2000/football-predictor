@@ -1,438 +1,368 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import axios from 'axios'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-
-function formatDateRO(isoDate: string): string {
-  if (!isoDate) return ''
-  const [y, m, d] = isoDate.split('-')
-  return `${d}.${m}.${y}`
-}
 
 function today() {
   return new Date().toISOString().split('T')[0]
 }
-
-function getProbColor(p: number) {
-  if (p >= 60) return '#10b981'
-  if (p >= 40) return '#f59e0b'
-  return '#ef4444'
+function formatDate(iso: string) {
+  const [y, m, d] = iso.split('-')
+  return `${d}.${m}.${y}`
 }
 
-interface BetSelection {
+interface Pick {
   home: string
   away: string
   league: string
   flag: string
-  date: string
   time: string
-  tip: string
-  probability: number
-  odds: number
-  leagueId: number
-}
-
-interface DailyTicket {
-  selections: BetSelection[]
-  totalOdds: number
+  home_win: number
+  draw: number
+  away_win: number
+  prediction: 'H' | 'D' | 'A'
+  prediction_label: string
   confidence: number
-  label: string
+  confidence_level: 'high' | 'medium' | 'low'
+  high_confidence: boolean
+  home_elo: number
+  away_elo: number
+  home_form: number
+  away_form: number
 }
 
-const LEAGUES = [
-  { id: 39,  flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿', name: 'Premier League' },
-  { id: 140, flag: '🇪🇸', name: 'La Liga' },
-  { id: 78,  flag: '🇩🇪', name: 'Bundesliga' },
-  { id: 135, flag: '🇮🇹', name: 'Serie A' },
-  { id: 61,  flag: '🇫🇷', name: 'Ligue 1' },
-  { id: 88,  flag: '🇳🇱', name: 'Eredivisie' },
-  { id: 94,  flag: '🇵🇹', name: 'Primeira Liga' },
-  { id: 71,  flag: '🇧🇷', name: 'Brasileirao' },
-  { id: 2,   flag: '🏆', name: 'Champions League' },
-]
-
-// ── Fetch predictii reale pentru un meci ─────────────────────────────────────
-async function fetchRealPrediction(fixture: any, leagueId: number): Promise<BetSelection | null> {
-  try {
-    const r = await axios.get(`${API_BASE}/api/predict`, {
-      params: {
-        home_team: fixture.home,
-        away_team: fixture.away,
-        league_id: leagueId,
-        home_team_id: fixture.home_id || 0,
-        away_team_id: fixture.away_id || 0,
-      },
-      timeout: 15000,
-    })
-    const data = r.data
-    const pred = data.prediction || {}
-    const home_w = pred.home_win ?? 0
-    const draw   = pred.draw ?? 0
-    const away_w = pred.away_win ?? 0
-
-    // Găsim cel mai bun pariu
-    let tip = ''
-    let prob = 0
-
-    if (home_w >= 55) {
-      tip = `1 — Victorie ${fixture.home}`
-      prob = home_w
-    } else if (away_w >= 55) {
-      tip = `2 — Victorie ${fixture.away}`
-      prob = away_w
-    } else if (home_w + draw >= 70) {
-      tip = `1X — ${fixture.home} sau Egal`
-      prob = Math.round((home_w + draw) * 0.95)
-    } else if (draw + away_w >= 70) {
-      tip = `X2 — Egal sau ${fixture.away}`
-      prob = Math.round((draw + away_w) * 0.95)
-    } else {
-      // Verificăm Over/Under cu xG
-      const xgHome = data.expected_goals?.home ?? 1.4
-      const xgAway = data.expected_goals?.away ?? 1.2
-      const totalXg = xgHome + xgAway
-      if (totalXg > 2.5) {
-        tip = 'Over 2.5 goluri'
-        prob = Math.round(55 + (totalXg - 2.5) * 10)
-      } else if (totalXg < 1.8) {
-        tip = 'Under 2.5 goluri'
-        prob = Math.round(60 + (1.8 - totalXg) * 10)
-      } else {
-        // Luăm maximul disponibil
-        const maxProb = Math.max(home_w, draw, away_w)
-        if (maxProb === home_w) { tip = `1 — Victorie ${fixture.home}`; prob = home_w }
-        else if (maxProb === away_w) { tip = `2 — Victorie ${fixture.away}`; prob = away_w }
-        else { tip = 'X — Egal'; prob = draw }
-      }
-    }
-
-    if (prob < 50) return null // Nu includem pariuri cu probabilitate sub 50%
-
-    const odds = parseFloat((100 / Math.max(prob, 1) * 1.08).toFixed(2))
-    const league = LEAGUES.find(l => l.id === leagueId)
-
-    return {
-      home: fixture.home,
-      away: fixture.away,
-      league: league?.name || 'Ligă',
-      flag: league?.flag || '⚽',
-      date: fixture.date || today(),
-      time: fixture.time || '',
-      tip,
-      probability: prob,
-      odds,
-      leagueId,
-    }
-  } catch {
-    return null
-  }
+interface DailyResponse {
+  date: string
+  total_fixtures: number
+  total_picks: number
+  high_conf: number
+  med_conf: number
+  picks: Pick[]
 }
 
-function buildTicket(selections: BetSelection[], count: number): DailyTicket {
-  const selected = selections.slice(0, count)
-  const totalOdds = parseFloat(selected.reduce((acc, s) => acc * s.odds, 1).toFixed(2))
-  const avgConf = selected.length > 0
-    ? Math.round(selected.reduce((a, s) => a + s.probability, 0) / selected.length)
-    : 0
-  return {
-    selections: selected,
-    totalOdds,
-    confidence: avgConf,
-    label: avgConf >= 65 ? 'Ridicată' : avgConf >= 55 ? 'Medie' : 'Scăzută',
-  }
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+function confColor(level: string) {
+  if (level === 'high')   return { bg: 'rgba(34,197,94,0.12)',  border: 'rgba(34,197,94,0.35)',  text: '#22c55e', label: 'RIDICATĂ' }
+  if (level === 'medium') return { bg: 'rgba(245,158,11,0.12)', border: 'rgba(245,158,11,0.35)', text: '#f59e0b', label: 'MEDIE' }
+  return                         { bg: 'rgba(99,102,241,0.10)', border: 'rgba(99,102,241,0.30)', text: '#818cf8', label: 'SCĂZUTĂ' }
 }
 
-function TicketCard({ ticket, premium = false, locked = false }: {
-  ticket: DailyTicket
-  premium?: boolean
-  locked?: boolean
-}) {
-  const confColor = ticket.confidence >= 65 ? '#10b981' : ticket.confidence >= 55 ? '#f59e0b' : '#ef4444'
-  const oddsColor = premium ? '#f59e0b' : '#3b82f6'
+function predLabel(p: Pick) {
+  if (p.prediction === 'H') return { emoji: '🏠', short: '1',  full: p.home,  prob: p.home_win }
+  if (p.prediction === 'A') return { emoji: '✈️', short: '2',  full: p.away,  prob: p.away_win }
+  return                           { emoji: '🤝', short: 'X',  full: 'Egal',  prob: p.draw }
+}
+
+function FormBar({ pct, label }: { pct: number; label: string }) {
+  const color = pct >= 60 ? '#22c55e' : pct >= 40 ? '#f59e0b' : '#ef4444'
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className="text-[10px] text-gray-500 font-mono w-14 shrink-0">{label}</span>
+      <div className="flex-1 h-1.5 rounded-full bg-white/5">
+        <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: color }} />
+      </div>
+      <span className="text-[10px] font-mono shrink-0" style={{ color }}>{pct}%</span>
+    </div>
+  )
+}
+
+// ── PickCard ─────────────────────────────────────────────────────────────────
+
+function PickCard({ pick, rank }: { pick: Pick; rank: number }) {
+  const c    = confColor(pick.confidence_level)
+  const pred = predLabel(pick)
 
   return (
-    <div className="card p-5 mb-6 relative"
-      style={{ borderColor: premium ? '#f59e0b40' : '#3b82f630', borderWidth: '1px', borderStyle: 'solid' }}>
+    <div className="card p-4 mb-3" style={{ borderColor: c.border }}>
 
-      <div className="flex items-center justify-between mb-4">
+      {/* Header: Liga + ora + rank */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-1.5">
+          <span className="text-base">{pick.flag}</span>
+          <span className="text-[10px] font-mono text-gray-500 uppercase tracking-widest">{pick.league}</span>
+          {pick.time && <span className="text-[10px] font-mono text-gray-600 ml-1">· {pick.time}</span>}
+        </div>
         <div className="flex items-center gap-2">
-          <span className="text-2xl">{premium ? '👑' : '🎯'}</span>
-          <div>
-            <div className="font-display text-lg text-white tracking-wide">
-              {premium ? 'BILET PREMIUM' : 'BILET GRATUIT'}
-            </div>
-            <div className="text-[10px] font-mono text-gray-500 uppercase tracking-widest">
-              {formatDateRO(today())} · {ticket.selections.length} selecții · Predicții AI reale
-            </div>
-          </div>
-        </div>
-        <div className="text-right">
-          <div className="text-3xl font-bold font-mono" style={{ color: oddsColor }}>
-            {locked ? '?.??' : `${ticket.totalOdds}`}
-          </div>
-          <div className="text-[10px] text-gray-500 uppercase tracking-widest">cotă totală</div>
+          {pick.high_confidence && (
+            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full font-mono"
+              style={{ backgroundColor: 'rgba(34,197,94,0.15)', color: '#22c55e', border: '1px solid rgba(34,197,94,0.3)' }}>
+              ⚡ HIGH CONF
+            </span>
+          )}
+          <span className="text-[10px] font-mono text-gray-700">#{rank}</span>
         </div>
       </div>
 
-      <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-xl"
-        style={{ backgroundColor: locked ? '#37415130' : `${confColor}15`, border: `1px solid ${locked ? '#374151' : confColor}30` }}>
-        <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: locked ? '#6b7280' : confColor }} />
-        <span className="text-xs font-mono" style={{ color: locked ? '#6b7280' : confColor }}>
-          Încredere AI: {locked ? '??%' : `${ticket.confidence}%`} ({locked ? '???' : ticket.label})
-        </span>
-        {premium && !locked && <span className="ml-auto text-[10px] text-amber-400 font-bold">⚡ PREMIUM</span>}
+      {/* Echipe */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex-1 min-w-0">
+          <div className="text-base font-bold text-white leading-tight truncate">{pick.home}</div>
+          <div className="text-[10px] font-mono text-gray-500 mt-0.5">
+            Elo {pick.home_elo} · Formă {pick.home_form}%
+          </div>
+        </div>
+        <div className="text-gray-600 font-bold text-sm mx-3 shrink-0">VS</div>
+        <div className="flex-1 min-w-0 text-right">
+          <div className="text-base font-bold text-white leading-tight truncate">{pick.away}</div>
+          <div className="text-[10px] font-mono text-gray-500 mt-0.5">
+            Elo {pick.away_elo} · Formă {pick.away_form}%
+          </div>
+        </div>
       </div>
 
-      <div className="space-y-3">
-        {ticket.selections.map((sel, i) => (
-          <div key={i} className={`rounded-xl p-3 border ${premium ? 'bg-amber-900/10 border-amber-700/20' : 'bg-blue-900/10 border-blue-700/20'} ${locked ? 'filter blur-sm select-none pointer-events-none' : ''}`}>
-            <div className="flex items-center justify-between mb-1">
-              <div className="flex items-center gap-2">
-                <span className="text-sm">{sel.flag}</span>
-                <span className="text-[10px] text-gray-500 uppercase tracking-widest truncate max-w-[120px]">{sel.league}</span>
-              </div>
-              <span className="text-[10px] font-mono text-gray-600">{sel.time || '—'}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex-1 min-w-0">
-                <div className="text-xs font-bold text-white truncate">{sel.home} vs {sel.away}</div>
-                <div className="text-[11px] text-blue-300 font-mono mt-0.5 truncate">✅ {sel.tip}</div>
-              </div>
-              <div className="text-right ml-2 shrink-0">
-                <div className="text-sm font-bold font-mono" style={{ color: getProbColor(sel.probability) }}>
-                  {sel.probability}%
-                </div>
-                <div className="text-[10px] text-gray-600 font-mono">~{sel.odds}</div>
-              </div>
+      {/* Probabilitati */}
+      <div className="grid grid-cols-3 gap-1.5 mb-3">
+        {[
+          { label: '1', val: pick.home_win, active: pick.prediction === 'H' },
+          { label: 'X', val: pick.draw,     active: pick.prediction === 'D' },
+          { label: '2', val: pick.away_win, active: pick.prediction === 'A' },
+        ].map(({ label, val, active }) => (
+          <div key={label} className="rounded-lg py-2 text-center"
+            style={{
+              background: active ? c.bg : 'rgba(255,255,255,0.03)',
+              border: `1px solid ${active ? c.border : 'rgba(255,255,255,0.06)'}`,
+            }}>
+            <div className="text-[10px] font-mono text-gray-500 uppercase">{label}</div>
+            <div className="text-lg font-bold font-mono" style={{ color: active ? c.text : '#6b7280' }}>
+              {val}%
             </div>
           </div>
         ))}
       </div>
 
-      {locked && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center rounded-xl"
-          style={{ background: 'rgba(0,0,0,0.80)', backdropFilter: 'blur(6px)' }}>
-          <div className="text-center px-6">
-            <div className="text-5xl mb-3">🔒</div>
-            <div className="font-display text-xl text-amber-400 tracking-wide mb-2">CONȚINUT PREMIUM</div>
-            <div className="text-sm text-gray-300 mb-1">Biletul cu cotă 8-12 e disponibil</div>
-            <div className="text-sm text-gray-300 mb-4">pentru abonații Premium</div>
-            <div className="px-6 py-3 rounded-xl font-bold text-sm"
-              style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: '#000' }}>
-              👑 Abonament Premium — 4.99€/lună
+      {/* Predictie + Confidence */}
+      <div className="flex items-center justify-between px-3 py-2 rounded-xl"
+        style={{ background: c.bg, border: `1px solid ${c.border}` }}>
+        <div className="flex items-center gap-2">
+          <span className="text-base">{pred.emoji}</span>
+          <div>
+            <div className="text-xs font-bold" style={{ color: c.text }}>
+              {pred.short} — {pred.full}
             </div>
-            <div className="text-[10px] text-gray-600 mt-3 font-mono">Coming soon</div>
+            <div className="text-[10px] font-mono text-gray-500">Predicție AI</div>
           </div>
         </div>
-      )}
+        <div className="text-right">
+          <div className="text-xl font-bold font-mono" style={{ color: c.text }}>
+            {pick.confidence}%
+          </div>
+          <div className="text-[9px] font-mono" style={{ color: c.text }}>
+            {c.label}
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
 
-export default function DailyBet() {
+// ── Loading ───────────────────────────────────────────────────────────────────
+
+function LoadingState() {
+  const [step, setStep] = useState(0)
+  const steps = [
+    'Se încarcă meciurile zilei...',
+    'AI analizează fiecare meci...',
+    'Calculez Elo + formă + probabilități...',
+    'Filtrare după confidence...',
+  ]
+  useEffect(() => {
+    const t = setInterval(() => setStep(s => Math.min(s + 1, steps.length - 1)), 1800)
+    return () => clearInterval(t)
+  }, [])
+  return (
+    <div className="card p-10 text-center">
+      <div className="spinner mx-auto mb-6" />
+      <div className="text-green-400 text-sm font-mono mb-1">{steps[step]}</div>
+      <div className="text-gray-600 text-[11px] font-mono">Model XGBoost · 225K meciuri antrenament</div>
+    </div>
+  )
+}
+
+// ── Page ──────────────────────────────────────────────────────────────────────
+
+export default function DailyPage() {
+  const [data, setData]       = useState<DailyResponse | null>(null)
   const [loading, setLoading] = useState(true)
-  const [loadingText, setLoadingText] = useState('Se încarcă meciurile...')
-  const [freeTicket, setFreeTicket] = useState<DailyTicket | null>(null)
-  const [premiumTicket, setPremiumTicket] = useState<DailyTicket | null>(null)
-  const [totalAnalyzed, setTotalAnalyzed] = useState(0)
+  const [filter, setFilter]   = useState<'all' | 'high'>('all')
+  const [error, setError]     = useState('')
 
   useEffect(() => {
-    async function loadRealPredictions() {
-      setLoadingText('Se încarcă meciurile din toate ligile...')
-
-      // Pasul 1: Fetch toate meciurile din toate ligile
-      const fixtureResults = await Promise.allSettled(
-        LEAGUES.map(l => axios.get(`${API_BASE}/api/fixtures/${l.id}`).catch(() => ({ data: { fixtures: [] } })))
-      )
-
-      const allFixturesWithLeague: Array<{ fixture: any; leagueId: number }> = []
-      fixtureResults.forEach((result, idx) => {
-        if (result.status === 'fulfilled') {
-          const fixtures = (result.value as any).data?.fixtures || []
-          // Luăm primele 3 meciuri din fiecare ligă
-          fixtures.slice(0, 3).forEach((f: any) => {
-            allFixturesWithLeague.push({ fixture: f, leagueId: LEAGUES[idx].id })
-          })
-        }
-      })
-
-      setLoadingText(`AI analizează ${allFixturesWithLeague.length} meciuri... (poate dura 15-30 secunde)`)
-
-      // Pasul 2: Fetch predicții reale pentru fiecare meci în paralel (maxim 12)
-      const toAnalyze = allFixturesWithLeague.slice(0, 12)
-      setTotalAnalyzed(toAnalyze.length)
-
-      const predResults = await Promise.allSettled(
-        toAnalyze.map(({ fixture, leagueId }) => fetchRealPrediction(fixture, leagueId))
-      )
-
-      // Pasul 3: Filtrăm și sortăm după probabilitate
-      const validSelections: BetSelection[] = predResults
-        .filter(r => r.status === 'fulfilled' && r.value !== null)
-        .map(r => (r as PromiseFulfilledResult<BetSelection>).value)
-        .sort((a, b) => b.probability - a.probability)
-
-      // Pasul 4: Construim biletele
-      // Bilet gratuit — top 4 cele mai sigure, cotă 2-3
-      const freeSelections = validSelections
-        .filter(s => s.probability >= 55 && s.odds <= 2.0)
-        .slice(0, 4)
-
-      // Bilet premium — 6 selecții cu probabilitate mai mare, cotă mai mare
-      const premiumSelections = validSelections
-        .filter(s => s.probability >= 52)
-        .slice(0, 6)
-
-      setFreeTicket(buildTicket(freeSelections, 4))
-      setPremiumTicket(buildTicket(premiumSelections, 6))
-      setLoading(false)
-    }
-
-    loadRealPredictions()
+    fetch(`${API_BASE}/api/daily?min_confidence=0.45`)
+      .then(r => r.json())
+      .then(d => { setData(d); setLoading(false) })
+      .catch(() => { setError('Serverul nu răspunde. Reîncarcă pagina.'); setLoading(false) })
   }, [])
 
-  const shareTicket = (platform: 'whatsapp' | 'telegram') => {
-    if (!freeTicket) return
-    const text = platform === 'whatsapp'
-      ? `🎯 *FLOPI SAN — Pariul Zilei ${formatDateRO(today())}*\n\n` +
-        `📋 Bilet gratuit · Cotă totală: *${freeTicket.totalOdds}*\n` +
-        `🤖 Încredere AI: *${freeTicket.confidence}%* (${freeTicket.label})\n\n` +
-        freeTicket.selections.map((s, i) =>
-          `${i+1}. ${s.flag} *${s.home}* vs *${s.away}*\n   ✅ ${s.tip} — ${s.probability}% (cotă ~${s.odds})`
-        ).join('\n\n') +
-        `\n\n🔮 _Predicții generate de AI real — Flopi San Forecast Academy_\n🌐 flopiforecastro.vercel.app`
-      : `🎯 FLOPI SAN — Pariul Zilei ${formatDateRO(today())}\n\n` +
-        `Bilet gratuit · Cotă: ${freeTicket.totalOdds} · Încredere AI: ${freeTicket.confidence}%\n\n` +
-        freeTicket.selections.map((s, i) => `${i+1}. ${s.flag} ${s.home} vs ${s.away}\n   ✅ ${s.tip} — ${s.probability}%`).join('\n\n') +
-        `\n\n🔮 Flopi San Forecast Academy\n🌐 flopiforecastro.vercel.app`
+  const picks = data?.picks ?? []
+  const shown = filter === 'high' ? picks.filter(p => p.high_confidence) : picks
 
-    const url = platform === 'whatsapp'
-      ? `https://wa.me/?text=${encodeURIComponent(text)}`
-      : `https://t.me/share/url?url=flopiforecastro.vercel.app&text=${encodeURIComponent(text)}`
-    window.open(url, '_blank')
+  function shareText() {
+    const top = shown.slice(0, 5)
+    const lines = top.map((p, i) => {
+      const pred = predLabel(p)
+      return `${i + 1}. ${p.flag} ${p.home} vs ${p.away}\n   ${pred.short} — ${pred.full} · ${p.confidence}% conf`
+    }).join('\n\n')
+    return `🎯 FLOPI SAN — Pick-urile zilei ${formatDate(today())}\n\n${lines}\n\n🤖 Model AI · flopiforecastro.vercel.app`
   }
 
   return (
-    <div style={{ overflowX: 'hidden', minHeight: '100vh' }} className="app-bg grid-bg">
+    <div className="app-bg grid-bg" style={{ minHeight: '100vh', overflowX: 'hidden' }}>
+
+      {/* Header */}
       <header className="header">
         <div className="max-w-4xl mx-auto px-4 py-2 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/logo.jpg" alt="Flopi San" className="w-10 h-10 rounded-full object-cover border-2 border-blue-500/60" />
+            <img src="/logo.jpg" alt="Flopi San" className="w-10 h-10 rounded-full object-cover border-2 border-green-500/60" />
             <div>
               <div className="font-display text-lg text-white tracking-widest leading-none">FLOPI SAN</div>
-              <div className="text-[9px] font-mono text-blue-400 tracking-[0.2em] uppercase">Forecast Academy</div>
+              <div className="text-[9px] font-mono text-green-400 tracking-[0.2em] uppercase">Forecast Academy</div>
             </div>
           </div>
           <nav className="flex items-center gap-1">
-            <a href="/" onClick={(e) => { if ((window as any).Capacitor) { e.preventDefault(); window.location.href='/index.html'; }}} className="nav-link">Predicții AI</a>
-            <a href="/daily" onClick={(e) => { if ((window as any).Capacitor) { e.preventDefault(); window.location.href='/daily/index.html'; }}} className="nav-link active">🎯 Azi</a>
-            <a href="/weekly" onClick={(e) => { if ((window as any).Capacitor) { e.preventDefault(); window.location.href='/weekly/index.html'; }}} className="nav-link">Rezultate</a>
+            <a href="/" className="nav-link">Predicții AI</a>
+            <a href="/daily" className="nav-link active">🎯 Azi</a>
+            <a href="/weekly" className="nav-link">Rezultate</a>
           </nav>
         </div>
       </header>
       <div className="header-spacer" />
 
-      <main className="max-w-2xl mx-auto px-4 py-8" style={{ overflowX: 'hidden' }}>
-        <div className="text-center mb-8 fade-in">
-          <div className="text-5xl mb-3">🎯</div>
-          <h1 className="font-display text-4xl text-white mb-1" style={{ letterSpacing: '0.05em' }}>PARIUL ZILEI</h1>
-          <div className="text-blue-400 text-sm font-mono uppercase tracking-widest mb-2">Flopi San · {formatDateRO(today())}</div>
-          <p className="text-gray-500 text-xs font-mono uppercase tracking-widest">
-            Predicții reale AI · XGBoost + Poisson + Elo
+      <main className="max-w-2xl mx-auto px-4 py-8">
+
+        {/* Hero */}
+        <div className="text-center mb-6 fade-in">
+          <div className="text-4xl mb-2">🎯</div>
+          <h1 className="font-display text-4xl text-white mb-1" style={{ letterSpacing: '0.05em' }}>
+            PICK-URILE ZILEI
+          </h1>
+          <div className="text-green-400 text-sm font-mono uppercase tracking-widest mb-1">
+            {formatDate(today())}
+          </div>
+          <p className="text-gray-500 text-xs font-mono">
+            XGBoost + Elo · 225K meciuri antrenament · Sorted by confidence
           </p>
         </div>
 
-        {loading && (
-          <div className="text-center py-16 card p-8">
-            <div className="spinner mx-auto mb-6" />
-            <div className="text-blue-400 text-sm font-mono mb-2">{loadingText}</div>
-            {totalAnalyzed > 0 && (
-              <div className="text-gray-600 text-xs font-mono">
-                🤖 AI analizează {totalAnalyzed} meciuri cu modele reale...
-              </div>
-            )}
-            <div className="text-gray-700 text-[10px] font-mono mt-4">
-              Prima încărcare poate dura 15-30 secunde
-            </div>
-          </div>
+        {loading && <LoadingState />}
+        {error && (
+          <div className="card p-6 text-center text-red-400 font-mono text-sm">{error}</div>
         )}
 
-        {!loading && freeTicket && (
+        {!loading && !error && data && (
           <>
-            {freeTicket.selections.length === 0 ? (
-              <div className="text-center py-16 card p-8">
-                <div className="text-5xl opacity-20 mb-4">📅</div>
-                <div className="font-display text-xl text-gray-500 tracking-widest mb-2">Nu sunt meciuri clare azi</div>
-                <div className="text-gray-600 text-sm font-mono">AI-ul nu a găsit pariuri cu probabilitate suficientă. Revino mâine!</div>
+            {/* Stats bar */}
+            <div className="grid grid-cols-3 gap-2 mb-5">
+              {[
+                { label: 'Meciuri analizate', val: data.total_fixtures, color: '#818cf8' },
+                { label: 'Pick-uri active',   val: data.total_picks,    color: '#f59e0b' },
+                { label: 'High confidence',   val: data.high_conf,      color: '#22c55e' },
+              ].map(({ label, val, color }) => (
+                <div key={label} className="card p-3 text-center">
+                  <div className="text-2xl font-bold font-mono" style={{ color }}>{val}</div>
+                  <div className="text-[9px] font-mono text-gray-500 uppercase tracking-widest mt-0.5">{label}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Filter tabs */}
+            <div className="flex gap-2 mb-5">
+              {[
+                { key: 'all',  label: `Toate (${data.total_picks})` },
+                { key: 'high', label: `⚡ High Conf (${data.high_conf})` },
+              ].map(({ key, label }) => (
+                <button key={key}
+                  onClick={() => setFilter(key as any)}
+                  className="flex-1 py-2 rounded-xl text-sm font-mono font-bold transition-all"
+                  style={{
+                    background: filter === key ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.04)',
+                    border: `1px solid ${filter === key ? 'rgba(34,197,94,0.4)' : 'rgba(255,255,255,0.08)'}`,
+                    color: filter === key ? '#22c55e' : '#6b7280',
+                  }}>
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {/* Accuracy info */}
+            {filter === 'high' && data.high_conf > 0 && (
+              <div className="mb-4 px-4 py-3 rounded-xl text-xs font-mono"
+                style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)' }}>
+                <span className="text-green-400 font-bold">⚡ High Confidence</span>
+                <span className="text-gray-400 ml-2">= confidence &gt;= 60% · acuratețe reală ~70%+ pe backtesting 33K meciuri</span>
+              </div>
+            )}
+
+            {/* Picks */}
+            {shown.length === 0 ? (
+              <div className="card p-10 text-center">
+                <div className="text-4xl opacity-20 mb-3">📅</div>
+                <div className="font-display text-xl text-gray-500 tracking-widest mb-2">
+                  {filter === 'high' ? 'Niciun pick high-confidence azi' : 'Nu sunt meciuri disponibile azi'}
+                </div>
+                <div className="text-gray-600 text-sm font-mono">
+                  {filter === 'high' ? 'Încearcă filtrul "Toate"' : 'Revino mai târziu sau a doua zi'}
+                </div>
               </div>
             ) : (
-              <>
-                {/* Bilet gratuit */}
-                <div className="mb-2">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="h-px flex-1 bg-blue-900/40" />
-                    <span className="text-[10px] font-bold text-blue-400 uppercase tracking-widest">🎯 Bilet gratuit · Predicții AI reale</span>
-                    <div className="h-px flex-1 bg-blue-900/40" />
-                  </div>
-                  <TicketCard ticket={freeTicket} />
-                </div>
-
-                <div className="flex gap-2 mb-8">
-                  <button onClick={() => shareTicket('whatsapp')}
-                    className="flex-1 py-2.5 rounded-xl text-sm font-bold"
-                    style={{ background: 'linear-gradient(135deg, #25D366, #128C7E)', color: 'white' }}>
-                    📤 WhatsApp
-                  </button>
-                  <button onClick={() => shareTicket('telegram')}
-                    className="flex-1 py-2.5 rounded-xl text-sm font-bold"
-                    style={{ background: 'linear-gradient(135deg, #2AABEE, #229ED9)', color: 'white' }}>
-                    ✈️ Telegram
-                  </button>
-                </div>
-
-                {/* Bilet premium */}
-                <div>
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="h-px flex-1 bg-amber-900/40" />
-                    <span className="text-[10px] font-bold text-amber-500 uppercase tracking-widest">👑 Bilet premium · Cotă 8-12</span>
-                    <div className="h-px flex-1 bg-amber-900/40" />
-                  </div>
-                  {premiumTicket && <TicketCard ticket={premiumTicket} premium locked />}
-                </div>
-              </>
+              shown.map((pick, i) => <PickCard key={i} pick={pick} rank={i + 1} />)
             )}
+
+            {/* Share */}
+            {shown.length > 0 && (
+              <div className="flex gap-2 mt-6">
+                <button
+                  onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(shareText())}`, '_blank')}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-bold"
+                  style={{ background: 'linear-gradient(135deg, #25D366, #128C7E)', color: 'white' }}>
+                  📤 WhatsApp
+                </button>
+                <button
+                  onClick={() => window.open(`https://t.me/share/url?url=flopiforecastro.vercel.app&text=${encodeURIComponent(shareText())}`, '_blank')}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-bold"
+                  style={{ background: 'linear-gradient(135deg, #2AABEE, #229ED9)', color: 'white' }}>
+                  ✈️ Telegram
+                </button>
+              </div>
+            )}
+
+            {/* Model info */}
+            <div className="card p-5 mt-6">
+              <div className="text-[10px] font-bold text-green-500 uppercase tracking-widest mb-3 text-center">
+                ℹ️ Cum funcționează
+              </div>
+              <div className="space-y-2 text-xs text-gray-500 font-mono">
+                <div className="flex items-start gap-2">
+                  <span className="text-green-400 shrink-0">🤖</span>
+                  <span>Model XGBoost antrenat pe 225,000 meciuri din 20+ ligi europene</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-green-400 shrink-0">📊</span>
+                  <span>84 features: cote bookmakers, Elo per ligă, formă recentă, H2H, xG</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-green-400 shrink-0">⚡</span>
+                  <span>High Confidence (&gt;=60%): ~70% acuratețe pe backtesting 33,572 meciuri</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-gray-600 shrink-0">⚠️</span>
+                  <span>Scop educațional. Nu reprezintă sfaturi financiare sau de pariuri.</span>
+                </div>
+              </div>
+            </div>
           </>
         )}
-
-        <div className="card p-5 mt-6">
-          <div className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-3 text-center">ℹ️ Cum funcționează</div>
-          <div className="space-y-2 text-xs text-gray-500 font-mono">
-            <div className="flex items-start gap-2">
-              <span className="text-blue-400 shrink-0">🤖</span>
-              <span>AI-ul rulează modelul XGBoost + Poisson + Elo pe fiecare meci al zilei</span>
-            </div>
-            <div className="flex items-start gap-2">
-              <span className="text-blue-400 shrink-0">🎯</span>
-              <span>Selectează automat cele mai clare oportunități cu probabilitate reală</span>
-            </div>
-            <div className="flex items-start gap-2">
-              <span className="text-amber-400 shrink-0">👑</span>
-              <span>Biletul Premium conține 6 selecții — disponibil cu abonament 4.99€/lună</span>
-            </div>
-            <div className="flex items-start gap-2">
-              <span className="text-gray-600 shrink-0">⚠️</span>
-              <span>Scop educațional. Pariurile implică riscuri. Joacă responsabil.</span>
-            </div>
-          </div>
-        </div>
       </main>
 
-      <footer className="border-t border-blue-900/40 mt-12 py-6">
+      <footer className="border-t border-green-900/30 mt-12 py-6">
         <div className="max-w-4xl mx-auto px-4 text-center">
-          <p className="text-xs font-mono text-gray-700">Flopi San Forecast Academy — Scop educațional. Nu reprezintă sfaturi de pariuri.</p>
-<a href="/privacy" className="text-xs font-mono text-blue-600 hover:text-blue-400 mt-1 block">Politică de confidențialitate</a>
+          <p className="text-xs font-mono text-gray-700">
+            Flopi San Forecast Academy — Scop educațional. Nu reprezintă sfaturi de pariuri.
+          </p>
+          <a href="/privacy" className="text-xs font-mono text-green-600 hover:text-green-400 mt-1 block">
+            Politică de confidențialitate
+          </a>
         </div>
       </footer>
     </div>
