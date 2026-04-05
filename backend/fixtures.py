@@ -285,6 +285,10 @@ def get_today_fixtures(date: Optional[str] = None, known_teams: list = None) -> 
             "status":           status,
         })
 
+    # Daca API-ul nu a returnat meciuri din ligile noastre, folosim demo
+    if not fixtures:
+        return _demo_fixtures()
+
     return fixtures
 
 

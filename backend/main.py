@@ -294,6 +294,46 @@ def predict_batch(req: BatchRequest):
 
 
 # ─────────────────────────────────────────────
+# DEBUG — starea API-urilor externe
+# ─────────────────────────────────────────────
+@app.get("/api/debug")
+def debug_status():
+    import os, requests as req
+    fd_key   = os.getenv("FOOTBALL_DATA_KEY", "")
+    odds_key = os.getenv("ODDS_API_KEY", "")
+
+    result = {
+        "football_data_key_set": bool(fd_key),
+        "odds_api_key_set":      bool(odds_key),
+        "football_data_status":  None,
+        "football_data_matches": None,
+    }
+
+    if fd_key:
+        try:
+            import datetime
+            today = datetime.date.today().isoformat()
+            r = req.get(
+                "https://api.football-data.org/v4/matches",
+                headers={"X-Auth-Token": fd_key},
+                params={"dateFrom": today, "dateTo": today},
+                timeout=10,
+            )
+            result["football_data_status"] = r.status_code
+            if r.status_code == 200:
+                data = r.json()
+                result["football_data_matches"] = len(data.get("matches", []))
+                result["competitions_today"] = list({
+                    m.get("competition", {}).get("code", "?")
+                    for m in data.get("matches", [])
+                })
+        except Exception as e:
+            result["football_data_error"] = str(e)
+
+    return result
+
+
+# ─────────────────────────────────────────────
 # ECHIPE CUNOSCUTE
 # ─────────────────────────────────────────────
 @app.get("/teams")
