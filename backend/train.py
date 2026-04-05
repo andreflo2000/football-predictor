@@ -14,6 +14,7 @@ warnings.filterwarnings("ignore")
 BASE_DIR    = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR    = os.path.join(BASE_DIR, "data", "csv", "club")
 MODEL_PATH  = os.path.join(BASE_DIR, "model.pkl")
+XG_PATH     = os.path.join(BASE_DIR, "data", "csv", "fbref_xg.csv")
 MIN_MATCHES = 6
 WINDOWS     = [3, 5, 10]
 ELO_K       = 32
@@ -41,6 +42,139 @@ def load_data():
     data = pd.concat(dfs, ignore_index=True)
     print(f"    Total randuri brute: {len(data)}")
     return data
+
+
+# ─────────────────────────────────────────────────────────
+# 1b. INCARCARE xG REAL (Understat)
+# ─────────────────────────────────────────────────────────
+def load_xg_data():
+    """
+    Incarca xG real din fbref_xg.csv (scrapat din Understat).
+    Returneaza un dict: (Div, date_str, home_lower, away_lower) -> (xg_h, xg_a)
+    Aplica mapare de nume Understat -> CSV pentru a creste rata de match.
+    """
+    if not os.path.exists(XG_PATH):
+        print("    xG file lipsa — se foloseste proxy din goluri")
+        return {}
+
+    # Mapare Understat -> format CSV (football-data.co.uk)
+    NAME_MAP = {
+        # Premier League
+        "manchester city":         "man city",
+        "manchester united":       "man united",
+        "newcastle united":        "newcastle",
+        "queens park rangers":     "qpr",
+        "west bromwich albion":    "west brom",
+        "wolverhampton wanderers": "wolves",
+        "sheffield united":        "sheffield utd",
+        "nottingham forest":       "nott'm forest",
+        "tottenham":               "tottenham",
+        # La Liga
+        "atletico madrid":         "ath madrid",
+        "athletic club":           "ath bilbao",
+        "real betis":              "betis",
+        "real sociedad":           "sociedad",
+        "deportivo alavés":        "alaves",
+        "deportivo la coruna":     "deportivo",
+        "rcd espanyol":            "espanol",
+        "rcd mallorca":            "mallorca",
+        "celta vigo":              "celta",
+        "leganés":                 "leganes",
+        "getafe":                  "getafe",
+        "sd huesca":               "huesca",
+        "elche":                   "elche",
+        "granada":                 "granada",
+        "cadiz":                   "cadiz",
+        "girona":                  "girona",
+        "almeria":                 "almeria",
+        "las palmas":              "las palmas",
+        # Serie A
+        "inter":                   "inter",
+        "ac milan":                "milan",
+        "hellas verona":           "verona",
+        "spal":                    "spal",
+        "chievo":                  "chievo",
+        "us sassuolo":             "sassuolo",
+        "frosinone":               "frosinone",
+        "lecce":                   "lecce",
+        "us lecce":                "lecce",
+        "brescia":                 "brescia",
+        "crotone":                 "crotone",
+        "benevento":               "benevento",
+        "venezia":                 "venezia",
+        "salernitana":             "salernitana",
+        "us cremonese":            "cremonese",
+        "frosinone calcio":        "frosinone",
+        # Bundesliga
+        "fc augsburg":             "augsburg",
+        "bayer leverkusen":        "leverkusen",
+        "borussia dortmund":       "dortmund",
+        "borussia mönchengladbach":"m'gladbach",
+        "eintracht frankfurt":     "ein frankfurt",
+        "fc köln":                 "fc koln",
+        "hamburger sv":            "hamburger sv",
+        "hannover 96":             "hannover",
+        "hertha bsc":              "hertha",
+        "hoffenheim":              "hoffenheim",
+        "mainz 05":                "mainz",
+        "rb leipzig":              "rb leipzig",
+        "sc freiburg":             "freiburg",
+        "schalke 04":              "schalke 04",
+        "vfb stuttgart":           "stuttgart",
+        "vfl wolfsburg":           "wolfsburg",
+        "werder bremen":           "werder bremen",
+        "1. fsv mainz 05":         "mainz",
+        "tsg 1899 hoffenheim":     "hoffenheim",
+        "fortuna düsseldorf":      "dusseldorf",
+        "paderborn 07":            "paderborn",
+        "arminia bielefeld":       "bielefeld",
+        "greuther fürth":          "greuther furth",
+        "vfl bochum":              "bochum",
+        "darmstadt 98":            "darmstadt",
+        "holstein kiel":           "holstein kiel",
+        "sv darmstadt 98":         "darmstadt",
+        # Ligue 1
+        "paris saint-germain":     "paris sg",
+        "olympique marseille":     "marseille",
+        "olympique lyonnais":      "lyon",
+        "as saint-etienne":        "st etienne",
+        "stade rennais fc":        "rennes",
+        "girondins de bordeaux":   "bordeaux",
+        "montpellier hsc":         "montpellier",
+        "toulouse fc":             "toulouse",
+        "rc strasbourg alsace":    "strasbourg",
+        "dijon fco":               "dijon",
+        "stade de reims":          "reims",
+        "fc nantes":               "nantes",
+        "ogc nice":                "nice",
+        "rc lens":                 "lens",
+        "clermont foot":           "clermont",
+        "angers sco":              "angers",
+        "es troyes ac":            "troyes",
+        "losc lille":              "lille",
+        "stade brestois 29":       "brest",
+        "aj auxerre":              "auxerre",
+        "havre ac":                "le havre",
+    }
+
+    xg_df = pd.read_csv(XG_PATH)
+    xg_df["Date"] = pd.to_datetime(xg_df["Date"], errors="coerce").dt.date
+    xg_df = xg_df.dropna(subset=["Date", "HomeTeam", "AwayTeam", "xg_h", "xg_a"])
+
+    def normalize(name):
+        n = str(name).strip().lower()
+        return NAME_MAP.get(n, n)
+
+    xg_df["_h"] = xg_df["HomeTeam"].apply(normalize)
+    xg_df["_a"] = xg_df["AwayTeam"].apply(normalize)
+
+    lookup = {}
+    for _, row in xg_df.iterrows():
+        key = (str(row["Div"]), str(row["Date"]), row["_h"], row["_a"])
+        lookup[key] = (float(row["xg_h"]), float(row["xg_a"]))
+
+    print(f"    xG real incarcat: {len(lookup):,} meciuri ({xg_df['Div'].nunique()} ligi)")
+    return lookup
 
 
 # ─────────────────────────────────────────────────────────
@@ -193,24 +327,39 @@ def build_elo_features(data):
 # ─────────────────────────────────────────────────────────
 # 4. FEATURES ATAC / APARARE + FORMA
 # ─────────────────────────────────────────────────────────
-def build_team_features(data):
+def build_team_features(data, xg_lookup=None):
     """
     Pentru fiecare meci, calculam (fara leakage):
-    - rata de goluri marcate/primite acasa si in deplasare
+    - rata de goluri / xG marcate/primite acasa si in deplasare
     - forma recenta (win rate ultimele 5)
     - streak
-    - H2H
+    xg_lookup: dict (Div, date_str, home_lower, away_lower) -> (xg_h, xg_a)
     """
     print(">>> Calculez features atac/aparare per echipa...")
+    if xg_lookup:
+        print(f"    xG real disponibil pentru {len(xg_lookup):,} meciuri")
 
     # Structuri de istoric per echipa
-    hist = {}  # team -> list de {gf, ga, is_home, pts}
+    hist = {}  # team -> list de {gf, ga, xgf, xga, is_home, pts}
 
     rows = []
+    xg_real_used = 0
+
     for idx, row in data.iterrows():
         home, away = row["HomeTeam"], row["AwayTeam"]
         hg, ag = row["FTHG"], row["FTAG"]
         ftr = row["FTR"]
+        div = str(row.get("Div", ""))
+        date_obj = row["Date"].date() if hasattr(row["Date"], "date") else None
+
+        # Cauta xG real pentru acest meci
+        real_xg_h = real_xg_a = None
+        if xg_lookup and date_obj:
+            key = (div, str(date_obj), home.strip().lower(), away.strip().lower())
+            real_xg = xg_lookup.get(key)
+            if real_xg:
+                real_xg_h, real_xg_a = real_xg
+                xg_real_used += 1
 
         def get_stats(team, as_home):
             records = hist.get(team, [])
@@ -227,6 +376,16 @@ def build_team_features(data):
                 if not lst: return default
                 vals = [r["ga"] for r in lst[-n:]]
                 return sum(vals) / len(vals)
+
+            def avg_xgf(lst, n, default=None):
+                sub = [r for r in lst[-n:] if r.get("xgf") is not None]
+                if not sub: return default
+                return sum(r["xgf"] for r in sub) / len(sub)
+
+            def avg_xga(lst, n, default=None):
+                sub = [r for r in lst[-n:] if r.get("xga") is not None]
+                if not sub: return default
+                return sum(r["xga"] for r in sub) / len(sub)
 
             def win_rate(lst, n):
                 if not lst: return 0.40
@@ -255,13 +414,22 @@ def build_team_features(data):
                 return s if last == 3 else (-s if last == 0 else 0)
 
             venue_r = home_r if as_home else away_r
+            gf_venue5 = avg_gf(venue_r, 5, 1.4 if as_home else 1.1)
+            ga_venue5 = avg_ga(venue_r, 5, 1.1 if as_home else 1.3)
+
+            # xG rolling: folosim real daca avem, altfel proxy din goluri
+            xgf5 = avg_xgf(all_r, 5)
+            xga5 = avg_xga(all_r, 5)
+            xgf_v5 = avg_xgf(venue_r, 5)
+            xga_v5 = avg_xga(venue_r, 5)
+
             return {
                 "atk_all5":    avg_gf(all_r, 5),
                 "def_all5":    avg_ga(all_r, 5),
                 "atk_all10":   avg_gf(all_r, 10),
                 "def_all10":   avg_ga(all_r, 10),
-                "atk_venue5":  avg_gf(venue_r, 5, 1.4 if as_home else 1.1),
-                "def_venue5":  avg_ga(venue_r, 5, 1.1 if as_home else 1.3),
+                "atk_venue5":  gf_venue5,
+                "def_venue5":  ga_venue5,
                 "win5":        win_rate(all_r, 5),
                 "win10":       win_rate(all_r, 10),
                 "draw5":       draw_rate(all_r, 5),
@@ -274,14 +442,42 @@ def build_team_features(data):
                 "clean5":      sum(1 for r in all_r[-5:] if r["ga"] == 0) / max(len(all_r[-5:]), 1),
                 "streak":      streak(all_r),
                 "n_matches":   len(all_r),
+                # xG rolling real (None daca nu avem date)
+                "_xgf5":       xgf5,
+                "_xga5":       xga5,
+                "_xgf_v5":     xgf_v5,
+                "_xga_v5":     xga_v5,
+                "_gf_v5":      gf_venue5,
+                "_ga_v5":      ga_venue5,
             }
 
         h_stats = get_stats(home, as_home=True)
         a_stats = get_stats(away, as_home=False)
 
-        # Expected goals proxy (atac gazda vs aparare oaspete)
-        xg_h = (h_stats["atk_venue5"] + a_stats["def_venue5"]) / 2
-        xg_a = (a_stats["atk_venue5"] + h_stats["def_venue5"]) / 2
+        # xG pentru feature-uri predictive (INAINTE de meci — rolling history)
+        # Folosim xG real rolling daca avem, altfel proxy din goluri
+        def pick_xg(xgf5, xga5, xgf_v5, xga_v5, gf_v5, ga_v5):
+            if xgf_v5 is not None and xga_v5 is not None:
+                return xgf_v5, xga_v5  # xG real venue-specific
+            elif xgf5 is not None and xga5 is not None:
+                return xgf5, xga5  # xG real general
+            else:
+                return gf_v5, ga_v5  # proxy din goluri
+
+        h_xgf, h_xga = pick_xg(h_stats["_xgf5"], h_stats["_xga5"],
+                                h_stats["_xgf_v5"], h_stats["_xga_v5"],
+                                h_stats["_gf_v5"], h_stats["_ga_v5"])
+        a_xgf, a_xga = pick_xg(a_stats["_xgf5"], a_stats["_xga5"],
+                                a_stats["_xgf_v5"], a_stats["_xga_v5"],
+                                a_stats["_gf_v5"], a_stats["_ga_v5"])
+
+        xg_h = (h_xgf + a_xga) / 2
+        xg_a = (a_xgf + h_xga) / 2
+
+        # Curata cheile interne
+        for k in ["_xgf5", "_xga5", "_xgf_v5", "_xga_v5", "_gf_v5", "_ga_v5"]:
+            h_stats.pop(k, None)
+            a_stats.pop(k, None)
 
         row_feat = {"match_idx": idx}
         for k, v in h_stats.items():
@@ -294,12 +490,19 @@ def build_team_features(data):
 
         rows.append(row_feat)
 
-        # Update istoric
+        # Update istoric (cu xG real daca avem)
         h_pts = {"H": 3, "D": 1, "A": 0}[ftr]
         a_pts = {"H": 0, "D": 1, "A": 3}[ftr]
-        hist.setdefault(home, []).append({"gf": hg, "ga": ag, "is_home": True,  "pts": h_pts})
-        hist.setdefault(away, []).append({"gf": ag, "ga": hg, "is_home": False, "pts": a_pts})
+        hist.setdefault(home, []).append({
+            "gf": hg, "ga": ag, "is_home": True, "pts": h_pts,
+            "xgf": real_xg_h, "xga": real_xg_a,
+        })
+        hist.setdefault(away, []).append({
+            "gf": ag, "ga": hg, "is_home": False, "pts": a_pts,
+            "xgf": real_xg_a, "xga": real_xg_h,
+        })
 
+    print(f"    xG real folosit: {xg_real_used:,} meciuri ({xg_real_used/max(len(rows),1)*100:.1f}%)")
     return pd.DataFrame(rows).set_index("match_idx"), hist
 
 
@@ -530,9 +733,10 @@ def build_team_stats(hist, elo_ratings):
 def main():
     data                    = load_data()
     data                    = preprocess(data)
+    xg_lookup               = load_xg_data()
     odds_df                 = build_odds_features(data)
     elo_df, elo_ratings     = build_elo_features(data)
-    team_df, hist           = build_team_features(data)
+    team_df, hist           = build_team_features(data, xg_lookup=xg_lookup)
     h2h_df                  = build_h2h_features(data)
     X, y                    = assemble(data, team_df, h2h_df, elo_df, odds_df)
     model, le, feature_means = train_model(X, y)
