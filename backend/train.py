@@ -52,7 +52,12 @@ def preprocess(data):
     if missing:
         raise RuntimeError(f"Coloane lipsa: {missing}")
 
-    keep = cols + [c for c in ["Div"] if c in data.columns]
+    # Pastram si coloanele de cote daca exista
+    odds_cols = ["PSH","PSD","PSA","B365H","B365D","B365A","AvgH","AvgD","AvgA",
+                 "MaxH","MaxD","MaxA","PSCH","PSCD","PSCA"]
+    extra = ["Div"] + [c for c in odds_cols if c in data.columns]
+    keep = cols + extra
+    keep = list(dict.fromkeys(keep))  # deduplicare
     data = data[keep].copy()
     data["FTHG"] = pd.to_numeric(data["FTHG"], errors="coerce")
     data["FTAG"] = pd.to_numeric(data["FTAG"], errors="coerce")
@@ -74,7 +79,63 @@ def preprocess(data):
 
 
 # ─────────────────────────────────────────────────────────
-# 3. ELO PER LIGA (fix principal — nu global!)
+# 3. MARKET DATA — cote → probabilitati implicite
+# ─────────────────────────────────────────────────────────
+def build_odds_features(data):
+    """
+    Converteste cotele bookmakerilor in probabilitati normalizate.
+    Pinnacle (PS) este cel mai sharp bookmaker — cel mai valoros feature.
+    Meciurile fara cote primesc valori medii (has_odds=0).
+    """
+    print(">>> Procesez cote bookmakers...")
+    result = pd.DataFrame(index=data.index)
+
+    sources = [
+        ("ps",   "PSH",   "PSD",   "PSA"),    # Pinnacle — cel mai sharp
+        ("avg",  "AvgH",  "AvgD",  "AvgA"),   # Media pietei
+        ("b365", "B365H", "B365D", "B365A"),  # Bet365
+        ("max",  "MaxH",  "MaxD",  "MaxA"),   # Maximul pietei
+    ]
+
+    any_odds = pd.Series(False, index=data.index)
+
+    for name, ch, cd, ca in sources:
+        if not all(c in data.columns for c in [ch, cd, ca]):
+            continue
+        h = pd.to_numeric(data[ch], errors="coerce").where(lambda x: x > 1.01)
+        d = pd.to_numeric(data[cd], errors="coerce").where(lambda x: x > 1.01)
+        a = pd.to_numeric(data[ca], errors="coerce").where(lambda x: x > 1.01)
+
+        raw_h = 1.0 / h
+        raw_d = 1.0 / d
+        raw_a = 1.0 / a
+        margin = raw_h + raw_d + raw_a  # overround (1.05-1.08 tipic)
+
+        # Probabilitati normalizate (suma = 1.0)
+        result[f"mkt_ph_{name}"] = raw_h / margin
+        result[f"mkt_pd_{name}"] = raw_d / margin
+        result[f"mkt_pa_{name}"] = raw_a / margin
+        result[f"mkt_margin_{name}"] = margin
+
+        valid = (raw_h.notna() & raw_d.notna() & raw_a.notna())
+        any_odds = any_odds | valid
+
+    result["has_odds"] = any_odds.astype(float)
+
+    # Inlocuieste NaN cu media datelor (meciuri fara cote = "meci mediu")
+    for col in result.columns:
+        if col != "has_odds":
+            mean_val = result.loc[any_odds, col].mean()
+            if pd.notna(mean_val):
+                result[col] = result[col].fillna(mean_val)
+
+    n_with = any_odds.sum()
+    print(f"    Meciuri cu cote: {n_with:,} / {len(data):,} ({n_with/len(data)*100:.1f}%)")
+    return result
+
+
+# ─────────────────────────────────────────────────────────
+# 4. ELO PER LIGA (fix principal — nu global!)
 # ─────────────────────────────────────────────────────────
 def build_elo_features(data):
     """
@@ -287,13 +348,13 @@ def build_h2h_features(data):
 # ─────────────────────────────────────────────────────────
 # 6. ASAMBLARE
 # ─────────────────────────────────────────────────────────
-def assemble(data, team_df, h2h_df, elo_df):
+def assemble(data, team_df, h2h_df, elo_df, odds_df):
     print(">>> Asamblam feature matrix...")
 
     le_div = LabelEncoder()
     league_id = le_div.fit_transform(data["Div"])
 
-    X = pd.concat([team_df, h2h_df, elo_df], axis=1)
+    X = pd.concat([team_df, h2h_df, elo_df, odds_df], axis=1)
 
     # Diferentiale
     for col in ["atk_all5", "def_all5", "atk_all10", "def_all10",
@@ -332,9 +393,15 @@ def train_model(X, y):
     le = LabelEncoder()
     y_enc = le.fit_transform(y)
 
-    # Random split stratificat — evita distribution shift
+    # Antrenam EXCLUSIV pe meciuri cu cote — fara zgomot din imputation
+    has_odds_mask = X["has_odds"] == 1
+    X_odds = X[has_odds_mask]
+    y_odds = y_enc[has_odds_mask.values]
+    print(f"    Meciuri cu cote: {len(X_odds):,} / {len(X):,} ({has_odds_mask.mean()*100:.1f}%)")
+
+    # Random split stratificat pe setul cu cote
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y_enc, test_size=0.20, random_state=42, stratify=y_enc
+        X_odds, y_odds, test_size=0.20, random_state=42, stratify=y_odds
     )
 
     dist = {le.classes_[i]: int((y_train == i).sum()) for i in range(3)}
@@ -369,7 +436,21 @@ def train_model(X, y):
     acc = accuracy_score(y_test, preds)
     print(f"\n>>> Acuratete: {acc * 100:.2f}%")
     print(classification_report(y_test, preds, target_names=le.classes_))
-    return model, le
+
+    # Confidence threshold analysis
+    proba = model.predict_proba(X_test)
+    max_conf = proba.max(axis=1)
+    print("\n>>> Acuratete per prag de incredere:")
+    for thr in [0.45, 0.50, 0.55, 0.60, 0.65, 0.70]:
+        mask = max_conf >= thr
+        if mask.sum() > 0:
+            acc_thr = accuracy_score(y_test[mask], preds[mask])
+            print(f"    >= {thr:.0%}  ->  {acc_thr*100:.2f}%  ({mask.sum():,} meciuri, {mask.mean()*100:.1f}%)")
+
+    # Salvam mediile pentru completarea features lipsă în predictor live
+    feature_means = X_odds.mean().to_dict()
+
+    return model, le, feature_means
 
 
 # ─────────────────────────────────────────────────────────
@@ -382,26 +463,63 @@ def build_team_stats(hist, elo_ratings):
             continue
         last10 = records[-10:]
         last5  = records[-5:]
-        home_r = [r for r in records if r["is_home"]][-5:]
-        away_r = [r for r in records if not r["is_home"]][-5:]
+        home_r = [r for r in records if r["is_home"]]
+        away_r = [r for r in records if not r["is_home"]]
+        home5  = home_r[-5:]
+        away5  = away_r[-5:]
 
         def avg(lst, key, default=1.3):
             return sum(r[key] for r in lst) / len(lst) if lst else default
 
+        def win_rate(lst):
+            return sum(1 for r in lst if r["pts"] == 3) / len(lst) if lst else 0.40
+
+        def pts_rate(lst):
+            return sum(r["pts"] for r in lst) / (3 * len(lst)) if lst else 0.40
+
+        def streak(lst):
+            if not lst: return 0
+            last = lst[-1]["pts"]
+            s = 0
+            for r in reversed(lst):
+                if r["pts"] == last: s += 1
+                else: break
+            return s if last == 3 else (-s if last == 0 else 0)
+
+        # Elo: cauta key "liga|echipa" — ia cea mai mare valoare (cel mai bun Elo al echipei)
+        team_elo = max(
+            (v for k, v in elo_ratings.items() if k.split("|", 1)[-1] == team),
+            default=1500.0
+        )
+
         team_stats[team] = {
-            "atk_all5":   avg(last5, "gf"),
-            "def_all5":   avg(last5, "ga"),
-            "atk_all10":  avg(last10, "gf"),
-            "def_all10":  avg(last10, "ga"),
-            "atk_venue5": avg(home_r, "gf", 1.4),
-            "def_venue5": avg(home_r, "ga", 1.1),
-            "win5":       sum(1 for r in last5 if r["pts"] == 3) / max(len(last5), 1),
-            "win10":      sum(1 for r in last10 if r["pts"] == 3) / max(len(last10), 1),
-            "draw5":      sum(1 for r in last5 if r["pts"] == 1) / max(len(last5), 1),
-            "pts5":       sum(r["pts"] for r in last5) / (3 * max(len(last5), 1)),
-            "pts10":      sum(r["pts"] for r in last10) / (3 * max(len(last10), 1)),
-            "n_matches":  len(records),
-            "elo":        elo_ratings.get(team, 1500.0),
+            # All games
+            "atk_all5":    avg(last5, "gf"),
+            "def_all5":    avg(last5, "ga"),
+            "atk_all10":   avg(last10, "gf"),
+            "def_all10":   avg(last10, "ga"),
+            # Home venue stats
+            "atk_home5":   avg(home5, "gf", 1.4),
+            "def_home5":   avg(home5, "ga", 1.1),
+            "win_home5":   win_rate(home5),
+            "pts_home5":   pts_rate(home5),
+            # Away venue stats
+            "atk_away5":   avg(away5, "gf", 1.1),
+            "def_away5":   avg(away5, "ga", 1.3),
+            "win_away5":   win_rate(away5),
+            "pts_away5":   pts_rate(away5),
+            # Form
+            "win5":        win_rate(last5),
+            "win10":       win_rate(last10),
+            "draw5":       sum(1 for r in last5 if r["pts"] == 1) / max(len(last5), 1),
+            "pts5":        pts_rate(last5),
+            "pts10":       pts_rate(last10),
+            "btts5":       sum(1 for r in last5 if r["gf"] > 0 and r["ga"] > 0) / max(len(last5), 1),
+            "over25_5":    sum(1 for r in last5 if r["gf"] + r["ga"] > 2) / max(len(last5), 1),
+            "clean5":      sum(1 for r in last5 if r["ga"] == 0) / max(len(last5), 1),
+            "streak":      streak(records),
+            "n_matches":   len(records),
+            "elo":         team_elo,
         }
     return team_stats
 
@@ -412,21 +530,23 @@ def build_team_stats(hist, elo_ratings):
 def main():
     data                    = load_data()
     data                    = preprocess(data)
+    odds_df                 = build_odds_features(data)
     elo_df, elo_ratings     = build_elo_features(data)
     team_df, hist           = build_team_features(data)
     h2h_df                  = build_h2h_features(data)
-    X, y                    = assemble(data, team_df, h2h_df, elo_df)
-    model, le               = train_model(X, y)
-    team_stats              = build_team_stats(hist, elo_ratings)
+    X, y                    = assemble(data, team_df, h2h_df, elo_df, odds_df)
+    model, le, feature_means = train_model(X, y)
+    team_stats               = build_team_stats(hist, elo_ratings)
 
     print(">>> Salvez modelul...")
     with open(MODEL_PATH, "wb") as f:
         pickle.dump({
-            "model":         model,
-            "features":      list(X.columns),
-            "team_stats":    team_stats,
-            "label_encoder": le,
-            "elo_ratings":   elo_ratings,
+            "model":          model,
+            "features":       list(X.columns),
+            "team_stats":     team_stats,
+            "label_encoder":  le,
+            "elo_ratings":    elo_ratings,
+            "feature_means":  feature_means,
         }, f)
     print(">>> Model salvat!")
 

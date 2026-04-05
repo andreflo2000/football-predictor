@@ -1,85 +1,268 @@
 """
 FLOPI SAN - Modul predictie AI
-Folosit de main.py pentru a prezice rezultatele meciurilor
+Folosit de main.py pentru a prezice rezultatele meciurilor.
+Incarca model.pkl generat de train.py si construieste vectorul complet de features.
 """
 
 import numpy as np
-import joblib
+import pandas as pd
+import pickle
 import os
 
 MODEL_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "model.pkl")
 
-_model = None
-_features = None
-_team_stats = None
+_model         = None
+_features      = None
+_team_stats    = None
+_label_encoder = None
+_elo_ratings   = None
+_feature_means = None
 
 
 def load_model():
-    global _model, _features, _team_stats
+    global _model, _features, _team_stats, _label_encoder, _elo_ratings, _feature_means
 
     if not os.path.exists(MODEL_PATH):
         raise FileNotFoundError(
             f"Modelul nu exista! Ruleaza mai intai: python train.py (cautat la: {MODEL_PATH})"
         )
 
-    data = joblib.load(MODEL_PATH)
-    _model = data["model"]
-    _features = data["features"]
-    _team_stats = data.get("team_stats", {})
-    print(f"Model AI incarcat cu succes din {MODEL_PATH}!")
+    data = pickle.load(open(MODEL_PATH, "rb"))
+    _model         = data["model"]
+    _features      = data["features"]
+    _team_stats    = data.get("team_stats", {})
+    _label_encoder = data.get("label_encoder")
+    _elo_ratings   = data.get("elo_ratings", {})
+    _feature_means = data.get("feature_means", {})
+    print(f"Model AI incarcat: {len(_team_stats)} echipe, {len(_features)} features")
 
 
-def _get_team_stats(team, n=6):
-    if _team_stats is None or team not in _team_stats or len(_team_stats[team]) == 0:
-        return 0.40, 1.2, 1.1
-    recent = _team_stats[team][-n:]
-    pts = sum(r[3] for r in recent)
-    max_pts = len(recent) * 3
-    form = pts / max_pts if max_pts > 0 else 0.40
-    avg_scored = float(np.mean([r[1] for r in recent]))
-    avg_conceded = float(np.mean([r[2] for r in recent]))
-    return form, avg_scored, avg_conceded
+def _team_elo(team: str) -> float:
+    """Cauta Elo pentru echipa in oricare liga."""
+    vals = [v for k, v in _elo_ratings.items() if k.split("|", 1)[-1] == team]
+    return max(vals) if vals else 1500.0
+
+
+def _get_team_stats(team: str, as_home: bool) -> dict:
+    """Returneaza stats complet pentru o echipa (home sau away)."""
+    if _team_stats is None or team not in _team_stats:
+        # Valori implicite pentru echipa necunoscuta
+        return {
+            "atk_all5": 1.3, "def_all5": 1.3, "atk_all10": 1.3, "def_all10": 1.3,
+            "atk_venue5": 1.4 if as_home else 1.1,
+            "def_venue5": 1.1 if as_home else 1.3,
+            "win5": 0.40, "win10": 0.40, "draw5": 0.26,
+            "pts5": 0.40, "pts10": 0.40,
+            "win_venue5": 0.40, "pts_venue5": 0.40,
+            "btts5": 0.50, "over25_5": 0.50, "clean5": 0.30,
+            "streak": 0, "n_matches": 6,
+        }
+
+    s = _team_stats[team]
+    venue_atk = s.get("atk_home5" if as_home else "atk_away5", 1.4 if as_home else 1.1)
+    venue_def = s.get("def_home5" if as_home else "def_away5", 1.1 if as_home else 1.3)
+    win_venue = s.get("win_home5" if as_home else "win_away5", 0.40)
+    pts_venue = s.get("pts_home5" if as_home else "pts_away5", 0.40)
+
+    return {
+        "atk_all5":   s.get("atk_all5", 1.3),
+        "def_all5":   s.get("def_all5", 1.3),
+        "atk_all10":  s.get("atk_all10", 1.3),
+        "def_all10":  s.get("def_all10", 1.3),
+        "atk_venue5": venue_atk,
+        "def_venue5": venue_def,
+        "win5":       s.get("win5", 0.40),
+        "win10":      s.get("win10", 0.40),
+        "draw5":      s.get("draw5", 0.26),
+        "pts5":       s.get("pts5", 0.40),
+        "pts10":      s.get("pts10", 0.40),
+        "win_venue5": win_venue,
+        "pts_venue5": pts_venue,
+        "btts5":      s.get("btts5", 0.50),
+        "over25_5":   s.get("over25_5", 0.50),
+        "clean5":     s.get("clean5", 0.30),
+        "streak":     s.get("streak", 0),
+        "n_matches":  s.get("n_matches", 6),
+    }
+
+
+def _build_feature_vector(home_team: str, away_team: str,
+                           odds: dict = None, league_id: int = 0,
+                           month: int = None) -> pd.DataFrame:
+    """
+    Construieste vectorul complet de ~80 features pe baza team_stats.
+    odds: dict optional cu chei PSH/PSD/PSA, B365H/B365D/B365A, etc.
+    """
+    import datetime
+    if month is None:
+        month = datetime.date.today().month
+
+    h = _get_team_stats(home_team, as_home=True)
+    a = _get_team_stats(away_team, as_home=False)
+
+    h_elo = _team_elo(home_team)
+    a_elo = _team_elo(away_team)
+    elo_diff = h_elo - a_elo
+
+    # Elo probabilities (formula clasica)
+    elo_diff_adj = elo_diff + 85  # home advantage
+    elo_prob_h = 1 / (1 + 10 ** (-elo_diff_adj / 400))
+    # Draw probability: aproximare empirica
+    diff_abs = abs(elo_diff_adj)
+    draw_base = 0.28 * (1 - diff_abs / 1000)
+    draw_base = max(0.05, min(draw_base, 0.32))
+    elo_prob_d = draw_base
+
+    # xG proxy
+    xg_h = (h["atk_venue5"] + a["def_venue5"]) / 2
+    xg_a = (a["atk_venue5"] + h["def_venue5"]) / 2
+    xg_diff = xg_h - xg_a
+
+    feat = {}
+
+    # Team features — home
+    for k, v in h.items():
+        feat[f"h_{k}"] = v
+    # Team features — away
+    for k, v in a.items():
+        feat[f"a_{k}"] = v
+
+    # xG
+    feat["xg_h"]    = xg_h
+    feat["xg_a"]    = xg_a
+    feat["xg_diff"] = xg_diff
+
+    # H2H defaults (neutral)
+    feat["h2h_hw"] = 0.45
+    feat["h2h_dr"] = 0.25
+    feat["h2h_gd"] = 0.0
+    feat["h2h_n"]  = 0
+
+    # Elo
+    feat["h_elo"]      = h_elo
+    feat["a_elo"]      = a_elo
+    feat["elo_diff"]   = elo_diff
+    feat["elo_prob_h"] = elo_prob_h
+    feat["elo_prob_d"] = elo_prob_d
+
+    # Odds features
+    if odds:
+        for source, col_h, col_d, col_a in [
+            ("ps",   "PSH",   "PSD",   "PSA"),
+            ("avg",  "AvgH",  "AvgD",  "AvgA"),
+            ("b365", "B365H", "B365D", "B365A"),
+            ("max",  "MaxH",  "MaxD",  "MaxA"),
+        ]:
+            oh = odds.get(col_h)
+            od = odds.get(col_d)
+            oa = odds.get(col_a)
+            if oh and od and oa and oh > 1 and od > 1 and oa > 1:
+                raw_h, raw_d, raw_a = 1/oh, 1/od, 1/oa
+                margin = raw_h + raw_d + raw_a
+                feat[f"mkt_ph_{source}"]     = raw_h / margin
+                feat[f"mkt_pd_{source}"]     = raw_d / margin
+                feat[f"mkt_pa_{source}"]     = raw_a / margin
+                feat[f"mkt_margin_{source}"] = margin
+            else:
+                # Folosim medii din antrenament
+                for sfx in ["ph", "pd", "pa"]:
+                    k = f"mkt_{sfx}_{source}"
+                    feat[k] = _feature_means.get(k, 0.333)
+                feat[f"mkt_margin_{source}"] = _feature_means.get(f"mkt_margin_{source}", 1.05)
+        feat["has_odds"] = 1.0
+    else:
+        # Fara cote: folosim medii din antrenament
+        for source in ["ps", "avg", "b365", "max"]:
+            for sfx in ["ph", "pd", "pa"]:
+                k = f"mkt_{sfx}_{source}"
+                feat[k] = _feature_means.get(k, 0.333)
+            feat[f"mkt_margin_{source}"] = _feature_means.get(f"mkt_margin_{source}", 1.05)
+        feat["has_odds"] = 0.0
+
+    # Diferentiale
+    for col in ["atk_all5", "def_all5", "atk_all10", "def_all10",
+                "atk_venue5", "def_venue5", "win5", "win10",
+                "pts5", "pts10", "win_venue5", "pts_venue5"]:
+        if f"h_{col}" in feat and f"a_{col}" in feat:
+            feat[f"diff_{col}"] = feat[f"h_{col}"] - feat[f"a_{col}"]
+
+    # Context
+    season_month = (month - 8) % 12
+    feat["league_id"]       = league_id
+    feat["month"]           = month
+    feat["season_progress"] = season_month / 11.0
+
+    # Draw-specific features
+    import math
+    feat["balanced"]    = math.exp(-abs(elo_diff) / 150)
+    feat["low_scoring"] = 1.0 / (xg_h + xg_a + 0.5)
+    feat["xg_sim"]      = math.exp(-abs(xg_diff) * 2)
+    lam = max(0.1, min(xg_h, 6))
+    mu  = max(0.1, min(xg_a, 6))
+    feat["poisson_draw"] = math.exp(-(lam + mu)) * math.exp(2 * math.sqrt(lam * mu) - lam - mu + (lam + mu))
+
+    # Aliniere la ordinea exacta de features din model
+    row = {f: feat.get(f, _feature_means.get(f, 0.0)) for f in _features}
+    return pd.DataFrame([row])[_features]
 
 
 def predict_match(
     home_team: str,
     away_team: str,
+    odds: dict = None,
+    league_id: int = 0,
+    month: int = None,
     neutral: bool = False,
-    tournament: str = "Friendly"
+    tournament: str = "Friendly",
 ) -> dict:
     if _model is None:
         load_model()
 
-    hf, hgs, hgc = _get_team_stats(home_team)
-    af, ags, agc = _get_team_stats(away_team)
-
-    wr_diff = hf - af
-    scored_diff = hgs - ags
-    conceded_diff = hgc - agc
-
-    X = np.array([[hf, hgs, hgc, af, ags, agc, wr_diff, scored_diff, conceded_diff]])
+    X = _build_feature_vector(home_team, away_team, odds=odds,
+                              league_id=league_id, month=month)
 
     proba = _model.predict_proba(X)[0]
-    classes = _model.classes_
+
+    # Label encoder: A=0, D=1, H=2 (ordine alfabetica)
+    if _label_encoder is not None:
+        classes = _label_encoder.classes_
+    else:
+        classes = ["A", "D", "H"]
+
     prob_map = {c: round(float(p), 3) for c, p in zip(classes, proba)}
-    best_class = classes[np.argmax(proba)]
+    best_class = classes[int(np.argmax(proba))]
     confidence = float(np.max(proba))
 
     label_map = {"H": "Victorie gazda", "D": "Egal", "A": "Victorie oaspete"}
 
+    if confidence >= 0.60:
+        confidence_level = "high"
+    elif confidence >= 0.50:
+        confidence_level = "medium"
+    else:
+        confidence_level = "low"
+
+    h_stats = _team_stats.get(home_team, {})
+    a_stats = _team_stats.get(away_team, {})
+
     return {
-        "home_team": home_team,
-        "away_team": away_team,
-        "home_win": prob_map.get("H", 0.0),
-        "draw": prob_map.get("D", 0.0),
-        "away_win": prob_map.get("A", 0.0),
-        "prediction": best_class,
+        "home_team":        home_team,
+        "away_team":        away_team,
+        "home_win":         prob_map.get("H", 0.0),
+        "draw":             prob_map.get("D", 0.0),
+        "away_win":         prob_map.get("A", 0.0),
+        "prediction":       best_class,
         "prediction_label": label_map.get(best_class, "Necunoscut"),
-        "confidence": round(confidence, 3),
-        "home_form": round(hf, 3),
-        "away_form": round(af, 3),
-        "home_goals_avg": round(hgs, 2),
-        "away_goals_avg": round(ags, 2),
+        "confidence":       round(confidence, 3),
+        "confidence_level": confidence_level,
+        "high_confidence":  confidence >= 0.60,
+        "home_elo":         round(_team_elo(home_team), 0),
+        "away_elo":         round(_team_elo(away_team), 0),
+        "home_form":        round(h_stats.get("pts5", 0.40), 3),
+        "away_form":        round(a_stats.get("pts5", 0.40), 3),
+        "home_goals_avg":   round(h_stats.get("atk_all5", 1.3), 2),
+        "away_goals_avg":   round(a_stats.get("atk_all5", 1.3), 2),
+        "has_odds":         odds is not None,
     }
 
 
