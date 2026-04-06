@@ -650,7 +650,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false)
   const [loadingFixtures, setLoadingFixtures] = useState(false)
 
-  const nextDays = getNextDays(3)
+  const nextDays = getNextDays(14)
 
   useEffect(() => {
     axios.get(`${API_BASE}/api/leagues`).then(r => setLeagues(r.data.leagues || []))
@@ -767,32 +767,40 @@ export default function Home() {
                   Se încarcă meciurile...
                 </div>
               ) : (
-                <select className="select-styled" value={selectedFixture?.id || ''}
-                  onChange={e => { const f = fixtures.find(x => x.id === Number(e.target.value)); setSelectedFixture(f || null); setPrediction(null) }}
+                <select className="select-styled"
+                  value={selectedFixture ? fixtures.indexOf(selectedFixture) : ''}
+                  onChange={e => {
+                    const val = e.target.value
+                    const f = val !== '' ? fixtures[Number(val)] : null
+                    setSelectedFixture(f || null)
+                    setPrediction(null)
+                  }}
                   disabled={fixtures.length === 0}>
                   <option value="">{fixtures.length === 0 ? tr.select_match_placeholder : tr.select_match_placeholder2}</option>
                   {hasDatedFixtures ? (
                     nextDays.map(day => (
                       fixturesByDay[day]?.length > 0 && (
                         <optgroup key={day} label={`── ${getDayLabel(day)} · ${formatDateRO(day)} ──`}>
-                          {fixturesByDay[day].map(f => (
-                            <option key={f.id} value={f.id}>{f.home} vs {f.away}{f.time ? ` · ${f.time}` : ''}</option>
-                          ))}
+                          {fixturesByDay[day].map(f => {
+                            const idx = fixtures.indexOf(f)
+                            return <option key={idx} value={idx}>{f.home} vs {f.away}{f.time ? ` · ${f.time}` : ''}</option>
+                          })}
                         </optgroup>
                       )
                     ))
                   ) : (
-                    fixtures.map(f => (
-                      <option key={f.id} value={f.id}>
+                    fixtures.map((f, idx) => (
+                      <option key={idx} value={idx}>
                         {f.home} vs {f.away}{f.date ? ` · ${formatDateRO(f.date)}` : ''}{f.time ? ` · ${f.time}` : ''}
                       </option>
                     ))
                   )}
                   {hasDatedFixtures && fixturesWithoutDate.length > 0 && (
                     <optgroup label="── Alte meciuri ──">
-                      {fixturesWithoutDate.map(f => (
-                        <option key={f.id} value={f.id}>{f.home} vs {f.away}</option>
-                      ))}
+                      {fixturesWithoutDate.map(f => {
+                        const idx = fixtures.indexOf(f)
+                        return <option key={idx} value={idx}>{f.home} vs {f.away}</option>
+                      })}
                     </optgroup>
                   )}
                 </select>

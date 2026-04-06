@@ -349,20 +349,8 @@ def _normalize_name(raw: str, known_teams: list) -> str:
     return raw  # Returnam originalul daca nu gasim
 
 
-def _fetch_fixtures_for_date(target: str, known_teams: list) -> list:
-    """Fetch meciuri dintr-o singura data. Returneaza lista goala daca nu sunt."""
-    headers = {"X-Auth-Token": API_KEY}
-    params  = {"dateFrom": target, "dateTo": target}
-    try:
-        resp = requests.get(f"{BASE_URL}/matches", headers=headers, params=params, timeout=15)
-        if resp.status_code in (429, 401, 403):
-            return []
-        if resp.status_code != 200:
-            return []
-        data = resp.json()
-    except Exception:
-        return []
-
+def _parse_matches(data: dict, known_teams: list, default_date: str = "") -> list:
+    """Proceseaza lista de meciuri returnata de football-data.org."""
     fixtures = []
     for m in data.get("matches", []):
         comp_code = m.get("competition", {}).get("code", "")
@@ -380,11 +368,13 @@ def _fetch_fixtures_for_date(target: str, known_teams: list) -> list:
         home = _normalize_name(home_raw, known_teams or [])
         away = _normalize_name(away_raw, known_teams or [])
 
-        time_str = ""
+        time_str  = ""
+        match_date = default_date
         utc_str = m.get("utcDate", "")
         if utc_str:
             try:
                 dt = datetime.datetime.fromisoformat(utc_str.replace("Z", "+00:00"))
+                match_date = dt.strftime("%Y-%m-%d")
                 dt_local = dt + datetime.timedelta(hours=1)
                 time_str = dt_local.strftime("%H:%M")
             except Exception:
@@ -399,11 +389,31 @@ def _fetch_fixtures_for_date(target: str, known_teams: list) -> list:
             "flag":             comp["flag"],
             "div":              comp["div"],
             "time":             time_str,
-            "date":             target,
+            "date":             match_date,
             "competition_code": comp_code,
             "status":           status,
         })
     return fixtures
+
+
+def _fetch_fixtures_for_range(date_from: str, date_to: str, known_teams: list) -> list:
+    """Fetch meciuri pentru un interval de date intr-un singur request."""
+    if not API_KEY:
+        return []
+    headers = {"X-Auth-Token": API_KEY}
+    params  = {"dateFrom": date_from, "dateTo": date_to}
+    try:
+        resp = requests.get(f"{BASE_URL}/matches", headers=headers, params=params, timeout=20)
+        if resp.status_code not in (200,):
+            return []
+        return _parse_matches(resp.json(), known_teams, default_date=date_from)
+    except Exception:
+        return []
+
+
+def _fetch_fixtures_for_date(target: str, known_teams: list) -> list:
+    """Fetch meciuri dintr-o singura data."""
+    return _fetch_fixtures_for_range(target, target, known_teams)
 
 
 def get_today_fixtures(date: Optional[str] = None, known_teams: list = None) -> list:

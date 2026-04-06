@@ -193,32 +193,28 @@ def get_fixtures(competition_code: str, date: Optional[str] = None):
         # Div 2
         "40": "ELC", "79": "BL2", "136": "SB", "62": "FL2", "141": "SD",
     }
-    code   = LEGACY_MAP.get(str(competition_code), competition_code.upper())
-    known  = get_known_teams()
-    base   = datetime.date.fromisoformat(date) if date else datetime.date.today()
+    code  = LEGACY_MAP.get(str(competition_code), competition_code.upper())
+    known = get_known_teams()
+    base  = datetime.date.fromisoformat(date) if date else datetime.date.today()
+    # Un singur request pentru urmatoarele 14 zile
+    date_to = (base + datetime.timedelta(days=13)).isoformat()
 
-    from fixtures import _fetch_fixtures_for_date
+    from fixtures import _fetch_fixtures_for_range
+    all_fix  = _fetch_fixtures_for_range(base.isoformat(), date_to, known)
+    filtered = [f for f in all_fix if f.get("competition_code") == code]
 
-    # Cauta pana in 14 zile inainte pentru liga specifica
-    for offset in range(14):
-        target   = (base + datetime.timedelta(days=offset)).isoformat()
-        all_fix  = _fetch_fixtures_for_date(target, known)
-        filtered = [f for f in all_fix if f.get("competition_code") == code]
-        if filtered:
-            return {"fixtures": [
-                {
-                    "id":      0,
-                    "home":    f["home"],
-                    "away":    f["away"],
-                    "home_id": 0,
-                    "away_id": 0,
-                    "date":    f.get("date", target),
-                    "time":    f.get("time", ""),
-                }
-                for f in filtered
-            ]}
-
-    return {"fixtures": []}
+    return {"fixtures": [
+        {
+            "id":      idx,          # index unic — important pentru select
+            "home":    f["home"],
+            "away":    f["away"],
+            "home_id": 0,
+            "away_id": 0,
+            "date":    f.get("date", base.isoformat()),
+            "time":    f.get("time", ""),
+        }
+        for idx, f in enumerate(filtered)
+    ]}
 
 
 # ─────────────────────────────────────────────
