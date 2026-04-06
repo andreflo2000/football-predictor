@@ -207,7 +207,7 @@ def get_fixtures(competition_code: str, date: Optional[str] = None):
         return cached["data"]
 
     known   = get_known_teams()
-    date_to = (base + datetime.timedelta(days=13)).isoformat()
+    date_to = (base + datetime.timedelta(days=9)).isoformat()   # max 10 zile
 
     api_debug: dict = {}
     all_fix  = _fetch_fixtures_for_range(base.isoformat(), date_to, known, _debug=api_debug)

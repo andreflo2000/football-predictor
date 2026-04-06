@@ -650,7 +650,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false)
   const [loadingFixtures, setLoadingFixtures] = useState(false)
 
-  const nextDays = getNextDays(14)
+  const nextDays = getNextDays(10)
 
   useEffect(() => {
     axios.get(`${API_BASE}/api/leagues`).then(r => setLeagues(r.data.leagues || []))
