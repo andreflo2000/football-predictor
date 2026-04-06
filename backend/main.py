@@ -179,28 +179,36 @@ def daily_picks(
 # ─────────────────────────────────────────────
 @app.get("/api/fixtures/{competition_code}")
 def get_fixtures(competition_code: str, date: Optional[str] = None):
-    target = date or datetime.date.today().isoformat()
-    known  = get_known_teams()
-    all_fix = get_today_fixtures(date=target, known_teams=known)
-    # Filtreaza dupa competition_code (sau liga ID din vechi frontend)
     LEGACY_MAP = {
         "39": "PL", "78": "BL1", "135": "SA", "140": "PD", "61": "FL1",
         "88": "DED", "94": "PPL", "2": "CL", "3": "EL",
     }
-    code = LEGACY_MAP.get(str(competition_code), competition_code.upper())
-    filtered = [f for f in all_fix if f.get("competition_code") == code]
-    return {"fixtures": [
-        {
-            "id":      0,
-            "home":    f["home"],
-            "away":    f["away"],
-            "home_id": 0,
-            "away_id": 0,
-            "date":    f.get("date", target),
-            "time":    f.get("time", ""),
-        }
-        for f in filtered
-    ]}
+    code   = LEGACY_MAP.get(str(competition_code), competition_code.upper())
+    known  = get_known_teams()
+    base   = datetime.date.fromisoformat(date) if date else datetime.date.today()
+
+    from fixtures import _fetch_fixtures_for_date
+
+    # Cauta pana in 14 zile inainte pentru liga specifica
+    for offset in range(14):
+        target   = (base + datetime.timedelta(days=offset)).isoformat()
+        all_fix  = _fetch_fixtures_for_date(target, known)
+        filtered = [f for f in all_fix if f.get("competition_code") == code]
+        if filtered:
+            return {"fixtures": [
+                {
+                    "id":      0,
+                    "home":    f["home"],
+                    "away":    f["away"],
+                    "home_id": 0,
+                    "away_id": 0,
+                    "date":    f.get("date", target),
+                    "time":    f.get("time", ""),
+                }
+                for f in filtered
+            ]}
+
+    return {"fixtures": []}
 
 
 # ─────────────────────────────────────────────
