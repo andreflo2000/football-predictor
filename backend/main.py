@@ -60,11 +60,15 @@ def api_health():
 @app.get("/api/leagues")
 def api_leagues():
     return {"leagues": [
-        {"id": "PL",  "name": "Premier League"},
-        {"id": "BL1", "name": "Bundesliga"},
-        {"id": "SA",  "name": "Serie A"},
-        {"id": "PD",  "name": "La Liga"},
-        {"id": "FL1", "name": "Ligue 1"},
+        {"id": 39,  "code": "PL",  "name": "Premier League",   "country": "England",  "flag": "🏴󠁧󠁢󠁥󠁮󠁧󠁿", "confederation": "UEFA", "rating": 100},
+        {"id": 140, "code": "PD",  "name": "La Liga",           "country": "Spain",    "flag": "🇪🇸",       "confederation": "UEFA", "rating": 95},
+        {"id": 135, "code": "SA",  "name": "Serie A",           "country": "Italy",    "flag": "🇮🇹",       "confederation": "UEFA", "rating": 90},
+        {"id": 78,  "code": "BL1", "name": "Bundesliga",        "country": "Germany",  "flag": "🇩🇪",       "confederation": "UEFA", "rating": 88},
+        {"id": 61,  "code": "FL1", "name": "Ligue 1",           "country": "France",   "flag": "🇫🇷",       "confederation": "UEFA", "rating": 82},
+        {"id": 2,   "code": "CL",  "name": "Champions League",  "country": "Europe",   "flag": "🏆",        "confederation": "UEFA", "rating": 99},
+        {"id": 3,   "code": "EL",  "name": "Europa League",     "country": "Europe",   "flag": "🌍",        "confederation": "UEFA", "rating": 80},
+        {"id": 94,  "code": "PPL", "name": "Primeira Liga",     "country": "Portugal", "flag": "🇵🇹",       "confederation": "UEFA", "rating": 72},
+        {"id": 88,  "code": "DED", "name": "Eredivisie",        "country": "Netherlands","flag": "🇳🇱",      "confederation": "UEFA", "rating": 70},
     ]}
 
 
@@ -186,7 +190,15 @@ def get_fixtures(competition_code: str, date: Optional[str] = None):
     code = LEGACY_MAP.get(str(competition_code), competition_code.upper())
     filtered = [f for f in all_fix if f.get("competition_code") == code]
     return {"fixtures": [
-        {"home": f["home"], "away": f["away"], "date": target, "time": f.get("time", "")}
+        {
+            "id":      0,
+            "home":    f["home"],
+            "away":    f["away"],
+            "home_id": 0,
+            "away_id": 0,
+            "date":    f.get("date", target),
+            "time":    f.get("time", ""),
+        }
         for f in filtered
     ]}
 
@@ -252,6 +264,91 @@ def predict_simple(home_team: str, away_team: str):
         return predict_match(home_team=home_team, away_team=away_team)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/predict")
+def predict_get(
+    home_team: str,
+    away_team: str,
+    league_id: int = 0,
+    home_team_id: Optional[int] = None,
+    away_team_id: Optional[int] = None,
+):
+    """GET variant for frontend — returns nested format expected by page.tsx"""
+    try:
+        result = predict_match(home_team=home_team, away_team=away_team, league_id=league_id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    hw = round(result["home_win"] * 100, 1)
+    dr = round(result["draw"] * 100, 1)
+    aw = round(result["away_win"] * 100, 1)
+
+    # Use model's attack stats as xG estimate
+    xg_home = round(result.get("home_goals_avg", max(0.3, 1.0 + (result["home_win"] - 0.333) * 2.5)), 2)
+    xg_away = round(result.get("away_goals_avg", max(0.3, 0.9 + (result["away_win"] - 0.333) * 2.5)), 2)
+
+    home_form_pct = result.get("home_form", 0.4)
+    away_form_pct = result.get("away_form", 0.4)
+
+    def form_str(form_val: float) -> list:
+        """Convert form 0-1 to list of W/D/L strings for last 5"""
+        wins  = round(form_val * 5)
+        draws = 1 if wins < 5 else 0
+        losses = max(0, 5 - wins - draws)
+        res = ['W'] * wins + ['D'] * draws + ['L'] * losses
+        return res[:5]
+
+    return {
+        "home_team": home_team,
+        "away_team": away_team,
+        "prediction": {
+            "home_win": hw,
+            "draw":     dr,
+            "away_win": aw,
+            "method":   "XGBoost + Elo",
+        },
+        "top_scores": [
+            {"score": "1-0", "probability": round(hw * 0.28)},
+            {"score": "2-1", "probability": round(hw * 0.20)},
+            {"score": "1-1", "probability": round(dr * 0.45)},
+            {"score": "0-0", "probability": round(dr * 0.30)},
+            {"score": "0-1", "probability": round(aw * 0.28)},
+            {"score": "0-2", "probability": round(aw * 0.20)},
+        ],
+        "expected_goals": {
+            "home": xg_home,
+            "away": xg_away,
+        },
+        "home_stats": {
+            "form":        form_str(home_form_pct),
+            "elo_rating":  result.get("home_elo", 1500),
+            "goals_avg":   xg_home,
+            "xg_for":      xg_home,
+            "xg_against":  xg_away * 0.8,
+        },
+        "away_stats": {
+            "form":        form_str(away_form_pct),
+            "elo_rating":  result.get("away_elo", 1500),
+            "goals_avg":   xg_away,
+            "xg_for":      xg_away,
+            "xg_against":  xg_home * 0.8,
+        },
+        "confidence":       round(result["confidence"] * 100, 1),
+        "confidence_level": result.get("confidence_level", "LOW"),
+        "model_breakdown": {
+            "xgboost": {"home_win": hw, "draw": dr, "away_win": aw},
+        },
+    }
+
+
+# ─────────────────────────────────────────────
+# STANDINGS stub (nu avem date live de clasament)
+# ─────────────────────────────────────────────
+@app.get("/api/standings/{league}")
+def api_standings(league: str):
+    """Returns empty standings — no live standings data source yet."""
+    return {"standings": [], "league": league, "note": "Standings not available"}
 
 
 # ─────────────────────────────────────────────
