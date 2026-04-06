@@ -396,18 +396,38 @@ def _parse_matches(data: dict, known_teams: list, default_date: str = "") -> lis
     return fixtures
 
 
-def _fetch_fixtures_for_range(date_from: str, date_to: str, known_teams: list) -> list:
-    """Fetch meciuri pentru un interval de date intr-un singur request."""
+def _fetch_fixtures_for_range(date_from: str, date_to: str, known_teams: list,
+                              _debug: dict = None) -> list:
+    """
+    Fetch meciuri pentru un interval de date intr-un singur request.
+    _debug: dict optional — se populeaza cu http_status si error daca e furnizat.
+    """
     if not API_KEY:
+        if _debug is not None:
+            _debug["http_status"] = 0
+            _debug["error"] = "FOOTBALL_DATA_KEY not set"
         return []
     headers = {"X-Auth-Token": API_KEY}
     params  = {"dateFrom": date_from, "dateTo": date_to}
     try:
         resp = requests.get(f"{BASE_URL}/matches", headers=headers, params=params, timeout=20)
-        if resp.status_code not in (200,):
+        if _debug is not None:
+            _debug["http_status"] = resp.status_code
+            if resp.status_code != 200:
+                try:
+                    _debug["error"] = resp.json().get("message", resp.text[:200])
+                except Exception:
+                    _debug["error"] = resp.text[:200]
+        if resp.status_code != 200:
             return []
-        return _parse_matches(resp.json(), known_teams, default_date=date_from)
-    except Exception:
+        data = resp.json()
+        if _debug is not None:
+            _debug["raw_match_count"] = len(data.get("matches", []))
+        return _parse_matches(data, known_teams, default_date=date_from)
+    except Exception as e:
+        if _debug is not None:
+            _debug["http_status"] = -1
+            _debug["error"] = str(e)
         return []
 
 

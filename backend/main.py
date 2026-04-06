@@ -209,11 +209,10 @@ def get_fixtures(competition_code: str, date: Optional[str] = None):
     known   = get_known_teams()
     date_to = (base + datetime.timedelta(days=13)).isoformat()
 
-    all_fix  = _fetch_fixtures_for_range(base.isoformat(), date_to, known)
+    api_debug: dict = {}
+    all_fix  = _fetch_fixtures_for_range(base.isoformat(), date_to, known, _debug=api_debug)
     filtered = [f for f in all_fix if f.get("competition_code") == code]
-
-    # Coduri primite de la football-data (debug)
-    codes_found = list({f.get("competition_code") for f in all_fix})
+    codes_found = sorted({f.get("competition_code") for f in all_fix})
 
     result = {
         "fixtures": [
@@ -232,7 +231,10 @@ def get_fixtures(competition_code: str, date: Optional[str] = None):
             "code_requested": code,
             "date_from": base.isoformat(),
             "date_to": date_to,
-            "total_fetched": len(all_fix),
+            "http_status": api_debug.get("http_status"),
+            "error": api_debug.get("error"),
+            "raw_match_count": api_debug.get("raw_match_count", 0),
+            "total_parsed": len(all_fix),
             "competition_codes_found": codes_found,
             "filtered_count": len(filtered),
         }
