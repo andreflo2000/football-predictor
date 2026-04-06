@@ -157,6 +157,99 @@ function PickCard({ pick, rank }: { pick: Pick; rank: number }) {
   )
 }
 
+// ── 3 Ponturi Gratuite ───────────────────────────────────────────────────────
+
+function FreePicks({ picks }: { picks: Pick[] }) {
+  if (picks.length === 0) return null
+
+  // Top 3 cele mai bune picks din 3 meciuri diferite
+  const seen = new Set<string>()
+  const top3: Pick[] = []
+  for (const p of picks) {
+    const key = `${p.home}-${p.away}`
+    if (!seen.has(key)) { seen.add(key); top3.push(p) }
+    if (top3.length === 3) break
+  }
+  if (top3.length < 1) return null
+
+  // Cota combinata (acumulator)
+  const margin = 1.08
+  const oddSingle = (prob: number) => parseFloat((100 / Math.max(prob, 1) * margin).toFixed(2))
+  const comboOdd  = top3.reduce((acc, p) => {
+    const prob = p.prediction === 'H' ? p.home_win : p.prediction === 'A' ? p.away_win : p.draw
+    return acc * oddSingle(prob)
+  }, 1)
+
+  return (
+    <div className="mb-6 fade-in">
+      {/* Header card */}
+      <div className="rounded-2xl p-4 mb-3"
+        style={{ background: 'linear-gradient(135deg, rgba(251,191,36,0.12), rgba(245,158,11,0.06))', border: '1px solid rgba(251,191,36,0.3)' }}>
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <div className="text-xs font-bold text-amber-400 uppercase tracking-widest">🎁 Ponturi Gratuite</div>
+            <div className="text-[10px] text-gray-500 font-mono mt-0.5">Top 3 selecții · Cele mai probabile rezultate</div>
+          </div>
+          <div className="text-right">
+            <div className="text-[10px] text-gray-500 font-mono uppercase tracking-widest">Acumulator estimat</div>
+            <div className="text-2xl font-bold font-mono text-amber-400">x{comboOdd.toFixed(2)}</div>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          {top3.map((p, i) => {
+            const pred   = predLabel(p)
+            const prob   = pred.prob
+            const odd    = oddSingle(prob)
+            const c      = confColor(p.confidence_level)
+            const medals = ['🥇', '🥈', '🥉']
+            return (
+              <div key={i} className="flex items-center gap-3 bg-black/20 rounded-xl px-3 py-2.5">
+                <span className="text-base shrink-0">{medals[i]}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs font-bold text-white truncate">
+                    {p.flag} {p.home} <span className="text-gray-500">vs</span> {p.away}
+                  </div>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded font-mono"
+                      style={{ backgroundColor: `${c.text}20`, color: c.text }}>
+                      {pred.short} — {pred.full}
+                    </span>
+                    <span className="text-[10px] text-gray-600 font-mono">{p.league}</span>
+                  </div>
+                </div>
+                <div className="text-right shrink-0">
+                  <div className="text-sm font-bold font-mono text-amber-400">~{odd.toFixed(2)}</div>
+                  <div className="text-[10px] font-mono" style={{ color: c.text }}>{prob}%</div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+
+        <div className="mt-3 pt-3 border-t border-amber-900/30 flex items-center justify-between">
+          <div className="text-[10px] text-gray-600 font-mono">* Cote estimate cu marjă 8%</div>
+          <button
+            onClick={() => {
+              const lines = top3.map((p, i) => {
+                const pred = predLabel(p)
+                const prob = pred.prob
+                const odd  = oddSingle(prob)
+                return `${i+1}. ${p.flag} ${p.home} vs ${p.away}\n   ➤ ${pred.short} — ${pred.full} · cotă ~${odd.toFixed(2)} · ${prob}% conf`
+              }).join('\n\n')
+              const text = `🎁 *FLOPI SAN — 3 Ponturi Gratuite ${formatDate(new Date().toISOString().split('T')[0])}*\n\n${lines}\n\n📦 Acumulator estimat: *x${comboOdd.toFixed(2)}*\n\n🤖 _Flopi San Forecast Academy_\n🌐 flopiforecastro.vercel.app`
+              window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank')
+            }}
+            className="text-[10px] font-bold px-3 py-1.5 rounded-lg"
+            style={{ background: 'rgba(251,191,36,0.15)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.3)' }}>
+            📤 Share bilet
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Loading ───────────────────────────────────────────────────────────────────
 
 function LoadingState() {
@@ -222,7 +315,7 @@ export default function DailyPage() {
           </div>
           <nav className="flex items-center gap-1">
             <a href="/" className="nav-link">Predicții AI</a>
-            <a href="/daily" className="nav-link active">🎯 Azi</a>
+            <a href="/daily" className="nav-link active">🎯 Selecțiile zilei</a>
             <a href="/weekly" className="nav-link">Rezultate</a>
           </nav>
         </div>
@@ -235,7 +328,7 @@ export default function DailyPage() {
         <div className="text-center mb-6 fade-in">
           <div className="text-4xl mb-2">🎯</div>
           <h1 className="font-display text-4xl text-white mb-1" style={{ letterSpacing: '0.05em' }}>
-            PICK-URILE ZILEI
+            SELECȚIILE ZILEI
           </h1>
           <div className="text-green-400 text-sm font-mono uppercase tracking-widest mb-1">
             {data ? formatDate(data.date) : formatDate(today())}
@@ -268,6 +361,9 @@ export default function DailyPage() {
                 </div>
               ))}
             </div>
+
+            {/* 3 Ponturi Gratuite */}
+            <FreePicks picks={picks} />
 
             {/* Filter tabs */}
             <div className="flex gap-2 mb-5">
