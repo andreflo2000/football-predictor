@@ -60,15 +60,22 @@ def api_health():
 @app.get("/api/leagues")
 def api_leagues():
     return {"leagues": [
-        {"id": 39,  "code": "PL",  "name": "Premier League",   "country": "England",  "flag": "🏴󠁧󠁢󠁥󠁮󠁧󠁿", "confederation": "UEFA", "rating": 100},
-        {"id": 140, "code": "PD",  "name": "La Liga",           "country": "Spain",    "flag": "🇪🇸",       "confederation": "UEFA", "rating": 95},
-        {"id": 135, "code": "SA",  "name": "Serie A",           "country": "Italy",    "flag": "🇮🇹",       "confederation": "UEFA", "rating": 90},
-        {"id": 78,  "code": "BL1", "name": "Bundesliga",        "country": "Germany",  "flag": "🇩🇪",       "confederation": "UEFA", "rating": 88},
-        {"id": 61,  "code": "FL1", "name": "Ligue 1",           "country": "France",   "flag": "🇫🇷",       "confederation": "UEFA", "rating": 82},
-        {"id": 2,   "code": "CL",  "name": "Champions League",  "country": "Europe",   "flag": "🏆",        "confederation": "UEFA", "rating": 99},
-        {"id": 3,   "code": "EL",  "name": "Europa League",     "country": "Europe",   "flag": "🌍",        "confederation": "UEFA", "rating": 80},
-        {"id": 94,  "code": "PPL", "name": "Primeira Liga",     "country": "Portugal", "flag": "🇵🇹",       "confederation": "UEFA", "rating": 72},
-        {"id": 88,  "code": "DED", "name": "Eredivisie",        "country": "Netherlands","flag": "🇳🇱",      "confederation": "UEFA", "rating": 70},
+        # Div 1
+        {"id": 39,  "code": "PL",  "name": "Premier League",   "country": "England",     "flag": "🏴󠁧󠁢󠁥󠁮󠁧󠁿", "confederation": "UEFA", "rating": 100},
+        {"id": 140, "code": "PD",  "name": "La Liga",           "country": "Spain",       "flag": "🇪🇸",       "confederation": "UEFA", "rating": 95},
+        {"id": 135, "code": "SA",  "name": "Serie A",           "country": "Italy",       "flag": "🇮🇹",       "confederation": "UEFA", "rating": 90},
+        {"id": 78,  "code": "BL1", "name": "Bundesliga",        "country": "Germany",     "flag": "🇩🇪",       "confederation": "UEFA", "rating": 88},
+        {"id": 61,  "code": "FL1", "name": "Ligue 1",           "country": "France",      "flag": "🇫🇷",       "confederation": "UEFA", "rating": 82},
+        {"id": 2,   "code": "CL",  "name": "Champions League",  "country": "Europe",      "flag": "🏆",        "confederation": "UEFA", "rating": 99},
+        {"id": 3,   "code": "EL",  "name": "Europa League",     "country": "Europe",      "flag": "🌍",        "confederation": "UEFA", "rating": 80},
+        {"id": 94,  "code": "PPL", "name": "Primeira Liga",     "country": "Portugal",    "flag": "🇵🇹",       "confederation": "UEFA", "rating": 72},
+        {"id": 88,  "code": "DED", "name": "Eredivisie",        "country": "Netherlands", "flag": "🇳🇱",       "confederation": "UEFA", "rating": 70},
+        # Div 2
+        {"id": 40,  "code": "ELC", "name": "Championship",      "country": "England",     "flag": "🏴󠁧󠁢󠁥󠁮󠁧󠁿", "confederation": "UEFA", "rating": 75},
+        {"id": 79,  "code": "BL2", "name": "2. Bundesliga",     "country": "Germany",     "flag": "🇩🇪",       "confederation": "UEFA", "rating": 68},
+        {"id": 136, "code": "SB",  "name": "Serie B",           "country": "Italy",       "flag": "🇮🇹",       "confederation": "UEFA", "rating": 65},
+        {"id": 62,  "code": "FL2", "name": "Ligue 2",           "country": "France",      "flag": "🇫🇷",       "confederation": "UEFA", "rating": 63},
+        {"id": 141, "code": "SD",  "name": "La Liga 2",         "country": "Spain",       "flag": "🇪🇸",       "confederation": "UEFA", "rating": 65},
     ]}
 
 
@@ -180,8 +187,11 @@ def daily_picks(
 @app.get("/api/fixtures/{competition_code}")
 def get_fixtures(competition_code: str, date: Optional[str] = None):
     LEGACY_MAP = {
+        # Div 1
         "39": "PL", "78": "BL1", "135": "SA", "140": "PD", "61": "FL1",
         "88": "DED", "94": "PPL", "2": "CL", "3": "EL",
+        # Div 2
+        "40": "ELC", "79": "BL2", "136": "SB", "62": "FL2", "141": "SD",
     }
     code   = LEGACY_MAP.get(str(competition_code), competition_code.upper())
     known  = get_known_teams()
