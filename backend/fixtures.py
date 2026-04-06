@@ -219,54 +219,42 @@ def _normalize_name(raw: str, known_teams: list) -> str:
     return raw  # Returnam originalul daca nu gasim
 
 
-def get_today_fixtures(date: Optional[str] = None, known_teams: list = None) -> list:
-    """
-    Returneaza meciurile pentru data data (default: azi) din football-data.org.
-    Fiecare element: { home, away, league, flag, div, time, competition_code }
-    """
-    if not API_KEY:
-        return _demo_fixtures()
-
-    target = date or datetime.date.today().isoformat()
-    url = f"{BASE_URL}/matches"
+def _fetch_fixtures_for_date(target: str, known_teams: list) -> list:
+    """Fetch meciuri dintr-o singura data. Returneaza lista goala daca nu sunt."""
     headers = {"X-Auth-Token": API_KEY}
-    params = {"dateFrom": target, "dateTo": target}
-
+    params  = {"dateFrom": target, "dateTo": target}
     try:
-        resp = requests.get(url, headers=headers, params=params, timeout=15)
-        if resp.status_code == 429:
-            return _demo_fixtures()
+        resp = requests.get(f"{BASE_URL}/matches", headers=headers, params=params, timeout=15)
+        if resp.status_code in (429, 401, 403):
+            return []
         if resp.status_code != 200:
-            return _demo_fixtures()
+            return []
         data = resp.json()
     except Exception:
-        return _demo_fixtures()
+        return []
 
     fixtures = []
     for m in data.get("matches", []):
         comp_code = m.get("competition", {}).get("code", "")
         if comp_code not in COMPETITIONS:
             continue
-
-        comp = COMPETITIONS[comp_code]
         home_raw = m.get("homeTeam", {}).get("name", "")
         away_raw = m.get("awayTeam", {}).get("name", "")
         status   = m.get("status", "")
-
         if not home_raw or not away_raw:
             continue
         if status in ("FINISHED", "CANCELLED", "POSTPONED"):
             continue
 
+        comp = COMPETITIONS[comp_code]
         home = _normalize_name(home_raw, known_teams or [])
         away = _normalize_name(away_raw, known_teams or [])
 
-        utc_str = m.get("utcDate", "")
         time_str = ""
+        utc_str = m.get("utcDate", "")
         if utc_str:
             try:
                 dt = datetime.datetime.fromisoformat(utc_str.replace("Z", "+00:00"))
-                # Afisam ora in UTC+1 (Europa Centrala) — ajusteaza dupa nevoie
                 dt_local = dt + datetime.timedelta(hours=1)
                 time_str = dt_local.strftime("%H:%M")
             except Exception:
@@ -281,15 +269,34 @@ def get_today_fixtures(date: Optional[str] = None, known_teams: list = None) -> 
             "flag":             comp["flag"],
             "div":              comp["div"],
             "time":             time_str,
+            "date":             target,
             "competition_code": comp_code,
             "status":           status,
         })
+    return fixtures
 
-    # Daca API-ul nu a returnat meciuri din ligile noastre, folosim demo
-    if not fixtures:
+
+def get_today_fixtures(date: Optional[str] = None, known_teams: list = None) -> list:
+    """
+    Returneaza meciurile pentru data ceruta (default: azi).
+    Daca azi nu sunt meciuri din ligile suportate, cauta urmatoarele 4 zile.
+    Fallback final: meciuri demo.
+    """
+    if not API_KEY:
         return _demo_fixtures()
 
-    return fixtures
+    base = datetime.date.fromisoformat(date) if date else datetime.date.today()
+
+    # Cauta maxim 5 zile inainte (azi + urmatoarele 4)
+    for offset in range(5):
+        target   = (base + datetime.timedelta(days=offset)).isoformat()
+        fixtures = _fetch_fixtures_for_date(target, known_teams or [])
+        if fixtures:
+            if offset > 0:
+                print(f"    Azi nu sunt meciuri — am gasit {len(fixtures)} in {target}")
+            return fixtures
+
+    return _demo_fixtures()
 
 
 def get_today_odds(known_teams: list = None) -> dict:

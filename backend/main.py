@@ -94,6 +94,8 @@ def daily_picks(
 
     known    = get_known_teams()
     fixtures = get_today_fixtures(date=target, known_teams=known)
+    # Data reala a meciurilor (poate fi diferita de target daca azi e pauza)
+    actual_date = fixtures[0].get("date", target) if fixtures else target
     odds_map = get_today_odds(known_teams=known)   # {} daca nu avem ODDS_API_KEY
 
     picks  = []
@@ -151,7 +153,8 @@ def daily_picks(
     low_conf   = [p for p in picks if p["confidence"] < 55]
 
     response = {
-        "date":           target,
+        "date":           actual_date,
+        "requested_date": target,
         "total_fixtures": len(fixtures),
         "total_picks":    len(picks),
         "high_conf":      len(high_conf),

@@ -238,7 +238,10 @@ export default function DailyPage() {
             PICK-URILE ZILEI
           </h1>
           <div className="text-green-400 text-sm font-mono uppercase tracking-widest mb-1">
-            {formatDate(today())}
+            {data ? formatDate(data.date) : formatDate(today())}
+            {data && data.date !== today() && (
+              <span className="text-yellow-500 text-[10px] ml-2">(next matchday)</span>
+            )}
           </div>
           <p className="text-gray-500 text-xs font-mono">
             XGBoost + Elo · 225K meciuri antrenament · Sorted by confidence
