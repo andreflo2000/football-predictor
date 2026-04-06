@@ -67,28 +67,66 @@ function calcConfidence(home_w: number, draw: number, away_w: number): { score: 
   return { score, label, color }
 }
 
+// ── Poisson helper ────────────────────────────────────────────────────────────
+function poissonCDF(lambda: number, k: number): number {
+  // P(X <= k) pentru distributia Poisson cu medie lambda
+  let prob = 0, term = Math.exp(-lambda)
+  for (let i = 0; i <= k; i++) {
+    prob += term
+    term *= lambda / (i + 1)
+  }
+  return Math.min(prob, 1)
+}
+function pOver(lambda: number, k: number) { // P(X > k)
+  return Math.round((1 - poissonCDF(lambda, k)) * 100)
+}
+
 // ── Calcul toate piețele disponibile ─────────────────────────────────────────
 function calcAllMarkets(prediction: Prediction) {
   const pred = prediction.prediction || {}
   const home_w = pred.home_win ?? 0
-  const draw = pred.draw ?? 0
+  const draw   = pred.draw ?? 0
   const away_w = pred.away_win ?? 0
-  const xgHome = prediction.expected_goals?.home ?? 1.4
-  const xgAway = prediction.expected_goals?.away ?? 1.2
+  const xgHome  = prediction.expected_goals?.home ?? 1.4
+  const xgAway  = prediction.expected_goals?.away ?? 1.2
   const totalXg = xgHome + xgAway
 
-  // Calcule probabilități piețe
-  const over25 = Math.round(totalXg > 2.8 ? 68 : totalXg > 2.3 ? 55 : totalXg > 1.8 ? 44 : 34)
-  const under25 = 100 - over25
-  const over15 = Math.round(totalXg > 2.0 ? 82 : totalXg > 1.5 ? 72 : 58)
-  const under15 = 100 - over15
-  const over35 = Math.round(totalXg > 3.2 ? 48 : totalXg > 2.6 ? 36 : totalXg > 2.0 ? 26 : 18)
-  const under35 = 100 - over35
-  const btts = Math.round(xgHome > 1.2 && xgAway > 1.0 ? 62 : xgHome > 0.9 && xgAway > 0.8 ? 50 : 38)
-  const bttsNo = 100 - btts
+  // Full-time Over/Under (Poisson)
+  const over05 = pOver(totalXg, 0)
+  const over15 = pOver(totalXg, 1)
+  const over25 = pOver(totalXg, 2)
+  const over35 = pOver(totalXg, 3)
+  const over45 = pOver(totalXg, 4)
+
+  // BTTS (independent Poisson pentru fiecare echipă)
+  const pHomeSc = Math.round((1 - poissonCDF(xgHome, 0)) * 100)
+  const pAwaySc = Math.round((1 - poissonCDF(xgAway, 0)) * 100)
+  const btts    = Math.round(pHomeSc * pAwaySc / 100)
+  const bttsNo  = 100 - btts
+
+  // Șansă dublă
   const dc1x = Math.min(97, Math.round((home_w + draw) * 0.97))
   const dcx2 = Math.min(97, Math.round((draw + away_w) * 0.97))
   const dc12 = Math.min(97, Math.round((home_w + away_w) * 0.97))
+
+  // Pauză — xG la pauză ≈ 42% din total
+  const htH = xgHome * 0.42
+  const htA = xgAway * 0.42
+  const htTotal = htH + htA
+
+  const htOver05 = pOver(htTotal, 0)
+  const htOver15 = pOver(htTotal, 1)
+  const htOver25 = pOver(htTotal, 2)
+
+  // Rezultat pauză (Poisson bivariate simplificat)
+  const pHtHomeSc = 1 - poissonCDF(htH, 0)  // P(gazdă înscrie >= 1 la pauză)
+  const pHtAwaySc = 1 - poissonCDF(htA, 0)
+  const pHtBoth   = pHtHomeSc * pHtAwaySc
+  const pHtNone   = poissonCDF(htH, 0) * poissonCDF(htA, 0)
+  // P(HT 1-0 sau 2-0...) ≈ P(home >= 1) * P(away = 0)
+  const htHome = Math.round(pHtHomeSc * poissonCDF(htA, 0) * 100)
+  const htDraw = Math.round((pHtNone + pHtBoth) * 100)  // 0-0 sau ambii înscriu egal
+  const htAway = Math.round(100 - htHome - htDraw)
 
   const margin = 1.08
   const odd = (p: number) => (100 / Math.max(p, 1) * margin).toFixed(2)
@@ -109,22 +147,87 @@ function calcAllMarkets(prediction: Prediction) {
       ]
     },
     {
-      category: '📊 Total goluri', items: [
+      category: '📊 Total goluri (meci întreg)', items: [
+        { name: 'Over 0.5 goluri', probability: over05, odds: odd(over05) },
+        { name: 'Under 0.5 goluri', probability: 100 - over05, odds: odd(100 - over05) },
         { name: 'Over 1.5 goluri', probability: over15, odds: odd(over15) },
-        { name: 'Under 1.5 goluri', probability: under15, odds: odd(under15) },
+        { name: 'Under 1.5 goluri', probability: 100 - over15, odds: odd(100 - over15) },
         { name: 'Over 2.5 goluri', probability: over25, odds: odd(over25) },
-        { name: 'Under 2.5 goluri', probability: under25, odds: odd(under25) },
+        { name: 'Under 2.5 goluri', probability: 100 - over25, odds: odd(100 - over25) },
         { name: 'Over 3.5 goluri', probability: over35, odds: odd(over35) },
-        { name: 'Under 3.5 goluri', probability: under35, odds: odd(under35) },
+        { name: 'Under 3.5 goluri', probability: 100 - over35, odds: odd(100 - over35) },
+        { name: 'Over 4.5 goluri', probability: over45, odds: odd(over45) },
+        { name: 'Under 4.5 goluri', probability: 100 - over45, odds: odd(100 - over45) },
       ]
     },
     {
       category: '🔄 Ambele înscriu (BTTS)', items: [
-        { name: 'BTTS — Da (ambele marchează)', probability: btts, odds: odd(btts) },
-        { name: 'BTTS — Nu (cel puțin o echipă nu marchează)', probability: bttsNo, odds: odd(bttsNo) },
+        { name: 'BTTS — Da', probability: btts, odds: odd(btts) },
+        { name: 'BTTS — Nu', probability: bttsNo, odds: odd(bttsNo) },
+      ]
+    },
+    {
+      category: '⏸️ Pauză — Total goluri', items: [
+        { name: 'HT Over 0.5', probability: htOver05, odds: odd(htOver05) },
+        { name: 'HT Under 0.5', probability: 100 - htOver05, odds: odd(100 - htOver05) },
+        { name: 'HT Over 1.5', probability: htOver15, odds: odd(htOver15) },
+        { name: 'HT Under 1.5', probability: 100 - htOver15, odds: odd(100 - htOver15) },
+        { name: 'HT Over 2.5', probability: htOver25, odds: odd(htOver25) },
+        { name: 'HT Under 2.5', probability: 100 - htOver25, odds: odd(100 - htOver25) },
+      ]
+    },
+    {
+      category: '🕐 Rezultat la pauză', items: [
+        { name: `HT 1 — ${prediction.home_team} conduce`, probability: htHome, odds: odd(htHome) },
+        { name: 'HT X — Egal la pauză', probability: htDraw, odds: odd(htDraw) },
+        { name: `HT 2 — ${prediction.away_team} conduce`, probability: Math.max(htAway, 1), odds: odd(Math.max(htAway, 1)) },
       ]
     },
   ]
+}
+
+// ── Bet Value — identifică pariuri cu valoare față de piață ──────────────────
+function calcBetValue(prediction: Prediction) {
+  const markets = calcAllMarkets(prediction)
+  const margin  = 1.08
+  const results: Array<{
+    name: string; probability: number; our_odds: string
+    market_odds: number; ev: number; value_pct: number; rating: string; color: string
+  }> = []
+
+  for (const group of markets) {
+    for (const item of group.items) {
+      const p         = item.probability / 100
+      const our_odds  = parseFloat(item.odds)
+      // Cota "corectă" fără marjă de risc: 1/p
+      // Piața tipică adaugă 8-12% marjă → implied_prob = p / 1.10
+      // Dacă modelul nostru are p > implied_prob_piata → value pozitiv
+      const mkt_margin   = 1.10                    // marja medie bookmaker
+      const implied_mkt  = p / mkt_margin          // prob implicita la bookmaker
+      const fair_mkt_odd = 1 / implied_mkt         // cota justa de la bookmaker
+      // EV = p * fair_mkt_odd - 1 (cat castigi in medie per 1 unitate pariu)
+      const ev         = Math.round((p * fair_mkt_odd - 1) * 100) / 100
+      // Value% = cat de mult depaseste modelul marja pietei
+      const value_pct  = Math.round((p - implied_mkt) * 100)
+
+      if (value_pct > 0 && p >= 0.45) {
+        const rating = value_pct >= 8 ? '🔥 Value înalt' : value_pct >= 4 ? '✅ Value bun' : '⚡ Value mic'
+        const color  = value_pct >= 8 ? '#10b981' : value_pct >= 4 ? '#f59e0b' : '#6b7280'
+        results.push({
+          name: item.name,
+          probability: item.probability,
+          our_odds: item.odds,
+          market_odds: parseFloat(fair_mkt_odd.toFixed(2)),
+          ev,
+          value_pct,
+          rating,
+          color,
+        })
+      }
+    }
+  }
+
+  return results.sort((a, b) => b.value_pct - a.value_pct).slice(0, 8)
 }
 
 // ── Top 3 cele mai sigure pariuri ─────────────────────────────────────────────
@@ -366,8 +469,11 @@ function PredictionDisplay({ prediction, fixture, standings }: { prediction: Pre
   const allMarkets = calcAllMarkets(prediction)
   const top3 = getTop3Bets(prediction)
 
+  const valueBets = calcBetValue(prediction)
+
   const tabs = [
     { key: 'markets',   label: '🎯 Pariuri' },
+    { key: 'value',     label: `💎 Value${valueBets.length > 0 ? ` (${valueBets.length})` : ''}` },
     { key: 'scores',    label: '⚽ Scoruri' },
     { key: 'stats',     label: '📊 Stats' },
     { key: 'standings', label: '🏆 Clas.' },
@@ -509,6 +615,53 @@ function PredictionDisplay({ prediction, fixture, standings }: { prediction: Pre
                 {group.items.map((item, ii) => <MarketRow key={ii} market={item} />)}
               </div>
             ))
+          )}
+        </div>
+      )}
+
+      {/* Tab: Bet Value */}
+      {activeTab === 'value' && (
+        <div className="card p-5 fade-in" style={{ overflow: 'hidden' }}>
+          <div className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest mb-1 text-center">💎 Bet Value — Pariuri cu Valoare Pozitivă</div>
+          <div className="text-[10px] text-gray-600 text-center mb-4 font-mono">Modelul AI detectează unde probabilitatea depășește marja bookmaker-ului</div>
+          {valueBets.length === 0 ? (
+            <div className="text-center py-8 text-gray-600 text-sm">Nu există pariuri cu value clar pentru acest meci</div>
+          ) : (
+            <div className="space-y-3">
+              {valueBets.map((bet, i) => (
+                <div key={i} className="bg-gray-800/40 rounded-xl p-4 border" style={{ borderColor: `${bet.color}30` }}>
+                  <div className="flex items-start justify-between gap-3 mb-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-semibold text-white truncate">{bet.name}</div>
+                      <div className="text-[10px] font-bold mt-0.5" style={{ color: bet.color }}>{bet.rating}</div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <div className="text-lg font-bold font-mono" style={{ color: bet.color }}>+{bet.value_pct}%</div>
+                      <div className="text-[10px] text-gray-600 font-mono">edge față de piață</div>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 mt-3">
+                    <div className="bg-gray-900/50 rounded-lg p-2 text-center">
+                      <div className="text-[10px] text-gray-600 uppercase tracking-widest">Prob. model</div>
+                      <div className="text-sm font-bold font-mono text-white">{bet.probability}%</div>
+                    </div>
+                    <div className="bg-gray-900/50 rounded-lg p-2 text-center">
+                      <div className="text-[10px] text-gray-600 uppercase tracking-widest">Cotă estimată</div>
+                      <div className="text-sm font-bold font-mono" style={{ color: bet.color }}>{bet.market_odds}</div>
+                    </div>
+                    <div className="bg-gray-900/50 rounded-lg p-2 text-center">
+                      <div className="text-[10px] text-gray-600 uppercase tracking-widest">EV / unitate</div>
+                      <div className="text-sm font-bold font-mono" style={{ color: bet.ev > 0 ? '#10b981' : '#ef4444' }}>
+                        {bet.ev > 0 ? '+' : ''}{bet.ev}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              <div className="text-[10px] text-gray-700 text-center mt-3 font-mono px-4">
+                * Value calculat față de marja medie bookmaker 10%. EV pozitiv = profitabil pe termen lung statistic. Pariați responsabil.
+              </div>
+            </div>
           )}
         </div>
       )}
