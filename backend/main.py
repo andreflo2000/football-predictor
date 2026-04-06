@@ -10,7 +10,7 @@ from pydantic import BaseModel
 from typing import Optional
 
 from predictor import predict_match, load_model, get_known_teams
-from fixtures import get_today_fixtures, get_today_odds
+from fixtures import get_today_fixtures, get_today_odds, _fetch_fixtures_for_range
 
 app = FastAPI(title="Flopi San API")
 
@@ -181,40 +181,65 @@ def daily_picks(
     return response
 
 
+# Cache pentru fixtures per liga (TTL 10 minute)
+_fixtures_cache: dict = {}
+FIXTURES_TTL = 600
+
+LEGACY_MAP = {
+    "39": "PL", "78": "BL1", "135": "SA", "140": "PD", "61": "FL1",
+    "88": "DED", "94": "PPL", "2": "CL", "3": "EL",
+    "40": "ELC", "79": "BL2", "136": "SB", "62": "FL2", "141": "SD",
+}
+
+
 # ─────────────────────────────────────────────
-# FIXTURES pentru o liga (compatibilitate frontend vechi)
+# FIXTURES pentru o liga
 # ─────────────────────────────────────────────
 @app.get("/api/fixtures/{competition_code}")
 def get_fixtures(competition_code: str, date: Optional[str] = None):
-    LEGACY_MAP = {
-        # Div 1
-        "39": "PL", "78": "BL1", "135": "SA", "140": "PD", "61": "FL1",
-        "88": "DED", "94": "PPL", "2": "CL", "3": "EL",
-        # Div 2
-        "40": "ELC", "79": "BL2", "136": "SB", "62": "FL2", "141": "SD",
-    }
     code  = LEGACY_MAP.get(str(competition_code), competition_code.upper())
-    known = get_known_teams()
     base  = datetime.date.fromisoformat(date) if date else datetime.date.today()
-    # Un singur request pentru urmatoarele 14 zile
+    cache_key = f"{code}:{base.isoformat()}"
+
+    # Verifica cache
+    cached = _fixtures_cache.get(cache_key)
+    if cached and (time.time() - cached["ts"]) < FIXTURES_TTL:
+        return cached["data"]
+
+    known   = get_known_teams()
     date_to = (base + datetime.timedelta(days=13)).isoformat()
 
-    from fixtures import _fetch_fixtures_for_range
     all_fix  = _fetch_fixtures_for_range(base.isoformat(), date_to, known)
     filtered = [f for f in all_fix if f.get("competition_code") == code]
 
-    return {"fixtures": [
-        {
-            "id":      idx,          # index unic — important pentru select
-            "home":    f["home"],
-            "away":    f["away"],
-            "home_id": 0,
-            "away_id": 0,
-            "date":    f.get("date", base.isoformat()),
-            "time":    f.get("time", ""),
+    # Coduri primite de la football-data (debug)
+    codes_found = list({f.get("competition_code") for f in all_fix})
+
+    result = {
+        "fixtures": [
+            {
+                "id":      idx,
+                "home":    f["home"],
+                "away":    f["away"],
+                "home_id": 0,
+                "away_id": 0,
+                "date":    f.get("date", base.isoformat()),
+                "time":    f.get("time", ""),
+            }
+            for idx, f in enumerate(filtered)
+        ],
+        "debug": {
+            "code_requested": code,
+            "date_from": base.isoformat(),
+            "date_to": date_to,
+            "total_fetched": len(all_fix),
+            "competition_codes_found": codes_found,
+            "filtered_count": len(filtered),
         }
-        for idx, f in enumerate(filtered)
-    ]}
+    }
+
+    _fixtures_cache[cache_key] = {"ts": time.time(), "data": result}
+    return result
 
 
 # ─────────────────────────────────────────────

@@ -661,13 +661,13 @@ export default function Home() {
     setFixtures([]); setSelectedFixture(null); setPrediction(null); setStandings([])
     setLoadingFixtures(true)
     Promise.all([
-      axios.get(`${API_BASE}/api/fixtures/${selectedLeague}`),
+      axios.get(`${API_BASE}/api/fixtures/${selectedLeague}`).catch(() => ({ data: { fixtures: [] } })),
       axios.get(`${API_BASE}/api/standings/${selectedLeague}`).catch(() => ({ data: { standings: [] } })),
     ]).then(([fixtRes, standRes]) => {
       const all: Fixture[] = fixtRes.data.fixtures || []
       const todayStr = new Date().toISOString().split('T')[0]
-      const upcoming = all.filter(f => f.date && f.date >= todayStr).sort((a, b) => (a.date || '').localeCompare(b.date || '')).slice(0, 30)
-      const filtered = all.filter(f => nextDays.includes(f.date))
+      const upcoming = all.filter((f: Fixture) => f.date && f.date >= todayStr).sort((a: Fixture, b: Fixture) => (a.date || '').localeCompare(b.date || '')).slice(0, 30)
+      const filtered = all.filter((f: Fixture) => nextDays.includes(f.date))
       setFixtures(filtered.length > 0 ? filtered : upcoming.length > 0 ? upcoming : all.slice(0, 30))
       setStandings(standRes.data.standings || [])
     }).finally(() => setLoadingFixtures(false))
