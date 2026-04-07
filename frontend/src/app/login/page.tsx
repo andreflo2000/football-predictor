@@ -1,7 +1,9 @@
 'use client'
 import { useState } from 'react'
-import { login, register } from '@/lib/auth'
+import { login, register, getToken, logout } from '@/lib/auth'
 import { useRouter } from 'next/navigation'
+
+const API = process.env.NEXT_PUBLIC_API_URL || 'https://football-predictor-api-n9sl.onrender.com'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -118,10 +120,34 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <div style={{ textAlign: 'center', marginTop: '20px' }}>
+        <div style={{ textAlign: 'center', marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
           <a href="/daily" style={{ color: '#64748b', fontSize: '13px', textDecoration: 'none' }}>
-            Continua fara cont →
+            Continuă fără cont →
           </a>
+          {getToken() && (
+            <button
+              onClick={async () => {
+                if (!confirm('Ești sigur? Contul și toate datele tale vor fi șterse permanent.')) return
+                try {
+                  await fetch(`${API}/api/auth/account`, {
+                    method: 'DELETE',
+                    headers: { Authorization: `Bearer ${getToken()}` },
+                  })
+                  logout()
+                } catch {
+                  alert('Eroare la ștergere. Contactează flopisan.forecast@gmail.com')
+                }
+              }}
+              style={{ color: '#ef4444', fontSize: '11px', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'monospace' }}
+            >
+              Șterge contul și toate datele mele
+            </button>
+          )}
+        </div>
+
+        <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #1e293b', textAlign: 'center' }}>
+          <a href="/terms" style={{ color: '#475569', fontSize: '10px', fontFamily: 'monospace', marginRight: '12px' }}>Termeni</a>
+          <a href="/privacy" style={{ color: '#475569', fontSize: '10px', fontFamily: 'monospace' }}>Confidențialitate</a>
         </div>
       </div>
     </div>

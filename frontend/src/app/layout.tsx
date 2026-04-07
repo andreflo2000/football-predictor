@@ -1,5 +1,8 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
+import DisclaimerBanner from '@/components/DisclaimerBanner'
+import GdprConsent from '@/components/GdprConsent'
+import Onboarding from '@/components/Onboarding'
 
 export const metadata: Metadata = {
   title: 'Flopi San — Forecast Academy',
@@ -48,6 +51,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body style={{width: '100vw', overflowX: 'hidden', position: 'relative'}}>
         {children}
+        <Onboarding />
+        <GdprConsent />
+        <DisclaimerBanner />
         <script dangerouslySetInnerHTML={{__html: `
           document.addEventListener('touchstart', function(e) {
             if (e.touches.length > 1) e.preventDefault();

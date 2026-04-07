@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { getUser, logout, isVip, type AuthUser } from '@/lib/auth'
+import PickSkeleton from '@/components/PickSkeleton'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -55,6 +56,78 @@ function predLabel(p: Pick) {
   if (p.prediction === 'H') return { emoji: '🏠', short: '1',  full: p.home,  prob: p.home_win }
   if (p.prediction === 'A') return { emoji: '✈️', short: '2',  full: p.away,  prob: p.away_win }
   return                           { emoji: '🤝', short: 'X',  full: 'Egal',  prob: p.draw }
+}
+
+// ── Format share profesional WhatsApp/Telegram ───────────────────────────────
+function buildShareCard(p: Pick, dateStr: string): string {
+  const pred  = predLabel(p)
+  const margin = 1.08
+  const odd   = (100 / Math.max(pred.prob, 1) * margin).toFixed(2)
+  const bar   = (pct: number) => '█'.repeat(Math.round(pct / 10)) + '░'.repeat(10 - Math.round(pct / 10))
+  const conf  = p.confidence >= 65 ? '🟢 HIGH' : p.confidence >= 55 ? '🟡 MEDIUM' : '🔵 LOW'
+
+  return [
+    `╔══════════════════════════╗`,
+    `   ⚽ FLOPI SAN · PREDICȚIE AI`,
+    `╚══════════════════════════╝`,
+    ``,
+    `${p.flag} ${p.league}`,
+    `📅 ${dateStr}  ·  ${p.time || '—'}`,
+    ``,
+    `  🏠  ${p.home}`,
+    `  ✈️  ${p.away}`,
+    ``,
+    `──────────────────────────`,
+    `📊 PROBABILITĂȚI`,
+    ``,
+    `  1  ${bar(p.home_win)}  ${p.home_win}%`,
+    `  X  ${bar(p.draw)}  ${p.draw}%`,
+    `  2  ${bar(p.away_win)}  ${p.away_win}%`,
+    ``,
+    `──────────────────────────`,
+    `🎯 PREDICȚIE: ${pred.emoji} ${pred.short} — ${pred.full}`,
+    `📈 Confidence: ${p.confidence}% · ${conf}`,
+    `⚡ Elo: ${p.home_elo} vs ${p.away_elo}`,
+    ``,
+    `🤖 XGBoost + Elo + Poisson`,
+    `──────────────────────────`,
+    `⚠️  Analiză statistică.`,
+    `    Nu constituie sfat de pariere.`,
+    ``,
+    `🌐 flopiforecastro.vercel.app`,
+  ].join('\n')
+}
+
+function buildAccumulatorCard(picks: Pick[], dateStr: string): string {
+  const margin = 1.08
+  const lines = picks.slice(0, 3).map((p, i) => {
+    const pred = predLabel(p)
+    const odd  = (100 / Math.max(pred.prob, 1) * margin).toFixed(2)
+    const medals = ['🥇', '🥈', '🥉']
+    return `${medals[i]} ${p.flag} ${p.home} vs ${p.away}\n   ➤ ${pred.short} — ${pred.full}  |  ~${odd}  |  ${p.confidence}% conf`
+  })
+  const combo = picks.slice(0, 3).reduce((acc, p) => {
+    const pred = predLabel(p)
+    return acc * (100 / Math.max(pred.prob, 1) * margin)
+  }, 1)
+
+  return [
+    `╔══════════════════════════╗`,
+    `  🎁 FLOPI SAN · 3 PONTURI`,
+    `╚══════════════════════════╝`,
+    ``,
+    `📅 ${dateStr}`,
+    ``,
+    ...lines,
+    ``,
+    `──────────────────────────`,
+    `📦 ACUMULATOR: x${combo.toFixed(2)}`,
+    `──────────────────────────`,
+    `⚠️  Analiză statistică.`,
+    `    Nu constituie sfat de pariere.`,
+    ``,
+    `🌐 flopiforecastro.vercel.app`,
+  ].join('\n')
 }
 
 // ── Tracker personal (localStorage) ─────────────────────────────────────────
@@ -337,8 +410,34 @@ function PickCard({ pick, rank }: { pick: Pick; rank: number }) {
         </div>
       </div>
 
-      {/* Streak indicators */}
+      {/* Streak indicators + Share */}
       <StreakBadges pick={pick} />
+      <div className="flex gap-2 mt-2">
+        <button
+          onClick={() => {
+            const dateStr = pick.time
+              ? `${new Date().toLocaleDateString('ro-RO')} · ${pick.time}`
+              : new Date().toLocaleDateString('ro-RO')
+            const text = buildShareCard(pick, dateStr)
+            window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank')
+          }}
+          className="text-[9px] font-bold px-2.5 py-1 rounded-lg font-mono"
+          style={{ background: 'rgba(37,211,102,0.1)', color: '#25d366', border: '1px solid rgba(37,211,102,0.2)' }}>
+          💬 WA
+        </button>
+        <button
+          onClick={() => {
+            const dateStr = pick.time
+              ? `${new Date().toLocaleDateString('ro-RO')} · ${pick.time}`
+              : new Date().toLocaleDateString('ro-RO')
+            const text = buildShareCard(pick, dateStr)
+            navigator.clipboard?.writeText(text).then(() => alert('Copiat pentru Telegram!'))
+          }}
+          className="text-[9px] font-bold px-2.5 py-1 rounded-lg font-mono"
+          style={{ background: 'rgba(38,120,188,0.1)', color: '#2678bc', border: '1px solid rgba(38,120,188,0.2)' }}>
+          ✈️ TG
+        </button>
+      </div>
     </div>
   )
 }
@@ -413,23 +512,30 @@ function FreePicks({ picks }: { picks: Pick[] }) {
           })}
         </div>
 
-        <div className="mt-3 pt-3 border-t border-amber-900/30 flex items-center justify-between">
+        <div className="mt-3 pt-3 border-t border-amber-900/30 flex items-center justify-between gap-2">
           <div className="text-[10px] text-gray-600 font-mono">* Cote estimate cu marjă 8%</div>
-          <button
-            onClick={() => {
-              const lines = top3.map((p, i) => {
-                const pred = predLabel(p)
-                const prob = pred.prob
-                const odd  = oddSingle(prob)
-                return `${i+1}. ${p.flag} ${p.home} vs ${p.away}\n   ➤ ${pred.short} — ${pred.full} · cotă ~${odd.toFixed(2)} · ${prob}% conf`
-              }).join('\n\n')
-              const text = `🎁 *FLOPI SAN — 3 Ponturi Gratuite ${formatDate(new Date().toISOString().split('T')[0])}*\n\n${lines}\n\n📦 Acumulator estimat: *x${comboOdd.toFixed(2)}*\n\n🤖 _Flopi San Forecast Academy_\n🌐 flopiforecastro.vercel.app`
-              window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank')
-            }}
-            className="text-[10px] font-bold px-3 py-1.5 rounded-lg"
-            style={{ background: 'rgba(251,191,36,0.15)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.3)' }}>
-            📤 Share bilet
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                const dateStr = formatDate(new Date().toISOString().split('T')[0])
+                const text = buildAccumulatorCard(top3, dateStr)
+                window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank')
+              }}
+              className="text-[10px] font-bold px-3 py-1.5 rounded-lg"
+              style={{ background: 'rgba(37,211,102,0.15)', color: '#25d366', border: '1px solid rgba(37,211,102,0.3)' }}>
+              💬 WhatsApp
+            </button>
+            <button
+              onClick={() => {
+                const dateStr = formatDate(new Date().toISOString().split('T')[0])
+                const text = buildAccumulatorCard(top3, dateStr)
+                navigator.clipboard?.writeText(text).then(() => alert('Copiat! Lipește în Telegram.'))
+              }}
+              className="text-[10px] font-bold px-3 py-1.5 rounded-lg"
+              style={{ background: 'rgba(38,120,188,0.15)', color: '#2678bc', border: '1px solid rgba(38,120,188,0.3)' }}>
+              ✈️ Telegram
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -617,7 +723,11 @@ export default function DailyPage() {
           )}
         </div>
 
-        {loading && <LoadingState />}
+        {loading && (
+          <div>
+            {[0,1,2,3].map(i => <PickSkeleton key={i} />)}
+          </div>
+        )}
         {error && (
           <div className="card p-6 text-center text-red-400 font-mono text-sm">{error}</div>
         )}
@@ -674,14 +784,26 @@ export default function DailyPage() {
 
             {/* Picks */}
             {shown.length === 0 ? (
-              <div className="card p-10 text-center">
-                <div className="text-4xl opacity-20 mb-3">📅</div>
+              <div className="card p-10 text-center fade-in">
+                <div style={{ fontSize: '48px', marginBottom: '12px', opacity: 0.3 }}>
+                  {filter === 'high' ? '⚡' : '📅'}
+                </div>
                 <div className="font-display text-xl text-gray-500 tracking-widest mb-2">
-                  {filter === 'high' ? 'Niciun pick high-confidence azi' : 'Nu sunt meciuri disponibile azi'}
+                  {filter === 'high' ? 'Niciun pick HIGH confidence' : 'Niciun meci disponibil azi'}
                 </div>
-                <div className="text-gray-600 text-sm font-mono">
-                  {filter === 'high' ? 'Încearcă filtrul "Toate"' : 'Revino mai târziu sau a doua zi'}
+                <div className="text-gray-600 text-sm font-mono mb-4">
+                  {filter === 'high'
+                    ? 'Modelul nu a găsit meciuri cu confidence ≥65% azi.'
+                    : 'Ligile suportate nu au meciuri programate. Revino mâine.'}
                 </div>
+                {filter === 'high' && (
+                  <button
+                    onClick={() => {}}
+                    className="text-xs font-mono px-4 py-2 rounded-lg"
+                    style={{ background: 'rgba(99,102,241,0.12)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.25)' }}>
+                    Vezi toate pick-urile →
+                  </button>
+                )}
               </div>
             ) : (
               shown.map((pick, i) => <PickCard key={i} pick={pick} rank={i + 1} />)

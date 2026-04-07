@@ -14,7 +14,7 @@ export default function Privacy() {
           </div>
           <nav className="flex items-center gap-1">
             <a href="/" className="nav-link">Predicții AI</a>
-            <a href="/daily" className="nav-link">🎯 Azi</a>
+            <a href="/daily" className="nav-link">🎯 Selecțiile zilei</a>
             <a href="/weekly" className="nav-link">Rezultate</a>
           </nav>
         </div>
@@ -49,17 +49,26 @@ export default function Privacy() {
               <ul className="space-y-1 mt-2">
                 <li className="flex items-start gap-2">
                   <span className="text-blue-400 shrink-0">·</span>
-                  <span><strong className="text-gray-300">Pronosticuri introduse manual</strong> — meciurile și predicțiile pe care le adaugi tu în Tracker</span>
+                  <span><strong className="text-gray-300">Adresă de email</strong> — dacă îți creezi un cont opțional, pentru autentificare</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-blue-400 shrink-0">·</span>
-                  <span><strong className="text-gray-300">Date anonime de utilizare</strong> — cum folosești aplicația, ce pagini vizitezi</span>
+                  <span><strong className="text-gray-300">Parolă criptată</strong> — stocată exclusiv sub formă hash bcrypt, niciodată în clar</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-blue-400 shrink-0">·</span>
-                  <span><strong className="text-gray-300">Nu colectăm</strong> — nume, email, număr de telefon, date de plată sau locație GPS</span>
+                  <span><strong className="text-gray-300">Pronosticuri introduse manual</strong> — meciurile și predicțiile pe care le adaugi în Tracker</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-400 shrink-0">·</span>
+                  <span><strong className="text-gray-300">Date anonime de utilizare</strong> — pagini vizitate, erori tehnice (fără date personale)</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-400 shrink-0">·</span>
+                  <span><strong className="text-gray-300">Nu colectăm</strong> — nume real, număr de telefon, date de plată, locație GPS sau date biometrice</span>
                 </li>
               </ul>
+              <p className="mt-3 text-gray-600 text-xs">Crearea contului este <strong className="text-gray-400">opțională</strong> — aplicația funcționează complet fără cont.</p>
             </div>
           </div>
 
@@ -109,14 +118,17 @@ export default function Privacy() {
           </div>
 
           <div className="card p-5">
-            <div className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-3">7. Drepturile tale</div>
+            <div className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-3">7. Drepturile tale (GDPR)</div>
             <div className="space-y-1 text-sm text-gray-400 leading-relaxed">
-              <p>Ai dreptul să:</p>
+              <p>Conform Regulamentului UE 2016/679 (GDPR), ai dreptul să:</p>
               <ul className="space-y-1 mt-2">
-                <li className="flex items-start gap-2"><span className="text-blue-400 shrink-0">·</span><span>Accesezi datele tale stocate în aplicație</span></li>
-                <li className="flex items-start gap-2"><span className="text-blue-400 shrink-0">·</span><span>Ștergi toate datele tale (butonul "Șterge tot" din Tracker)</span></li>
-                <li className="flex items-start gap-2"><span className="text-blue-400 shrink-0">·</span><span>Soliciți informații despre datele stocate</span></li>
+                <li className="flex items-start gap-2"><span className="text-blue-400 shrink-0">·</span><span><strong className="text-gray-300">Acces</strong> — să primești o copie a datelor tale</span></li>
+                <li className="flex items-start gap-2"><span className="text-blue-400 shrink-0">·</span><span><strong className="text-gray-300">Rectificare</strong> — să corectezi datele incorecte</span></li>
+                <li className="flex items-start gap-2"><span className="text-blue-400 shrink-0">·</span><span><strong className="text-gray-300">Ștergere (Art. 17)</strong> — să ștergi contul și toate datele asociate, din pagina de cont sau prin email</span></li>
+                <li className="flex items-start gap-2"><span className="text-blue-400 shrink-0">·</span><span><strong className="text-gray-300">Portabilitate</strong> — să primești datele în format JSON la cerere</span></li>
+                <li className="flex items-start gap-2"><span className="text-blue-400 shrink-0">·</span><span><strong className="text-gray-300">Opoziție</strong> — să te opui prelucrării datelor tale</span></li>
               </ul>
+              <p className="mt-3">Pentru exercitarea drepturilor, contactează-ne la <span className="text-blue-400 font-mono">flopisan.forecast@gmail.com</span>. Răspundem în maxim <strong className="text-gray-300">30 de zile</strong>.</p>
             </div>
           </div>
 

@@ -122,6 +122,22 @@ def auth_me(user: dict = Depends(require_user)):
     return user
 
 
+@app.delete("/api/auth/account")
+def auth_delete_account(user: dict = Depends(require_user)):
+    """Sterge contul si toate datele asociate (GDPR Art. 17)."""
+    from db import get_client
+    client = get_client()
+    if client is None:
+        raise HTTPException(503, "DB indisponibil")
+    try:
+        uid = int(user["id"])
+        client.table("predictions").delete().eq("user_id", uid).execute()
+        client.table("users").delete().eq("id", uid).execute()
+        return {"message": "Contul și datele tale au fost șterse complet."}
+    except Exception as e:
+        raise HTTPException(500, f"Eroare la ștergere: {str(e)}")
+
+
 # ─────────────────────────────────────────────
 # LIGI
 # ─────────────────────────────────────────────
