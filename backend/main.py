@@ -14,11 +14,21 @@ from fixtures import get_today_fixtures, get_today_odds, _fetch_fixtures_for_ran
 
 app = FastAPI(title="Flopi San API")
 
+ALLOWED_ORIGINS = [
+    "https://flopiforecastro.vercel.app",
+    "https://www.flopiforecastro.vercel.app",
+    # development local
+    "http://localhost:3000",
+    "http://localhost:3001",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=ALLOWED_ORIGINS,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
+    allow_credentials=True,
+    max_age=600,  # cache preflight 10 minute
 )
 
 
