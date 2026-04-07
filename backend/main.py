@@ -404,24 +404,51 @@ def predict_get(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+    import math
+
     hw = round(result["home_win"] * 100, 1)
     dr = round(result["draw"] * 100, 1)
     aw = round(result["away_win"] * 100, 1)
 
-    # Use model's attack stats as xG estimate
     xg_home = round(result.get("home_goals_avg", max(0.3, 1.0 + (result["home_win"] - 0.333) * 2.5)), 2)
     xg_away = round(result.get("away_goals_avg", max(0.3, 0.9 + (result["away_win"] - 0.333) * 2.5)), 2)
 
+    home_elo = result.get("home_elo", 1500)
+    away_elo = result.get("away_elo", 1500)
     home_form_pct = result.get("home_form", 0.4)
     away_form_pct = result.get("away_form", 0.4)
 
+    # ── Elo model (formula clasica Bradley-Terry) ──────────────
+    elo_diff = home_elo - away_elo
+    elo_hw   = round(1 / (1 + 10 ** (-elo_diff / 400)) * 100, 1)
+    elo_aw   = round(1 / (1 + 10 ** (elo_diff / 400)) * 100, 1)
+    elo_dr   = round(max(0, 100 - elo_hw - elo_aw), 1)
+    # Redistribuim draw mai realist (15-25% din spatiu)
+    draw_share = min(28, max(15, 22 - abs(elo_diff) * 0.02))
+    elo_hw2 = round((elo_hw / (elo_hw + elo_aw)) * (100 - draw_share), 1)
+    elo_aw2 = round((elo_aw / (elo_hw + elo_aw)) * (100 - draw_share), 1)
+    elo_dr2 = round(100 - elo_hw2 - elo_aw2, 1)
+
+    # ── Poisson model (Dixon-Coles simplificat) ────────────────
+    def poisson_pmf(lam: float, k: int) -> float:
+        return (lam ** k) * math.exp(-lam) / math.factorial(k)
+
+    p_home, p_draw, p_away = 0.0, 0.0, 0.0
+    for i in range(8):
+        for j in range(8):
+            p = poisson_pmf(xg_home, i) * poisson_pmf(xg_away, j)
+            if i > j:   p_home += p
+            elif i == j: p_draw += p
+            else:        p_away += p
+    poi_hw = round(p_home * 100, 1)
+    poi_dr = round(p_draw * 100, 1)
+    poi_aw = round(p_away * 100, 1)
+
     def form_str(form_val: float) -> list:
-        """Convert form 0-1 to list of W/D/L strings for last 5"""
-        wins  = round(form_val * 5)
-        draws = 1 if wins < 5 else 0
+        wins   = round(form_val * 5)
+        draws  = 1 if wins < 5 else 0
         losses = max(0, 5 - wins - draws)
-        res = ['W'] * wins + ['D'] * draws + ['L'] * losses
-        return res[:5]
+        return (['W'] * wins + ['D'] * draws + ['L'] * losses)[:5]
 
     return {
         "home_team": home_team,
@@ -430,7 +457,7 @@ def predict_get(
             "home_win": hw,
             "draw":     dr,
             "away_win": aw,
-            "method":   "XGBoost + Elo",
+            "method":   "XGBoost + Elo + Poisson",
         },
         "top_scores": [
             {"score": "1-0", "probability": round(hw * 0.28)},
@@ -446,14 +473,14 @@ def predict_get(
         },
         "home_stats": {
             "form":        form_str(home_form_pct),
-            "elo_rating":  result.get("home_elo", 1500),
+            "elo_rating":  home_elo,
             "goals_avg":   xg_home,
             "xg_for":      xg_home,
             "xg_against":  xg_away * 0.8,
         },
         "away_stats": {
             "form":        form_str(away_form_pct),
-            "elo_rating":  result.get("away_elo", 1500),
+            "elo_rating":  away_elo,
             "goals_avg":   xg_away,
             "xg_for":      xg_away,
             "xg_against":  xg_home * 0.8,
@@ -461,7 +488,9 @@ def predict_get(
         "confidence":       round(result["confidence"] * 100, 1),
         "confidence_level": result.get("confidence_level", "LOW"),
         "model_breakdown": {
-            "xgboost": {"home_win": hw, "draw": dr, "away_win": aw},
+            "xgboost": {"home_win": hw,      "draw": dr,      "away_win": aw},
+            "elo":     {"home_win": elo_hw2, "draw": elo_dr2, "away_win": elo_aw2},
+            "poisson": {"home_win": poi_hw,  "draw": poi_dr,  "away_win": poi_aw},
         },
     }
 

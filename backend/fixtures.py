@@ -9,6 +9,9 @@ import requests
 import datetime
 from difflib import get_close_matches
 from typing import Optional
+from zoneinfo import ZoneInfo
+
+BUCHAREST_TZ = ZoneInfo("Europe/Bucharest")
 
 API_KEY      = os.getenv("FOOTBALL_DATA_KEY", "")
 ODDS_API_KEY = os.getenv("ODDS_API_KEY", "")
@@ -352,8 +355,24 @@ def _normalize_name(raw: str, known_teams: list) -> str:
 def _parse_matches(data: dict, known_teams: list, default_date: str = "") -> list:
     """Proceseaza lista de meciuri returnata de football-data.org."""
     fixtures = []
+    # Echipe din afara Europei — nu le predictam (date insuficiente in model)
+    NON_EUROPEAN = {
+        "Cruzeiro", "Flamengo", "Fluminense", "Palmeiras", "Santos", "São Paulo",
+        "Corinthians", "Atletico Mineiro", "Botafogo", "Gremio", "Internacional",
+        "River Plate", "Boca Juniors", "Racing Club", "Independiente", "Estudiantes",
+        "Al Ahly", "Al Hilal", "Al Nassr", "Al Ittihad", "Urawa Red Diamonds",
+        "Seattle Sounders", "New York City", "LA Galaxy", "Inter Miami", "Portland Timbers",
+        "CF Monterrey", "Club America", "Auckland City", "Ulsan HD",
+        "Mamelodi Sundowns", "ES Tunis", "Wydad AC",
+    }
+
     for m in data.get("matches", []):
         comp_code = m.get("competition", {}).get("code", "")
+        comp_name = m.get("competition", {}).get("name", "")
+
+        # Exclude FIFA Club World Cup si alte competitii non-europene
+        if any(kw in comp_name for kw in ("Club World", "Intercontinental", "Libertadores", "Brasileirao", "MLS")):
+            continue
         if comp_code not in COMPETITIONS:
             continue
         home_raw = m.get("homeTeam", {}).get("name", "")
@@ -375,7 +394,7 @@ def _parse_matches(data: dict, known_teams: list, default_date: str = "") -> lis
             try:
                 dt = datetime.datetime.fromisoformat(utc_str.replace("Z", "+00:00"))
                 match_date = dt.strftime("%Y-%m-%d")
-                dt_local = dt + datetime.timedelta(hours=1)
+                dt_local = dt.astimezone(BUCHAREST_TZ)   # UTC → ora Bucuresti (auto DST)
                 time_str = dt_local.strftime("%H:%M")
             except Exception:
                 pass
