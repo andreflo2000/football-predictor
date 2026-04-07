@@ -20,6 +20,7 @@ from fixtures import get_today_fixtures, get_today_odds, _fetch_fixtures_for_ran
 from db import log_predictions_bulk
 import cache as redis_cache
 from auth import register_user, login_user, get_current_user, require_user
+from ingestion import compute_and_store_picks, load_picks_from_db
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +57,26 @@ app.add_middleware(
 @app.on_event("startup")
 async def startup_event():
     load_model()
+
+    # Porneste scheduler pentru pre-calculul zilnic
+    try:
+        from apscheduler.schedulers.background import BackgroundScheduler
+        from apscheduler.triggers.cron import CronTrigger
+
+        scheduler = BackgroundScheduler(timezone="Europe/Bucharest")
+
+        # Calculeaza la 07:00 si 13:00 in fiecare zi
+        scheduler.add_job(compute_and_store_picks, CronTrigger(hour=7,  minute=0))
+        scheduler.add_job(compute_and_store_picks, CronTrigger(hour=13, minute=0))
+
+        scheduler.start()
+        logger.info("Scheduler pornit: pre-calcul picks la 07:00 si 13:00")
+
+        # Pre-calcul imediat la startup (in background thread)
+        import threading
+        threading.Thread(target=compute_and_store_picks, daemon=True).start()
+    except Exception as e:
+        logger.warning("Scheduler init failed: %s", e)
 
 
 CACHE_TTL_DAILY    = 1800   # 30 minute
@@ -149,30 +170,40 @@ def daily_picks(
     target = date or datetime.date.today().isoformat()
 
     cache_key = f"{target}:{min_confidence}"
+
+    # 1. Redis cache (cel mai rapid)
     cached = redis_cache.get("daily", cache_key)
     if cached:
         return cached
 
+    # 2. Supabase daily_picks (pre-calculat de scheduler)
+    db_data = load_picks_from_db(target)
+    if db_data:
+        # Aplica filtrul de confidence
+        all_picks = db_data["picks"]
+        filtered  = [p for p in all_picks if p["confidence"] >= min_confidence * 100]
+        db_data["picks"]       = filtered
+        db_data["total_picks"] = len(filtered)
+        db_data["high_conf"]   = len([p for p in filtered if p["confidence"] >= 65])
+        db_data["med_conf"]    = len([p for p in filtered if 55 <= p["confidence"] < 65])
+        db_data["low_conf"]    = len([p for p in filtered if p["confidence"] < 55])
+        redis_cache.set("daily", cache_key, db_data, ttl=CACHE_TTL_DAILY)
+        return db_data
+
+    # 3. Calcul live (fallback daca DB nu are date)
     known    = get_known_teams()
     fixtures = get_today_fixtures(date=target, known_teams=known)
-    # Data reala a meciurilor (poate fi diferita de target daca azi e pauza)
     actual_date = fixtures[0].get("date", target) if fixtures else target
-    odds_map = get_today_odds(known_teams=known)   # {} daca nu avem ODDS_API_KEY
+    odds_map = get_today_odds(known_teams=known)
 
     picks  = []
     errors = []
 
     for fix in fixtures:
         try:
-            # Cauta odds pentru acest meci
             key  = (fix["home"].lower(), fix["away"].lower())
             odds = odds_map.get(key)
-
-            result = predict_match(
-                home_team=fix["home"],
-                away_team=fix["away"],
-                odds=odds,
-            )
+            result = predict_match(home_team=fix["home"], away_team=fix["away"], odds=odds)
 
             if result["confidence"] < min_confidence:
                 continue
@@ -186,7 +217,6 @@ def daily_picks(
                 "flag":             fix["flag"],
                 "time":             fix.get("time", ""),
                 "competition_code": fix.get("competition_code", ""),
-                # Predictie
                 "home_win":         round(result["home_win"] * 100, 1),
                 "draw":             round(result["draw"] * 100, 1),
                 "away_win":         round(result["away_win"] * 100, 1),
@@ -195,33 +225,29 @@ def daily_picks(
                 "confidence":       round(result["confidence"] * 100, 1),
                 "confidence_level": result["confidence_level"],
                 "high_confidence":  result["high_confidence"],
-                # Team info
                 "home_elo":         result.get("home_elo", 1500),
                 "away_elo":         result.get("away_elo", 1500),
                 "home_form":        round(result.get("home_form", 0.4) * 100, 0),
                 "away_form":        round(result.get("away_form", 0.4) * 100, 0),
                 "has_odds":         odds is not None,
+                "vip_only":         False,
+                "model_version":    "xgb-v1",
             })
         except Exception as e:
             errors.append({"match": f"{fix['home']} vs {fix['away']}", "error": str(e)})
 
-    # Sorteaza: HIGH confidence first, then by confidence desc
     picks.sort(key=lambda x: x["confidence"], reverse=True)
 
-    # CLV Logger — salvam picks in Supabase (async-like: nu blocam raspunsul)
+    # CLV logging
     if picks:
         try:
-            logged = log_predictions_bulk(picks, actual_date)
-            if logged:
-                import logging
-                logging.getLogger(__name__).info("Logged %d predictions for %s", logged, actual_date)
+            log_predictions_bulk(picks, actual_date)
         except Exception:
-            pass  # DB logging nu trebuie sa blocheze raspunsul
+            pass
 
-    # Statistici
-    high_conf  = [p for p in picks if p["confidence"] >= 65]
-    med_conf   = [p for p in picks if 55 <= p["confidence"] < 65]
-    low_conf   = [p for p in picks if p["confidence"] < 55]
+    high_conf = [p for p in picks if p["confidence"] >= 65]
+    med_conf  = [p for p in picks if 55 <= p["confidence"] < 65]
+    low_conf  = [p for p in picks if p["confidence"] < 55]
 
     response = {
         "date":           actual_date,
@@ -232,12 +258,12 @@ def daily_picks(
         "med_conf":       len(med_conf),
         "low_conf":       len(low_conf),
         "picks":          picks,
-        "errors":         errors[:5],  # max 5 erori in raspuns
+        "errors":         errors[:5],
         "cached":         False,
+        "source":         "live",
     }
 
     redis_cache.set("daily", cache_key, response, ttl=CACHE_TTL_DAILY)
-    response["cached"] = False
     return response
 
 
