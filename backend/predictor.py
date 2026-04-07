@@ -235,9 +235,9 @@ def predict_match(
 
     label_map = {"H": "Victorie gazda", "D": "Egal", "A": "Victorie oaspete"}
 
-    if confidence >= 0.60:
+    if confidence >= 0.65:
         confidence_level = "high"
-    elif confidence >= 0.50:
+    elif confidence >= 0.55:
         confidence_level = "medium"
     else:
         confidence_level = "low"
@@ -255,7 +255,7 @@ def predict_match(
         "prediction_label": label_map.get(best_class, "Necunoscut"),
         "confidence":       round(confidence, 3),
         "confidence_level": confidence_level,
-        "high_confidence":  confidence >= 0.60,
+        "high_confidence":  confidence >= 0.65,
         "home_elo":         round(_team_elo(home_team), 0),
         "away_elo":         round(_team_elo(away_team), 0),
         "home_form":        round(h_stats.get("pts5", 0.40), 3),
