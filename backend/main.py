@@ -103,8 +103,9 @@ def api_health():
     return {"status": "ok", "service": "Flopi San API", "ts": _dt.datetime.utcnow().isoformat()}
 
 @app.get("/ping")
+@app.head("/ping")
 def ping():
-    """Keep-alive endpoint — pinged every 10 min by UptimeRobot."""
+    """Keep-alive endpoint — pinged every 5 min by UptimeRobot."""
     return "pong"
 
 
