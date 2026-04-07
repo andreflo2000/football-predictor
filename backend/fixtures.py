@@ -380,7 +380,8 @@ def _parse_matches(data: dict, known_teams: list, default_date: str = "") -> lis
         status   = m.get("status", "")
         if not home_raw or not away_raw:
             continue
-        if status in ("FINISHED", "CANCELLED", "POSTPONED"):
+        # Acceptam doar meciuri nepornite inca
+        if status not in ("TIMED", "SCHEDULED"):
             continue
 
         comp = COMPETITIONS[comp_code]

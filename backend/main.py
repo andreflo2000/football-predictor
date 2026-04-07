@@ -57,6 +57,16 @@ app.add_middleware(
 @app.on_event("startup")
 async def startup_event():
     load_model()
+    # Goleste cache la fiecare restart — evita date invechite
+    try:
+        import cache as _c
+        for ns in ("daily", "fixtures"):
+            import datetime as _dt
+            today_str = _dt.date.today().isoformat()
+            _c.delete(ns, f"{today_str}:0.5")
+            _c.delete(ns, f"{today_str}:0.45")
+    except Exception:
+        pass
 
     # Porneste scheduler pentru pre-calculul zilnic
     try:
