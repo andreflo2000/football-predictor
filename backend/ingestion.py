@@ -70,6 +70,13 @@ def compute_and_store_picks(date: str = None) -> dict:
 
     picks.sort(key=lambda x: x["confidence"], reverse=True)
 
+    # Top 3 picks cu confidence >= 65% devin VIP-only (monetizare)
+    vip_count = 0
+    for p in picks:
+        if p["confidence"] >= 65 and vip_count < 3:
+            p["vip_only"] = True
+            vip_count += 1
+
     high_conf = [p for p in picks if p["confidence"] >= 65]
     med_conf  = [p for p in picks if 55 <= p["confidence"] < 65]
     low_conf  = [p for p in picks if p["confidence"] < 55]

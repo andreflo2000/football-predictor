@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { detectLang, t } from './i18n'
 import axios from 'axios'
+import { getUser, logout, type AuthUser } from '@/lib/auth'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -926,6 +927,8 @@ export default function Home() {
   const [lang, setLang] = useState<'ro'|'en'>('ro')
   const tr = t[lang]
   useEffect(() => { setLang(detectLang()) }, [])
+  const [user, setUser] = useState<AuthUser | null>(null)
+  useEffect(() => { setUser(getUser()) }, [])
   const [leagues, setLeagues] = useState<League[]>([])
   const [selectedLeague, setSelectedLeague] = useState<number | null>(null)
   const [fixtures, setFixtures] = useState<Fixture[]>([])
@@ -1006,6 +1009,26 @@ export default function Home() {
             <a href="/" className="nav-link active">{tr.predictions}</a>
             <a href="/daily" onClick={(e) => { if ((window as any).Capacitor) { e.preventDefault(); window.location.href='/daily/index.html'; }}} className="nav-link">🎯 Selecțiile zilei</a>
             <a href="/weekly" onClick={(e) => { if ((window as any).Capacitor) { e.preventDefault(); window.location.href='/weekly/index.html'; }}} className="nav-link">{tr.results}</a>
+            {user ? (
+              <div className="flex items-center gap-1 ml-1">
+                {user.tier === 'vip' && (
+                  <span className="text-[9px] font-bold px-2 py-0.5 rounded-full font-mono"
+                    style={{ background: 'rgba(234,179,8,0.15)', color: '#eab308', border: '1px solid rgba(234,179,8,0.3)' }}>
+                    👑 VIP
+                  </span>
+                )}
+                <button onClick={() => { logout(); setUser(null) }}
+                  className="nav-link text-[10px]" style={{ color: '#64748b' }}>
+                  Ieșire
+                </button>
+              </div>
+            ) : (
+              <a href="/login"
+                className="text-[10px] font-bold px-3 py-1 rounded-full ml-1"
+                style={{ background: 'rgba(59,130,246,0.15)', color: '#60a5fa', border: '1px solid rgba(59,130,246,0.3)' }}>
+                Cont
+              </a>
+            )}
           </nav>
         </div>
       </header>

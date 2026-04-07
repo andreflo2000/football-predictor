@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { getUser, logout, isVip, type AuthUser } from '@/lib/auth'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -504,11 +505,14 @@ function LoadingState() {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function DailyPage() {
-  const [data, setData]         = useState<DailyResponse | null>(null)
-  const [loading, setLoading]   = useState(true)
-  const [filter, setFilter]     = useState<'all' | 'high'>('all')
-  const [error, setError]       = useState('')
+  const [data, setData]           = useState<DailyResponse | null>(null)
+  const [loading, setLoading]     = useState(true)
+  const [filter, setFilter]       = useState<'all' | 'high'>('all')
+  const [error, setError]         = useState('')
   const [notifPerm, setNotifPerm] = useState<string>('default')
+  const [user, setUser]           = useState<AuthUser | null>(null)
+
+  useEffect(() => { setUser(getUser()) }, [])
 
   useEffect(() => {
     fetch(`${API_BASE}/api/daily?min_confidence=0.45`)
@@ -559,6 +563,26 @@ export default function DailyPage() {
             <a href="/" className="nav-link">Predicții AI</a>
             <a href="/daily" className="nav-link active">🎯 Selecțiile zilei</a>
             <a href="/weekly" className="nav-link">Rezultate</a>
+            {user ? (
+              <div className="flex items-center gap-1 ml-1">
+                {user.tier === 'vip' && (
+                  <span className="text-[9px] font-bold px-2 py-0.5 rounded-full font-mono"
+                    style={{ background: 'rgba(234,179,8,0.15)', color: '#eab308', border: '1px solid rgba(234,179,8,0.3)' }}>
+                    👑 VIP
+                  </span>
+                )}
+                <button onClick={() => { logout(); setUser(null) }}
+                  className="nav-link text-[10px]" style={{ color: '#64748b' }}>
+                  Ieșire
+                </button>
+              </div>
+            ) : (
+              <a href="/login"
+                className="text-[10px] font-bold px-3 py-1 rounded-full ml-1"
+                style={{ background: 'rgba(59,130,246,0.15)', color: '#60a5fa', border: '1px solid rgba(59,130,246,0.3)' }}>
+                Cont
+              </a>
+            )}
           </nav>
         </div>
       </header>
