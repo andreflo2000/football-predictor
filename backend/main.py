@@ -2,19 +2,38 @@
 FLOPI SAN — Backend API
 """
 
+import os
 import datetime
 import time
-from fastapi import FastAPI, HTTPException, Query
+import logging
+from fastapi import FastAPI, HTTPException, Query, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from typing import Optional
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+import sentry_sdk
 
 from predictor import predict_match, load_model, get_known_teams
 from fixtures import get_today_fixtures, get_today_odds, _fetch_fixtures_for_range
 from db import log_predictions_bulk
 import cache as redis_cache
+from auth import register_user, login_user, get_current_user, require_user
+
+logger = logging.getLogger(__name__)
+
+# ── Sentry (erori in productie) ─────────────────────────────
+_sentry_dsn = os.getenv("SENTRY_DSN", "")
+if _sentry_dsn:
+    sentry_sdk.init(dsn=_sentry_dsn, traces_sample_rate=0.1)
+
+# ── Rate limiter ─────────────────────────────────────────────
+limiter = Limiter(key_func=get_remote_address, default_limits=["60/minute"])
 
 app = FastAPI(title="Flopi San API")
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 ALLOWED_ORIGINS = [
     "https://flopiforecastro.vercel.app",
@@ -53,6 +72,36 @@ def api_health():
 
 
 # ─────────────────────────────────────────────
+# AUTH
+# ─────────────────────────────────────────────
+class AuthRequest(BaseModel):
+    email: str
+    password: str
+
+
+@app.post("/api/auth/register")
+@limiter.limit("5/minute")
+def auth_register(req: AuthRequest, request: Request):
+    """Inregistrare cont nou."""
+    if len(req.password) < 6:
+        raise HTTPException(400, "Parola trebuie sa aiba minim 6 caractere")
+    return register_user(req.email, req.password)
+
+
+@app.post("/api/auth/login")
+@limiter.limit("10/minute")
+def auth_login(req: AuthRequest, request: Request):
+    """Login — returneaza JWT token."""
+    return login_user(req.email, req.password)
+
+
+@app.get("/api/auth/me")
+def auth_me(user: dict = Depends(require_user)):
+    """Returneaza datele utilizatorului curent."""
+    return user
+
+
+# ─────────────────────────────────────────────
 # LIGI
 # ─────────────────────────────────────────────
 @app.get("/api/leagues")
@@ -81,7 +130,9 @@ def api_leagues():
 # DAILY PICKS — endpoint principal
 # ─────────────────────────────────────────────
 @app.get("/api/daily")
+@limiter.limit("30/minute")
 def daily_picks(
+    request: Request,
     date: Optional[str] = None,
     min_confidence: float = Query(0.50, ge=0.0, le=1.0),
 ):
@@ -201,7 +252,8 @@ LEGACY_MAP = {
 # FIXTURES pentru o liga
 # ─────────────────────────────────────────────
 @app.get("/api/fixtures/{competition_code}")
-def get_fixtures(competition_code: str, date: Optional[str] = None):
+@limiter.limit("20/minute")
+def get_fixtures(request: Request, competition_code: str, date: Optional[str] = None):
     code  = LEGACY_MAP.get(str(competition_code), competition_code.upper())
     base  = datetime.date.fromisoformat(date) if date else datetime.date.today()
     cache_key = f"{code}:{base.isoformat()}"
@@ -274,7 +326,8 @@ class MatchRequest(BaseModel):
 
 @app.post("/predict")
 @app.post("/api/predict")
-def predict(req: MatchRequest):
+@limiter.limit("20/minute")
+def predict(req: MatchRequest, request: Request):
     try:
         odds = None
         if req.odds_b365h and req.odds_b365d and req.odds_b365a:
