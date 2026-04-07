@@ -12,6 +12,7 @@ from typing import Optional
 from predictor import predict_match, load_model, get_known_teams
 from fixtures import get_today_fixtures, get_today_odds, _fetch_fixtures_for_range
 from db import log_predictions_bulk
+import cache as redis_cache
 
 app = FastAPI(title="Flopi San API")
 
@@ -38,22 +39,8 @@ async def startup_event():
     load_model()
 
 
-# ─────────────────────────────────────────────
-# CACHE simplu in memorie pentru /api/daily
-# ─────────────────────────────────────────────
-_daily_cache: dict = {}   # {"2024-01-15": {"ts": 123456, "data": {...}}}
-CACHE_TTL = 1800          # 30 minute
-
-
-def _get_cached_daily(date: str):
-    entry = _daily_cache.get(date)
-    if entry and (time.time() - entry["ts"]) < CACHE_TTL:
-        return entry["data"]
-    return None
-
-
-def _set_cached_daily(date: str, data: dict):
-    _daily_cache[date] = {"ts": time.time(), "data": data}
+CACHE_TTL_DAILY    = 1800   # 30 minute
+CACHE_TTL_FIXTURES = 600    # 10 minute
 
 
 # ─────────────────────────────────────────────
@@ -110,7 +97,8 @@ def daily_picks(
     """
     target = date or datetime.date.today().isoformat()
 
-    cached = _get_cached_daily(f"{target}:{min_confidence}")
+    cache_key = f"{target}:{min_confidence}"
+    cached = redis_cache.get("daily", cache_key)
     if cached:
         return cached
 
@@ -197,14 +185,10 @@ def daily_picks(
         "cached":         False,
     }
 
-    _set_cached_daily(f"{target}:{min_confidence}", response)
-    response["cached"] = False  # prima data e fresh
+    redis_cache.set("daily", cache_key, response, ttl=CACHE_TTL_DAILY)
+    response["cached"] = False
     return response
 
-
-# Cache pentru fixtures per liga (TTL 10 minute)
-_fixtures_cache: dict = {}
-FIXTURES_TTL = 600
 
 LEGACY_MAP = {
     "39": "PL", "78": "BL1", "135": "SA", "140": "PD", "61": "FL1",
@@ -222,10 +206,9 @@ def get_fixtures(competition_code: str, date: Optional[str] = None):
     base  = datetime.date.fromisoformat(date) if date else datetime.date.today()
     cache_key = f"{code}:{base.isoformat()}"
 
-    # Verifica cache
-    cached = _fixtures_cache.get(cache_key)
-    if cached and (time.time() - cached["ts"]) < FIXTURES_TTL:
-        return cached["data"]
+    cached = redis_cache.get("fixtures", cache_key)
+    if cached:
+        return cached
 
     known   = get_known_teams()
     date_to = (base + datetime.timedelta(days=9)).isoformat()   # max 10 zile
@@ -261,7 +244,7 @@ def get_fixtures(competition_code: str, date: Optional[str] = None):
         }
     }
 
-    _fixtures_cache[cache_key] = {"ts": time.time(), "data": result}
+    redis_cache.set("fixtures", cache_key, result, ttl=CACHE_TTL_FIXTURES)
     return result
 
 
