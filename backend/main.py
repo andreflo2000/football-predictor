@@ -11,6 +11,7 @@ from typing import Optional
 
 from predictor import predict_match, load_model, get_known_teams
 from fixtures import get_today_fixtures, get_today_odds, _fetch_fixtures_for_range
+from db import log_predictions_bulk
 
 app = FastAPI(title="Flopi San API")
 
@@ -167,6 +168,16 @@ def daily_picks(
 
     # Sorteaza: HIGH confidence first, then by confidence desc
     picks.sort(key=lambda x: x["confidence"], reverse=True)
+
+    # CLV Logger — salvam picks in Supabase (async-like: nu blocam raspunsul)
+    if picks:
+        try:
+            logged = log_predictions_bulk(picks, actual_date)
+            if logged:
+                import logging
+                logging.getLogger(__name__).info("Logged %d predictions for %s", logged, actual_date)
+        except Exception:
+            pass  # DB logging nu trebuie sa blocheze raspunsul
 
     # Statistici
     high_conf  = [p for p in picks if p["confidence"] >= 65]
