@@ -11,7 +11,7 @@ import cache as redis_cache
 
 logger = logging.getLogger(__name__)
 
-MODEL_VERSION = "xgb-v1"
+MODEL_VERSION = "xgb-v2"  # bump: filtre TIMED/SCHEDULED + doar 10 ligi active
 
 
 def compute_and_store_picks(date: str = None) -> dict:
@@ -105,9 +105,10 @@ def compute_and_store_picks(date: str = None) -> dict:
     if client:
         try:
             client.table("daily_picks").upsert({
-                "pick_date": actual_date,
-                "picks":     json.dumps(picks, default=str),
-                "banker":    json.dumps(banker, default=str) if banker else None,
+                "pick_date":     actual_date,
+                "picks":         json.dumps(picks, default=str),
+                "banker":        json.dumps(banker, default=str) if banker else None,
+                "model_version": MODEL_VERSION,
             }, on_conflict="pick_date").execute()
             logger.info("[ingestion] Salvat %d picks in Supabase pentru %s", len(picks), actual_date)
         except Exception as e:
@@ -118,6 +119,20 @@ def compute_and_store_picks(date: str = None) -> dict:
     redis_cache.delete("daily", f"{actual_date}:0.5")
 
     logger.info("[ingestion] Complet: %d picks pentru %s", len(picks), actual_date)
+
+    # Trimite notificari (Telegram + Email) doar la rularea de dimineata
+    hour = datetime.datetime.utcnow().hour
+    if picks and 5 <= hour <= 9:
+        try:
+            from notifications import send_telegram, send_email_digest, get_subscribers
+            date_fmt = datetime.datetime.strptime(actual_date, "%Y-%m-%d").strftime("%d.%m.%Y")
+            send_telegram(picks, date_fmt)
+            subs = get_subscribers()
+            if subs:
+                send_email_digest(picks, date_fmt, subs)
+        except Exception as e:
+            logger.warning("[ingestion] Notificari failed: %s", e)
+
     return payload
 
 
@@ -134,6 +149,15 @@ def load_picks_from_db(date: str) -> dict | None:
         if not rows.data:
             return None
         row = rows.data[0]
+
+        # Daca versiunea difera, sterge si forteaza recompute
+        if row.get("model_version") != MODEL_VERSION:
+            logger.info("[ingestion] Versiune veche (%s) — sterg si recomputez", row.get("model_version"))
+            client.table("daily_picks").delete().eq("pick_date", date).execute()
+            redis_cache.delete("daily", f"{date}:0.5")
+            redis_cache.delete("daily", f"{date}:0.45")
+            return None
+
         picks  = json.loads(row["picks"])  if isinstance(row["picks"],  str) else row["picks"]
         banker = json.loads(row["banker"]) if isinstance(row["banker"], str) else row["banker"]
 

@@ -669,6 +669,7 @@ export default function DailyPage() {
             <a href="/" className="nav-link">Predicții AI</a>
             <a href="/daily" className="nav-link active">🎯 Selecțiile zilei</a>
             <a href="/weekly" className="nav-link">Rezultate</a>
+            <a href="/track-record" className="nav-link">📊 Track Record</a>
             {user ? (
               <div className="flex items-center gap-1 ml-1">
                 {user.tier === 'vip' && (

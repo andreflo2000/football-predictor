@@ -99,7 +99,13 @@ CACHE_TTL_FIXTURES = 600    # 10 minute
 @app.get("/health")
 @app.get("/api/health")
 def api_health():
-    return {"status": "ok", "service": "Flopi San API"}
+    import datetime as _dt
+    return {"status": "ok", "service": "Flopi San API", "ts": _dt.datetime.utcnow().isoformat()}
+
+@app.get("/ping")
+def ping():
+    """Keep-alive endpoint — pinged every 10 min by UptimeRobot."""
+    return "pong"
 
 
 # ─────────────────────────────────────────────
@@ -606,6 +612,49 @@ def debug_status():
             result["football_data_error"] = str(e)
 
     return result
+
+
+# ─────────────────────────────────────────────
+# TRACK RECORD
+# ─────────────────────────────────────────────
+@app.get("/api/track-record")
+def track_record():
+    """Statistici acuratete live din tabelul predictions."""
+    from db import get_client
+    import datetime as _dt
+    client = get_client()
+    if client is None:
+        return {"total": 0, "tracking_since": "Aprilie 2026"}
+    try:
+        rows = client.table("predictions").select("confidence, result").execute()
+        data = rows.data or []
+        resolved = [r for r in data if r.get("result") in ("WIN", "LOSS")]
+
+        high = [r for r in resolved if r["confidence"] >= 0.65]
+        med  = [r for r in resolved if 0.55 <= r["confidence"] < 0.65]
+
+        def acc(lst):
+            wins = sum(1 for r in lst if r["result"] == "WIN")
+            return round(wins / len(lst) * 100, 1) if lst else 0
+
+        # Prima predictie logata
+        first_row = client.table("predictions").select("created_at").order("created_at").limit(1).execute()
+        since = first_row.data[0]["created_at"][:10] if first_row.data else "Aprilie 2026"
+        days  = (datetime.date.today() - datetime.date.fromisoformat(since)).days if since != "Aprilie 2026" else 0
+
+        return {
+            "total":               len(resolved),
+            "high_conf_total":     len(high),
+            "high_conf_wins":      sum(1 for r in high if r["result"] == "WIN"),
+            "high_conf_accuracy":  acc(high),
+            "med_conf_total":      len(med),
+            "med_conf_wins":       sum(1 for r in med if r["result"] == "WIN"),
+            "med_conf_accuracy":   acc(med),
+            "tracking_since":      since,
+            "days_tracked":        days,
+        }
+    except Exception as e:
+        return {"total": 0, "tracking_since": "Aprilie 2026", "error": str(e)}
 
 
 # ─────────────────────────────────────────────
