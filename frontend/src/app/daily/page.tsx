@@ -30,6 +30,7 @@ interface Pick {
   away_elo: number
   home_form: number
   away_form: number
+  competition_code?: string
 }
 
 interface DailyResponse {
@@ -53,6 +54,187 @@ function predLabel(p: Pick) {
   if (p.prediction === 'H') return { emoji: '🏠', short: '1',  full: p.home,  prob: p.home_win }
   if (p.prediction === 'A') return { emoji: '✈️', short: '2',  full: p.away,  prob: p.away_win }
   return                           { emoji: '🤝', short: 'X',  full: 'Egal',  prob: p.draw }
+}
+
+// ── Tracker personal (localStorage) ─────────────────────────────────────────
+interface TrackedBet { id: string; match: string; pick: string; odd: number; result: 'win'|'loss'|'pending'; date: string }
+
+function PersonalTracker({ picks }: { picks: Pick[] }) {
+  const [bets, setBets]       = useState<TrackedBet[]>([])
+  const [open, setOpen]       = useState(false)
+  const [stake, setStake]     = useState('10')
+
+  useEffect(() => {
+    try { setBets(JSON.parse(localStorage.getItem('flopi_bets') || '[]')) } catch {}
+  }, [])
+
+  const save = (updated: TrackedBet[]) => {
+    setBets(updated)
+    localStorage.setItem('flopi_bets', JSON.stringify(updated))
+  }
+
+  const addBet = (p: Pick) => {
+    const pred   = predLabel(p)
+    const margin = 1.08
+    const odd    = parseFloat((100 / Math.max(pred.prob, 1) * margin).toFixed(2))
+    const id     = `${p.home}-${p.away}-${Date.now()}`
+    const bet: TrackedBet = {
+      id, odd,
+      match: `${p.home} vs ${p.away}`,
+      pick:  `${pred.short} — ${pred.full}`,
+      result: 'pending',
+      date: new Date().toLocaleDateString('ro-RO'),
+    }
+    save([...bets, bet])
+  }
+
+  const markResult = (id: string, result: 'win'|'loss') =>
+    save(bets.map(b => b.id === id ? { ...b, result } : b))
+
+  const removeBet = (id: string) => save(bets.filter(b => b.id !== id))
+
+  const wins   = bets.filter(b => b.result === 'win').length
+  const losses = bets.filter(b => b.result === 'loss').length
+  const total  = wins + losses
+  const stakeN = parseFloat(stake) || 10
+  const roi    = total > 0
+    ? bets.filter(b => b.result !== 'pending').reduce((acc, b) =>
+        acc + (b.result === 'win' ? b.odd * stakeN - stakeN : -stakeN), 0)
+    : 0
+  const roiPct = total > 0 ? Math.round((roi / (total * stakeN)) * 100) : 0
+
+  return (
+    <div className="mt-6">
+      <button onClick={() => setOpen(o => !o)} className="w-full py-3 rounded-2xl text-sm font-bold transition-all flex items-center justify-center gap-2"
+        style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.25)', color: '#818cf8' }}>
+        📓 Tracker Personal {bets.length > 0 && `· ${bets.length} pariuri`} {open ? '▲' : '▼'}
+      </button>
+      {open && (
+        <div className="mt-3 card p-4 fade-in">
+          {/* Stats */}
+          {total > 0 && (
+            <div className="grid grid-cols-4 gap-2 mb-4">
+              {[
+                { label: 'Câștigate', val: wins, color: '#22c55e' },
+                { label: 'Pierdute', val: losses, color: '#ef4444' },
+                { label: 'ROI', val: `${roiPct > 0 ? '+' : ''}${roiPct}%`, color: roiPct >= 0 ? '#22c55e' : '#ef4444' },
+                { label: `P/L (${stake} RON)`, val: `${roi > 0 ? '+' : ''}${roi.toFixed(0)}`, color: roi >= 0 ? '#22c55e' : '#ef4444' },
+              ].map(s => (
+                <div key={s.label} className="bg-gray-800/40 rounded-xl p-2 text-center">
+                  <div className="text-sm font-bold font-mono" style={{ color: s.color }}>{s.val}</div>
+                  <div className="text-[9px] text-gray-600 uppercase tracking-widest mt-0.5">{s.label}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Stake input */}
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-[10px] text-gray-500 font-mono shrink-0">Miză per pariu:</span>
+            <input type="number" value={stake} onChange={e => setStake(e.target.value)} min="1"
+              className="w-20 bg-gray-800/60 border border-gray-700 rounded-lg px-2 py-1 text-white text-sm font-mono focus:outline-none focus:border-blue-500" />
+            <span className="text-[10px] text-gray-600 font-mono">RON</span>
+          </div>
+
+          {/* Add from today's picks */}
+          <div className="mb-4">
+            <div className="text-[10px] text-gray-500 uppercase tracking-widest mb-2 font-mono">Adaugă din pick-urile de azi:</div>
+            <div className="space-y-1">
+              {picks.slice(0, 5).map((p, i) => {
+                const pred = predLabel(p)
+                const already = bets.some(b => b.match === `${p.home} vs ${p.away}`)
+                return (
+                  <button key={i} onClick={() => !already && addBet(p)}
+                    className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-left transition-all"
+                    style={{
+                      background: already ? 'rgba(255,255,255,0.03)' : 'rgba(99,102,241,0.08)',
+                      border: `1px solid ${already ? 'rgba(255,255,255,0.06)' : 'rgba(99,102,241,0.2)'}`,
+                      opacity: already ? 0.5 : 1,
+                    }}>
+                    <span className="text-[11px] text-white font-mono truncate">{p.flag} {p.home} vs {p.away} · <span className="text-indigo-400">{pred.short}</span></span>
+                    <span className="text-[10px] text-gray-500 shrink-0 ml-2">{already ? '✓ adăugat' : '+ adaugă'}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Bet history */}
+          {bets.length > 0 && (
+            <div className="space-y-2">
+              <div className="text-[10px] text-gray-500 uppercase tracking-widest font-mono">Istoricul tău:</div>
+              {[...bets].reverse().slice(0, 10).map(b => (
+                <div key={b.id} className="flex items-center gap-2 bg-gray-800/30 rounded-xl px-3 py-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[11px] text-white font-mono truncate">{b.match}</div>
+                    <div className="text-[10px] text-gray-500 font-mono">{b.pick} · ~{b.odd} · {b.date}</div>
+                  </div>
+                  {b.result === 'pending' ? (
+                    <div className="flex gap-1 shrink-0">
+                      <button onClick={() => markResult(b.id, 'win')}
+                        className="text-[10px] px-2 py-1 rounded-lg font-bold" style={{ background: 'rgba(34,197,94,0.2)', color: '#22c55e' }}>W</button>
+                      <button onClick={() => markResult(b.id, 'loss')}
+                        className="text-[10px] px-2 py-1 rounded-lg font-bold" style={{ background: 'rgba(239,68,68,0.2)', color: '#ef4444' }}>L</button>
+                      <button onClick={() => removeBet(b.id)}
+                        className="text-[10px] px-2 py-1 rounded-lg" style={{ background: 'rgba(255,255,255,0.05)', color: '#6b7280' }}>✕</button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1 shrink-0">
+                      <span className="text-sm">{b.result === 'win' ? '✅' : '❌'}</span>
+                      <span className="text-[10px] font-bold font-mono" style={{ color: b.result === 'win' ? '#22c55e' : '#ef4444' }}>
+                        {b.result === 'win' ? `+${((b.odd - 1) * stakeN).toFixed(0)}` : `-${stakeN}`} RON
+                      </span>
+                      <button onClick={() => removeBet(b.id)} className="text-gray-700 text-[10px] ml-1">✕</button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Streak Badges ────────────────────────────────────────────────────────────
+function StreakBadges({ pick }: { pick: Pick }) {
+  const badges: { text: string; color: string }[] = []
+
+  // Formă excelentă (>= 65%)
+  if (pick.home_form >= 65)
+    badges.push({ text: `🔥 ${pick.home.split(' ')[0]} în formă`, color: '#f97316' })
+  if (pick.away_form >= 65)
+    badges.push({ text: `🔥 ${pick.away.split(' ')[0]} în formă`, color: '#f97316' })
+
+  // Formă slabă (<= 30%)
+  if (pick.home_form <= 30)
+    badges.push({ text: `📉 ${pick.home.split(' ')[0]} în criză`, color: '#ef4444' })
+  if (pick.away_form <= 30)
+    badges.push({ text: `📉 ${pick.away.split(' ')[0]} în criză`, color: '#ef4444' })
+
+  // Diferență mare Elo = favorit clar
+  const eloDiff = Math.abs(pick.home_elo - pick.away_elo)
+  if (eloDiff >= 150) {
+    const fav = pick.home_elo > pick.away_elo ? pick.home : pick.away
+    badges.push({ text: `⚡ ${fav.split(' ')[0]} favorit clar (+${eloDiff} Elo)`, color: '#a78bfa' })
+  }
+
+  // Meci echilibrat
+  if (eloDiff < 30 && Math.abs(pick.home_form - pick.away_form) < 10)
+    badges.push({ text: '⚖️ Meci echilibrat', color: '#6b7280' })
+
+  if (badges.length === 0) return null
+  return (
+    <div className="flex flex-wrap gap-1 mt-2">
+      {badges.slice(0, 3).map((b, i) => (
+        <span key={i} className="text-[9px] font-mono px-2 py-0.5 rounded-full"
+          style={{ backgroundColor: `${b.color}18`, color: b.color, border: `1px solid ${b.color}30` }}>
+          {b.text}
+        </span>
+      ))}
+    </div>
+  )
 }
 
 function FormBar({ pct, label }: { pct: number; label: string }) {
@@ -153,6 +335,9 @@ function PickCard({ pick, rank }: { pick: Pick; rank: number }) {
           </div>
         </div>
       </div>
+
+      {/* Streak indicators */}
+      <StreakBadges pick={pick} />
     </div>
   )
 }
@@ -250,6 +435,49 @@ function FreePicks({ picks }: { picks: Pick[] }) {
   )
 }
 
+// ── Banker of the Week ───────────────────────────────────────────────────────
+function BankerCard({ picks }: { picks: Pick[] }) {
+  const banker = picks.find(p => p.confidence >= 65) ?? picks[0]
+  if (!banker) return null
+  const pred   = predLabel(banker)
+  const margin = 1.08
+  const odd    = (100 / Math.max(pred.prob, 1) * margin).toFixed(2)
+
+  return (
+    <div className="mb-4 fade-in">
+      <div className="rounded-2xl p-4"
+        style={{ background: 'linear-gradient(135deg, rgba(139,92,246,0.15), rgba(109,40,217,0.08))', border: '1px solid rgba(139,92,246,0.35)' }}>
+        <div className="flex items-center gap-2 mb-3">
+          <span className="text-xl">🏦</span>
+          <div>
+            <div className="text-xs font-bold text-purple-400 uppercase tracking-widest">Banker of the Day</div>
+            <div className="text-[10px] text-gray-500 font-mono">Cel mai sigur pariu · Recomandat la acumulatori</div>
+          </div>
+          <div className="ml-auto">
+            <span className="text-[9px] font-bold px-2 py-1 rounded-full font-mono"
+              style={{ backgroundColor: 'rgba(139,92,246,0.2)', color: '#a78bfa', border: '1px solid rgba(139,92,246,0.4)' }}>
+              {banker.confidence}% conf
+            </span>
+          </div>
+        </div>
+        <div className="bg-black/20 rounded-xl px-4 py-3 flex items-center justify-between">
+          <div>
+            <div className="text-sm font-bold text-white">{banker.flag} {banker.home} <span className="text-gray-500">vs</span> {banker.away}</div>
+            <div className="text-xs font-mono mt-1">
+              <span className="text-purple-300 font-bold">{pred.short} — {pred.full}</span>
+              <span className="text-gray-600 ml-2">{banker.league}</span>
+            </div>
+          </div>
+          <div className="text-right ml-4 shrink-0">
+            <div className="text-2xl font-bold font-mono text-purple-400">~{odd}</div>
+            <div className="text-[9px] text-gray-600 font-mono">cotă estimată</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Loading ───────────────────────────────────────────────────────────────────
 
 function LoadingState() {
@@ -276,17 +504,31 @@ function LoadingState() {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function DailyPage() {
-  const [data, setData]       = useState<DailyResponse | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [filter, setFilter]   = useState<'all' | 'high'>('all')
-  const [error, setError]     = useState('')
+  const [data, setData]         = useState<DailyResponse | null>(null)
+  const [loading, setLoading]   = useState(true)
+  const [filter, setFilter]     = useState<'all' | 'high'>('all')
+  const [error, setError]       = useState('')
+  const [notifPerm, setNotifPerm] = useState<string>('default')
 
   useEffect(() => {
     fetch(`${API_BASE}/api/daily?min_confidence=0.45`)
       .then(r => r.json())
       .then(d => { setData(d); setLoading(false) })
       .catch(() => { setError('Serverul nu răspunde. Reîncarcă pagina.'); setLoading(false) })
+    if ('Notification' in window) setNotifPerm(Notification.permission)
   }, [])
+
+  const enableNotifications = async () => {
+    if (!('Notification' in window)) return
+    const perm = await Notification.requestPermission()
+    setNotifPerm(perm)
+    if (perm === 'granted') {
+      new Notification('🎯 Flopi San activat!', {
+        body: 'Vei fi notificat când apar pick-uri noi cu confidence ridicat.',
+        icon: '/logo.jpg',
+      })
+    }
+  }
 
   const picks = data?.picks ?? []
   const shown = filter === 'high' ? picks.filter(p => p.high_confidence) : picks
@@ -339,6 +581,16 @@ export default function DailyPage() {
           <p className="text-gray-500 text-xs font-mono">
             XGBoost + Elo · 225K meciuri antrenament · Sorted by confidence
           </p>
+          {notifPerm !== 'granted' && notifPerm !== 'denied' && (
+            <button onClick={enableNotifications}
+              className="mt-3 px-4 py-2 rounded-full text-xs font-bold font-mono transition-all"
+              style={{ background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.3)', color: '#22c55e' }}>
+              🔔 Activează alertele pentru pick-uri noi
+            </button>
+          )}
+          {notifPerm === 'granted' && (
+            <div className="mt-3 text-[10px] font-mono text-green-600">🔔 Alerte active</div>
+          )}
         </div>
 
         {loading && <LoadingState />}
@@ -364,6 +616,9 @@ export default function DailyPage() {
 
             {/* 3 Ponturi Gratuite */}
             <FreePicks picks={picks} />
+
+            {/* Banker of the Week */}
+            <BankerCard picks={picks} />
 
             {/* Filter tabs */}
             <div className="flex gap-2 mb-5">
@@ -425,6 +680,9 @@ export default function DailyPage() {
                 </button>
               </div>
             )}
+
+            {/* Tracker personal */}
+            <PersonalTracker picks={shown} />
 
             {/* Model info */}
             <div className="card p-5 mt-6">

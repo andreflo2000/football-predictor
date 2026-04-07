@@ -458,6 +458,81 @@ function TeamStatsCard({ stats, teamName, color }: { stats: any; teamName: strin
   )
 }
 
+// ── Comparator cotă reală introdusă de user ───────────────────────────────────
+function OddsComparator({ prediction }: { prediction: Prediction }) {
+  const [inputOdd, setInputOdd] = useState('')
+  const [market, setMarket]     = useState('1')
+  const pred = prediction.prediction || {}
+  const probMap: Record<string, number> = {
+    '1': pred.home_win ?? 0,
+    'X': pred.draw ?? 0,
+    '2': pred.away_win ?? 0,
+  }
+  const prob     = (probMap[market] ?? 0) / 100
+  const odd      = parseFloat(inputOdd)
+  const hasValue = !isNaN(odd) && odd > 0 && prob > 0
+  const impliedP = hasValue ? 1 / odd : 0
+  const edge     = hasValue ? Math.round((prob - impliedP) * 100) : 0
+  const ev       = hasValue ? Math.round((prob * odd - 1) * 100) / 100 : 0
+  const isValue  = edge > 0
+
+  return (
+    <div className="mt-5 pt-5 border-t border-gray-800/50">
+      <div className="text-[10px] font-bold text-amber-400 uppercase tracking-widest mb-3 text-center">🔍 Verifică cota ta — Value sau nu?</div>
+      <div className="flex gap-2 mb-3">
+        {['1','X','2'].map(m => (
+          <button key={m} onClick={() => setMarket(m)}
+            className="flex-1 py-2 rounded-xl text-sm font-bold font-mono transition-all"
+            style={{
+              background: market === m ? 'rgba(59,130,246,0.2)' : 'rgba(255,255,255,0.04)',
+              border: `1px solid ${market === m ? 'rgba(59,130,246,0.5)' : 'rgba(255,255,255,0.08)'}`,
+              color: market === m ? '#60a5fa' : '#6b7280',
+            }}>
+            {m === '1' ? `1 ${prediction.home_team.split(' ')[0]}` : m === '2' ? `2 ${prediction.away_team.split(' ')[0]}` : 'X Egal'}
+          </button>
+        ))}
+      </div>
+      <div className="flex gap-2 items-center">
+        <input
+          type="number" step="0.01" min="1.01" placeholder="Cota la bookmaker (ex: 2.15)"
+          value={inputOdd}
+          onChange={e => setInputOdd(e.target.value)}
+          className="flex-1 bg-gray-800/60 border border-gray-700 rounded-xl px-3 py-2.5 text-white text-sm font-mono focus:outline-none focus:border-blue-500"
+        />
+      </div>
+      {hasValue && (
+        <div className="mt-3 p-4 rounded-xl" style={{
+          background: isValue ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)',
+          border: `1px solid ${isValue ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'}`,
+        }}>
+          <div className="text-center mb-3">
+            <div className="text-2xl font-bold font-mono" style={{ color: isValue ? '#10b981' : '#ef4444' }}>
+              {isValue ? '✅ VALUE BET' : '❌ Fără value'}
+            </div>
+            <div className="text-[10px] text-gray-500 font-mono mt-1">
+              Probabilitate model: {Math.round(prob*100)}% · Prob. implicită cotă: {Math.round(impliedP*100)}%
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="bg-gray-900/50 rounded-lg p-2 text-center">
+              <div className="text-[10px] text-gray-600 uppercase tracking-widest">Edge față de cotă</div>
+              <div className="text-base font-bold font-mono" style={{ color: isValue ? '#10b981' : '#ef4444' }}>
+                {edge > 0 ? '+' : ''}{edge}%
+              </div>
+            </div>
+            <div className="bg-gray-900/50 rounded-lg p-2 text-center">
+              <div className="text-[10px] text-gray-600 uppercase tracking-widest">EV / 10 RON</div>
+              <div className="text-base font-bold font-mono" style={{ color: ev > 0 ? '#10b981' : '#ef4444' }}>
+                {ev > 0 ? '+' : ''}{(ev * 10).toFixed(2)} RON
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function PredictionDisplay({ prediction, fixture, standings }: { prediction: Prediction; fixture: Fixture; standings: StandingRow[] }) {
   const [activeTab, setActiveTab] = useState('markets')
   const pred = prediction.prediction || {}
@@ -663,10 +738,13 @@ function PredictionDisplay({ prediction, fixture, standings }: { prediction: Pre
               </div>
             </div>
           )}
+
+          {/* ── Comparator cotă reală vs. model ───────────────────────── */}
+          <OddsComparator prediction={prediction} />
         </div>
       )}
 
-      {/* Tab: Scoruri */}
+      {/* Tab: Scoruri + Score Matrix */}
       {activeTab === 'scores' && (
         <div className="card p-5 fade-in" style={{ overflow: 'hidden' }}>
           <div className="flex gap-4 mb-4 text-center">
@@ -680,7 +758,61 @@ function PredictionDisplay({ prediction, fixture, standings }: { prediction: Pre
               </div>
             ))}
           </div>
-          <div className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-3 text-center">Cele mai probabile scoruri</div>
+
+          {/* Score Matrix — Poisson bivariate */}
+          {(() => {
+            const lH = prediction.expected_goals?.home ?? 1.4
+            const lA = prediction.expected_goals?.away ?? 1.2
+            const poi = (l: number, k: number) => {
+              let t = Math.exp(-l); for (let i = 0; i < k; i++) t *= l / (i + 1); return t
+            }
+            const rows = [0,1,2,3,4]
+            const maxP = Math.max(...rows.flatMap(h => rows.map(a => poi(lH,h)*poi(lA,a))))
+            return (
+              <div className="mb-5">
+                <div className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-2 text-center">🎯 Score Matrix — Probabilitate per scor exact</div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-[10px] font-mono">
+                    <thead>
+                      <tr>
+                        <td className="text-gray-700 text-center pb-1 pr-1">G↓ A→</td>
+                        {rows.map(a => <th key={a} className="text-orange-400 text-center pb-1 w-10">{a}</th>)}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rows.map(h => (
+                        <tr key={h}>
+                          <td className="text-blue-400 font-bold text-center pr-1 py-0.5">{h}</td>
+                          {rows.map(a => {
+                            const p = poi(lH, h) * poi(lA, a)
+                            const pct = Math.round(p * 100)
+                            const intensity = p / maxP
+                            const bg = h > a
+                              ? `rgba(59,130,246,${intensity * 0.7})`
+                              : a > h
+                              ? `rgba(249,115,22,${intensity * 0.7})`
+                              : `rgba(107,114,128,${intensity * 0.7})`
+                            return (
+                              <td key={a} className="text-center py-1 rounded" style={{ backgroundColor: bg }}>
+                                <span className="text-white font-bold">{pct}%</span>
+                              </td>
+                            )
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="flex gap-3 justify-center mt-2 text-[9px] font-mono text-gray-600">
+                  <span><span className="text-blue-400">■</span> Victorie gazdă</span>
+                  <span><span className="text-gray-400">■</span> Egal</span>
+                  <span><span className="text-orange-400">■</span> Victorie oaspete</span>
+                </div>
+              </div>
+            )
+          })()}
+
+          <div className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-3 text-center">Top scoruri probabile</div>
           <div className="grid grid-cols-2 gap-2">
             {(prediction.top_scores || []).slice(0, 8).map((s: any, i: number) => (
               <div key={i} className="flex justify-between items-center bg-gray-800/30 rounded-lg px-3 py-2">
