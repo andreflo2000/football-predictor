@@ -55,33 +55,33 @@ def register_user(email: str, password: str) -> dict:
     """
     Creaza cont nou. Returneaza token sau arunca HTTPException.
     """
-    client = get_client()
-    if client is None:
-        raise HTTPException(503, "DB indisponibil")
-
-    # Verifica daca email-ul exista deja
-    existing = client.table("users").select("id").eq("email", email).execute()
-    if existing.data:
-        raise HTTPException(400, "Email deja inregistrat")
-
-    hashed = _hash(password)
     try:
+        client = get_client()
+        if client is None:
+            raise HTTPException(503, "DB indisponibil")
+
+        existing = client.table("users").select("id").eq("email", email).execute()
+        if existing.data:
+            raise HTTPException(400, "Email deja inregistrat")
+
+        hashed = _hash(password)
         client.table("users").insert({
             "email":         email,
             "password_hash": hashed,
             "tier":          "free",
         }).execute()
-    except Exception as e:
-        logger.error("Register insert failed: %s", e)
-        raise HTTPException(500, f"Eroare DB la inregistrare: {str(e)}")
 
-    # Fetch user dupa insert (supabase-py nu returneaza date din insert direct)
-    rows = client.table("users").select("*").eq("email", email).execute()
-    if not rows.data:
-        raise HTTPException(500, "Eroare la crearea contului — user negasit dupa insert")
-    user = rows.data[0]
-    token = _create_token(user["id"], user["email"], user["tier"])
-    return {"access_token": token, "token_type": "bearer", "tier": "free"}
+        rows = client.table("users").select("*").eq("email", email).execute()
+        if not rows.data:
+            raise HTTPException(500, "User negasit dupa insert")
+        user = rows.data[0]
+        token = _create_token(user["id"], user["email"], user["tier"])
+        return {"access_token": token, "token_type": "bearer", "tier": "free"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("register_user error: %s", repr(e))
+        raise HTTPException(500, f"Eroare inregistrare: {repr(e)}")
 
 
 def login_user(email: str, password: str) -> dict:
