@@ -17,7 +17,7 @@ import sentry_sdk
 
 from predictor import predict_match, load_model, get_known_teams
 from fixtures import get_today_fixtures, get_today_odds, _fetch_fixtures_for_range
-from db import log_predictions_bulk
+from db import log_predictions_bulk, get_client
 import cache as redis_cache
 from auth import register_user, login_user, get_current_user, require_user
 from ingestion import compute_and_store_picks, load_picks_from_db
