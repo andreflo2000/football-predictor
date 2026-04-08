@@ -62,8 +62,13 @@ def compute_and_store_picks(date: str = None) -> dict:
                 "home_form":        round(result.get("home_form", 0.4) * 100, 0),
                 "away_form":        round(result.get("away_form", 0.4) * 100, 0),
                 "has_odds":         odds is not None,
-                "vip_only":         False,   # viitor: top picks = VIP
+                "vip_only":         False,
                 "model_version":    MODEL_VERSION,
+                # BI signals
+                "edge":             result.get("edge", 0.0),
+                "value_bet":        result.get("value_bet", False),
+                "market_signal":    result.get("market_signal", "NO_ODDS"),
+                "upset_risk":       result.get("upset_risk", False),
             })
         except Exception as e:
             errors.append({"match": f"{fix['home']} vs {fix['away']}", "error": str(e)})

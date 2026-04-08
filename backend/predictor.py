@@ -186,6 +186,75 @@ def _build_feature_vector(home_team: str, away_team: str,
         if f"h_{col}" in feat and f"a_{col}" in feat:
             feat[f"diff_{col}"] = feat[f"h_{col}"] - feat[f"a_{col}"]
 
+    # ── Market Intelligence features ────────────────────────────────────────
+    # La inferenta nu avem opening odds → miscarea liniei = 0 (neutral)
+    # Calculam ce putem din cotele curente disponibile
+    _MI_ZERO = ["ps_move_h","ps_move_a","ps_move_d",
+                "home_steamed","away_steamed","home_drifted","away_drifted",
+                "clv_h","clv_a","reverse_line_h","reverse_line_a",
+                "drift_in_value_h","steam_in_value_a","trap_game_h"]
+
+    if odds:
+        ps_h  = odds.get("PSH")  or odds.get("B365H")
+        ps_a  = odds.get("PSA")  or odds.get("B365A")
+        avg_h = odds.get("AvgH") or odds.get("B365H")
+        avg_a = odds.get("AvgA") or odds.get("B365A")
+        max_h = odds.get("MaxH") or odds.get("B365H")
+        max_d = odds.get("MaxD") or odds.get("B365D")
+        max_a = odds.get("MaxA") or odds.get("B365A")
+        b365h = odds.get("B365H")
+        b365a = odds.get("B365A")
+
+        # Sharp vs Soft (Pinnacle vs Bet365)
+        if ps_h and b365h and ps_h > 1 and b365h > 1:
+            feat["sharp_soft_div_h"] = float(ps_h - b365h)
+            feat["sharp_soft_div_a"] = float((ps_a or b365a or 0) - (b365a or 0))
+            feat["public_fav_h"] = float(feat["sharp_soft_div_h"] > 0.08)
+            feat["public_fav_a"] = float(feat["sharp_soft_div_a"] > 0.08)
+        elif ps_h and avg_h and ps_h > 1 and avg_h > 1:
+            feat["sharp_soft_div_h"] = float(ps_h - avg_h)
+            feat["sharp_soft_div_a"] = float((ps_a or 0) - (avg_a or 0))
+            feat["public_fav_h"] = float(feat["sharp_soft_div_h"] > 0.08)
+            feat["public_fav_a"] = float(feat["sharp_soft_div_a"] > 0.08)
+        else:
+            feat["sharp_soft_div_h"] = _feature_means.get("sharp_soft_div_h", 0.0)
+            feat["sharp_soft_div_a"] = _feature_means.get("sharp_soft_div_a", 0.0)
+            feat["public_fav_h"] = 0.0
+            feat["public_fav_a"] = 0.0
+
+        # Closing Odds Variance (dispersia intre bookmakers disponibili)
+        close_h_vals = [v for v in [ps_h, max_h, avg_h, b365h] if v and v > 1]
+        close_a_vals = [v for v in [ps_a, max_a, avg_a, b365a] if v and v > 1]
+        feat["close_var_h"] = float(np.std(close_h_vals)) if len(close_h_vals) >= 2 else 0.0
+        feat["close_var_a"] = float(np.std(close_a_vals)) if len(close_a_vals) >= 2 else 0.0
+        feat["high_cov_h"] = float(feat["close_var_h"] > 0.10)
+        feat["high_cov_a"] = float(feat["close_var_a"] > 0.10)
+
+        # Market efficiency (vig la max — cel mai mic overround)
+        if max_h and max_d and max_a and max_h > 1 and max_d > 1 and max_a > 1:
+            feat["market_vig"] = float(1/max_h + 1/max_d + 1/max_a - 1)
+            feat["low_vig"]    = float(feat["market_vig"] < 0.04)
+        else:
+            feat["market_vig"] = _feature_means.get("market_vig", 0.05)
+            feat["low_vig"]    = 0.0
+
+        # Value zone 1.60–2.10
+        ref_h = max_h or ps_h or b365h or 0
+        ref_a = max_a or ps_a or b365a or 0
+        feat["value_zone_h"] = float(1.60 <= ref_h <= 2.10) if ref_h else 0.0
+        feat["value_zone_a"] = float(1.60 <= ref_a <= 2.10) if ref_a else 0.0
+
+        # Miscarea liniei necunoscuta la inferenta → 0
+        for col in _MI_ZERO:
+            feat[col] = 0.0
+
+    else:
+        # Fara cote: folosim medii
+        for col in ["sharp_soft_div_h","sharp_soft_div_a","public_fav_h","public_fav_a",
+                    "close_var_h","close_var_a","high_cov_h","high_cov_a",
+                    "market_vig","low_vig","value_zone_h","value_zone_a"] + _MI_ZERO:
+            feat[col] = _feature_means.get(col, 0.0)
+
     # Context
     season_month = (month - 8) % 12
     feat["league_id"]       = league_id
@@ -245,6 +314,68 @@ def predict_match(
     h_stats = _team_stats.get(home_team, {})
     a_stats = _team_stats.get(away_team, {})
 
+    # ── Market Intelligence signals ─────────────────────────────────────────
+    edge           = 0.0
+    value_bet      = False
+    upset_risk     = False
+    market_signal  = "NO_ODDS"
+
+    if odds:
+        max_h = odds.get("MaxH") or odds.get("B365H") or 0
+        max_d = odds.get("MaxD") or odds.get("B365D") or 0
+        max_a = odds.get("MaxA") or odds.get("B365A") or 0
+
+        if max_h > 1 and max_d > 1 and max_a > 1:
+            # Probabilitati implicite corectate pentru vig
+            vig       = 1/max_h + 1/max_d + 1/max_a
+            impl_h    = (1/max_h) / vig
+            impl_d    = (1/max_d) / vig
+            impl_a    = (1/max_a) / vig
+
+            model_h   = prob_map.get("H", 0.0)
+            model_a   = prob_map.get("A", 0.0)
+            model_d   = prob_map.get("D", 0.0)
+
+            # Edge = diferenta intre probabilitatea modelului si piata
+            edge_h = model_h - impl_h
+            edge_a = model_a - impl_a
+            edge_d = model_d - impl_d
+
+            # Cel mai bun edge pe directia predictiei
+            if best_class == "H":
+                edge = edge_h
+            elif best_class == "A":
+                edge = edge_a
+            else:
+                edge = edge_d
+
+            # Value bet: edge > 4% (pragul minim de exploatare pe termen lung)
+            in_value_zone_h = 1.60 <= max_h <= 2.10
+            in_value_zone_a = 1.60 <= max_a <= 2.10
+
+            if edge > 0.04:
+                value_bet = True
+                if best_class == "H" and in_value_zone_h:
+                    market_signal = "VALUE_HOME"
+                elif best_class == "A" and in_value_zone_a:
+                    market_signal = "VALUE_AWAY"
+                elif best_class == "H":
+                    market_signal = "EDGE_HOME"
+                elif best_class == "A":
+                    market_signal = "EDGE_AWAY"
+                else:
+                    market_signal = "EDGE_DRAW"
+            else:
+                market_signal = "NEUTRAL"
+
+            # Upset risk: model vede altceva decat favoritul pietei in zona 1.60-2.10
+            fav_is_home = max_h < max_a and in_value_zone_h
+            fav_is_away = max_a < max_h and in_value_zone_a
+            if fav_is_home and best_class != "H" and model_a > impl_a + 0.03:
+                upset_risk = True
+            elif fav_is_away and best_class != "A" and model_h > impl_h + 0.03:
+                upset_risk = True
+
     return {
         "home_team":        home_team,
         "away_team":        away_team,
@@ -263,6 +394,11 @@ def predict_match(
         "home_goals_avg":   round(h_stats.get("atk_all5", 1.3), 2),
         "away_goals_avg":   round(a_stats.get("atk_all5", 1.3), 2),
         "has_odds":         odds is not None,
+        # ── BI signals ─────────────────────────────────────────────────────
+        "edge":             round(edge * 100, 1),    # % avantaj față de piață
+        "value_bet":        value_bet,               # True dacă edge > 4%
+        "market_signal":    market_signal,           # VALUE_HOME|VALUE_AWAY|EDGE_*|NEUTRAL|NO_ODDS
+        "upset_risk":       upset_risk,              # True dacă modelul contrazice favoritul din 1.60-2.10
     }
 
 

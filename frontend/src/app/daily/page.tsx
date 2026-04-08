@@ -33,6 +33,11 @@ interface Pick {
   home_form: number
   away_form: number
   competition_code?: string
+  // BI signals
+  edge?: number
+  value_bet?: boolean
+  market_signal?: string
+  upset_risk?: boolean
 }
 
 interface DailyResponse {
@@ -454,6 +459,39 @@ function PickCard({ pick, rank, userTier }: { pick: Pick; rank: number; userTier
           </div>
         </div>
       </div>
+
+      {/* BI Market Signals */}
+      {pick.has_odds && (pick.value_bet || pick.upset_risk) && (
+        <div className="flex flex-wrap gap-1.5 mt-2 mb-1">
+          {pick.value_bet && (
+            <span style={{
+              background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.4)',
+              color: '#f59e0b', fontSize: 10, fontWeight: 700, padding: '3px 8px',
+              borderRadius: 6, fontFamily: 'monospace', letterSpacing: '0.05em',
+            }}>
+              ⚡ VALUE +{pick.edge}%
+            </span>
+          )}
+          {pick.market_signal === 'VALUE_HOME' || pick.market_signal === 'VALUE_AWAY' ? (
+            <span style={{
+              background: 'rgba(16,185,129,0.10)', border: '1px solid rgba(16,185,129,0.35)',
+              color: '#10b981', fontSize: 10, fontWeight: 700, padding: '3px 8px',
+              borderRadius: 6, fontFamily: 'monospace',
+            }}>
+              📊 PIAȚA SUBEVALUATĂ
+            </span>
+          ) : null}
+          {pick.upset_risk && (
+            <span style={{
+              background: 'rgba(239,68,68,0.10)', border: '1px solid rgba(239,68,68,0.30)',
+              color: '#f87171', fontSize: 10, fontWeight: 700, padding: '3px 8px',
+              borderRadius: 6, fontFamily: 'monospace',
+            }}>
+              ⚠️ RISC SURPRIZĂ
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Streak indicators + Share */}
       <StreakBadges pick={pick} />

@@ -261,6 +261,10 @@ def daily_picks(
                 "has_odds":         odds is not None,
                 "vip_only":         False,
                 "model_version":    "xgb-v1",
+                "edge":             result.get("edge", 0.0),
+                "value_bet":        result.get("value_bet", False),
+                "market_signal":    result.get("market_signal", "NO_ODDS"),
+                "upset_risk":       result.get("upset_risk", False),
             })
         except Exception as e:
             errors.append({"match": f"{fix['home']} vs {fix['away']}", "error": str(e)})

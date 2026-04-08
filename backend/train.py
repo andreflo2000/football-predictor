@@ -188,7 +188,8 @@ def preprocess(data):
 
     # Pastram si coloanele de cote daca exista
     odds_cols = ["PSH","PSD","PSA","B365H","B365D","B365A","AvgH","AvgD","AvgA",
-                 "MaxH","MaxD","MaxA","PSCH","PSCD","PSCA"]
+                 "MaxH","MaxD","MaxA","PSCH","PSCD","PSCA",
+                 "BbAvH","BbAvD","BbAvA","BbMxH","BbMxD","BbMxA"]   # variante vechi football-data
     extra = ["Div"] + [c for c in odds_cols if c in data.columns]
     keep = cols + extra
     keep = list(dict.fromkeys(keep))  # deduplicare
@@ -215,6 +216,137 @@ def preprocess(data):
 # ─────────────────────────────────────────────────────────
 # 3. MARKET DATA — cote → probabilitati implicite
 # ─────────────────────────────────────────────────────────
+def build_market_features(data):
+    """
+    Market Intelligence features — COV, CLV, steam/drift, sharp-soft divergence.
+
+    Surse de date necesare (football-data.co.uk):
+      PSH/PSD/PSA   = Pinnacle opening (pre-match)
+      PSCH/PSCD/PSCA = Pinnacle closing (la startul meciului) ← cel mai sharp bookmaker
+      MaxH/MaxD/MaxA = Maximum la close (toate casele)
+      AvgH/AvgD/AvgA = Media la close
+      B365H/B365D/B365A = Bet365 (soft book, reflecta opinia publicului)
+    """
+    print(">>> Calculez Market Intelligence features (COV/CLV/Steam/Sharp)...")
+    result = pd.DataFrame(index=data.index)
+
+    has_ps_open  = all(c in data.columns for c in ["PSH",  "PSD",  "PSA"])
+    has_ps_close = all(c in data.columns for c in ["PSCH", "PSCD", "PSCA"])
+    has_avg      = all(c in data.columns for c in ["AvgH", "AvgD", "AvgA"])
+    has_max      = all(c in data.columns for c in ["MaxH", "MaxD", "MaxA"])
+    has_b365     = all(c in data.columns for c in ["B365H","B365D","B365A"])
+
+    def safe_num(col):
+        return pd.to_numeric(data[col], errors="coerce").where(lambda x: x > 1.01) if col in data.columns else pd.Series(np.nan, index=data.index)
+
+    # ── 1. Pinnacle line movement: opening → closing ───────────────────────
+    if has_ps_open and has_ps_close:
+        psh, psd, psa   = safe_num("PSH"),  safe_num("PSD"),  safe_num("PSA")
+        psch, pscd, psca = safe_num("PSCH"), safe_num("PSCD"), safe_num("PSCA")
+
+        # Miscarea relativa: >0 = cota crescut (drift), <0 = cota scazut (steam = bani intrați)
+        result["ps_move_h"] = ((psch / psh) - 1).clip(-0.40, 0.40)
+        result["ps_move_a"] = ((psca / psa) - 1).clip(-0.40, 0.40)
+        result["ps_move_d"] = ((pscd / psd) - 1).clip(-0.40, 0.40)
+
+        # Directie binara
+        result["home_steamed"] = (psch < psh * 0.98).astype(float)   # bani pe gazda
+        result["away_steamed"] = (psca < psa * 0.98).astype(float)   # bani pe oaspete
+        result["home_drifted"] = (psch > psh * 1.03).astype(float)   # piata fuge de gazda
+        result["away_drifted"] = (psca > psa * 1.03).astype(float)
+
+        # Closing Line Value (CLV): prob implicita la close vs open
+        vig_o = (1/psh + 1/psd + 1/psa).clip(lower=0.9)
+        vig_c = (1/psch + 1/pscd + 1/psca).clip(lower=0.9)
+        result["clv_h"] = ((1/psch)/vig_c - (1/psh)/vig_o).clip(-0.15, 0.15)
+        result["clv_a"] = ((1/psca)/vig_c - (1/psa)/vig_o).clip(-0.15, 0.15)
+
+        # Reverse line movement: cota a scazut DAR linia implicitly se misca invers
+        # → public pariaza pe favorit, dar sharp money e pe cealalta parte
+        result["reverse_line_h"] = ((result["home_steamed"] == 1) & (result["clv_h"] < -0.02)).astype(float)
+        result["reverse_line_a"] = ((result["away_steamed"] == 1) & (result["clv_a"] < -0.02)).astype(float)
+
+        print(f"    Pinnacle movement data: {(psch.notna()).sum():,} meciuri cu PS closing")
+    else:
+        for col in ["ps_move_h","ps_move_a","ps_move_d",
+                    "home_steamed","away_steamed","home_drifted","away_drifted",
+                    "clv_h","clv_a","reverse_line_h","reverse_line_a"]:
+            result[col] = 0.0
+        print("    ATENTIE: PSH/PSCH lipsa — features de miscare setate la 0")
+
+    # ── 2. Sharp vs Soft divergence ────────────────────────────────────────
+    # Pinnacle (sharp) vs Bet365 (soft/public sentiment)
+    ps_close_h = safe_num("PSCH") if has_ps_close else safe_num("PSH")
+    ps_close_a = safe_num("PSCA") if has_ps_close else safe_num("PSA")
+
+    if has_b365:
+        b365h, b365a = safe_num("B365H"), safe_num("B365A")
+        result["sharp_soft_div_h"] = (ps_close_h - b365h).clip(-1.0, 1.0)
+        result["sharp_soft_div_a"] = (ps_close_a - b365a).clip(-1.0, 1.0)
+        # >0 = Pinnacle mai mare = piata sharp nu favorizeaza echipa → public o supraevalueaza
+        result["public_fav_h"] = (result["sharp_soft_div_h"] > 0.08).astype(float)
+        result["public_fav_a"] = (result["sharp_soft_div_a"] > 0.08).astype(float)
+    elif has_avg:
+        avgh, avga = safe_num("AvgH"), safe_num("AvgA")
+        result["sharp_soft_div_h"] = (ps_close_h - avgh).clip(-1.0, 1.0)
+        result["sharp_soft_div_a"] = (ps_close_a - avga).clip(-1.0, 1.0)
+        result["public_fav_h"] = (result["sharp_soft_div_h"] > 0.08).astype(float)
+        result["public_fav_a"] = (result["sharp_soft_div_a"] > 0.08).astype(float)
+    else:
+        for col in ["sharp_soft_div_h","sharp_soft_div_a","public_fav_h","public_fav_a"]:
+            result[col] = 0.0
+
+    # ── 3. Closing Odds Variance (dezacord între bookmakers la close) ───────
+    close_cols_h = [c for c in ["PSCH","MaxH","AvgH","B365H"] if c in data.columns]
+    close_cols_a = [c for c in ["PSCA","MaxA","AvgA","B365A"] if c in data.columns]
+
+    if len(close_cols_h) >= 2:
+        close_mat_h = pd.concat([safe_num(c) for c in close_cols_h], axis=1)
+        close_mat_a = pd.concat([safe_num(c) for c in close_cols_a], axis=1)
+        result["close_var_h"] = close_mat_h.std(axis=1).fillna(0).clip(0, 1.0)
+        result["close_var_a"] = close_mat_a.std(axis=1).fillna(0).clip(0, 1.0)
+        # COV ridicat = piata nesigura = informatie valoroasa
+        result["high_cov_h"] = (result["close_var_h"] > 0.10).astype(float)
+        result["high_cov_a"] = (result["close_var_a"] > 0.10).astype(float)
+    else:
+        for col in ["close_var_h","close_var_a","high_cov_h","high_cov_a"]:
+            result[col] = 0.0
+
+    # ── 4. Market efficiency (vig) ─────────────────────────────────────────
+    if has_max:
+        maxh, maxd, maxa = safe_num("MaxH"), safe_num("MaxD"), safe_num("MaxA")
+        result["market_vig"] = (1/maxh + 1/maxd + 1/maxa - 1).clip(0, 0.25)
+        result["low_vig"]    = (result["market_vig"] < 0.04).astype(float)
+    else:
+        result["market_vig"] = 0.05
+        result["low_vig"]    = 0.0
+
+    # ── 5. Value zone 1.60–2.10 + interactiuni ────────────────────────────
+    ref_h = safe_num("PSCH") if has_ps_close else (safe_num("MaxH") if has_max else safe_num("PSH"))
+    ref_a = safe_num("PSCA") if has_ps_close else (safe_num("MaxA") if has_max else safe_num("PSA"))
+
+    result["value_zone_h"] = ((ref_h >= 1.60) & (ref_h <= 2.10)).astype(float)
+    result["value_zone_a"] = ((ref_a >= 1.60) & (ref_a <= 2.10)).astype(float)
+
+    # Interactiuni: drift/steam IN zona de valoare → semnalul cel mai puternic pentru surprize
+    result["drift_in_value_h"] = result.get("home_drifted", pd.Series(0.0, index=data.index)) \
+                                  * result["value_zone_h"]
+    result["steam_in_value_a"] = result.get("away_steamed", pd.Series(0.0, index=data.index)) \
+                                  * result["value_zone_a"]
+    result["trap_game_h"] = (
+        (result["value_zone_h"] == 1) &
+        (result.get("home_drifted", pd.Series(0.0, index=data.index)) == 1) &
+        (result.get("sharp_soft_div_h", pd.Series(0.0, index=data.index)) > 0.05)
+    ).astype(float)
+
+    result = result.fillna(0.0)
+
+    n_cols    = len(result.columns)
+    n_nonzero = (result != 0).any(axis=1).sum()
+    print(f"    Market Intelligence: {n_cols} features, {n_nonzero:,}/{len(data):,} meciuri cu date ({n_nonzero/len(data)*100:.1f}%)")
+    return result
+
+
 def build_odds_features(data):
     """
     Converteste cotele bookmakerilor in probabilitati normalizate.
@@ -551,13 +683,13 @@ def build_h2h_features(data):
 # ─────────────────────────────────────────────────────────
 # 6. ASAMBLARE
 # ─────────────────────────────────────────────────────────
-def assemble(data, team_df, h2h_df, elo_df, odds_df):
+def assemble(data, team_df, h2h_df, elo_df, odds_df, market_df):
     print(">>> Asamblam feature matrix...")
 
     le_div = LabelEncoder()
     league_id = le_div.fit_transform(data["Div"])
 
-    X = pd.concat([team_df, h2h_df, elo_df, odds_df], axis=1)
+    X = pd.concat([team_df, h2h_df, elo_df, odds_df, market_df], axis=1)
 
     # Diferentiale
     for col in ["atk_all5", "def_all5", "atk_all10", "def_all10",
@@ -735,10 +867,11 @@ def main():
     data                    = preprocess(data)
     xg_lookup               = load_xg_data()
     odds_df                 = build_odds_features(data)
+    market_df               = build_market_features(data)
     elo_df, elo_ratings     = build_elo_features(data)
     team_df, hist           = build_team_features(data, xg_lookup=xg_lookup)
     h2h_df                  = build_h2h_features(data)
-    X, y                    = assemble(data, team_df, h2h_df, elo_df, odds_df)
+    X, y                    = assemble(data, team_df, h2h_df, elo_df, odds_df, market_df)
     model, le, feature_means = train_model(X, y)
     team_stats               = build_team_stats(hist, elo_ratings)
 
