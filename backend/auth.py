@@ -65,16 +65,20 @@ def register_user(email: str, password: str) -> dict:
         raise HTTPException(400, "Email deja inregistrat")
 
     hashed = _hash(password)
-    client.table("users").insert({
-        "email":         email,
-        "password_hash": hashed,
-        "tier":          "free",
-    }).execute()
+    try:
+        client.table("users").insert({
+            "email":         email,
+            "password_hash": hashed,
+            "tier":          "free",
+        }).execute()
+    except Exception as e:
+        logger.error("Register insert failed: %s", e)
+        raise HTTPException(500, f"Eroare DB la inregistrare: {str(e)}")
 
     # Fetch user dupa insert (supabase-py nu returneaza date din insert direct)
     rows = client.table("users").select("*").eq("email", email).execute()
     if not rows.data:
-        raise HTTPException(500, "Eroare la crearea contului")
+        raise HTTPException(500, "Eroare la crearea contului — user negasit dupa insert")
     user = rows.data[0]
     token = _create_token(user["id"], user["email"], user["tier"])
     return {"access_token": token, "token_type": "bearer", "tier": "free"}
