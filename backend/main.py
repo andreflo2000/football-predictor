@@ -47,8 +47,8 @@ ALLOWED_ORIGINS = [
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
-    allow_methods=["GET", "POST", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
+    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "X-Request-ID", "stripe-signature"],
     allow_credentials=True,
     max_age=600,  # cache preflight 10 minute
 )
@@ -656,6 +656,177 @@ def track_record():
         }
     except Exception as e:
         return {"total": 0, "tracking_since": "Aprilie 2026", "error": str(e)}
+
+
+# ─────────────────────────────────────────────
+# LEMON SQUEEZY CHECKOUT
+# ─────────────────────────────────────────────
+LS_PLANS = {
+    "analyst": {
+        "variant_id":  os.getenv("LS_VARIANT_ANALYST", ""),
+        "name":        "Analyst",
+        "price_ron":   29,
+        "tier":        "analyst",
+        "description": "Acces la toate predictiile HIGH confidence + statistici avansate",
+    },
+    "pro": {
+        "variant_id":  os.getenv("LS_VARIANT_PRO", ""),
+        "name":        "Pro",
+        "price_ron":   79,
+        "tier":        "pro",
+        "description": "Tot ce include Analyst + picks VIP, acumulatoare + suport prioritar",
+    },
+}
+
+LS_API = "https://api.lemonsqueezy.com/v1"
+
+
+@app.get("/api/stripe/plans")
+def ls_plans():
+    """Returneaza planurile disponibile."""
+    return {
+        k: {
+            "name":        v["name"],
+            "price_ron":   v["price_ron"],
+            "tier":        v["tier"],
+            "description": v["description"],
+        }
+        for k, v in LS_PLANS.items()
+    }
+
+
+class CheckoutRequest(BaseModel):
+    plan: str   # "analyst" | "pro"
+
+
+@app.post("/api/checkout/session")
+@limiter.limit("10/minute")
+async def create_checkout_session(
+    req: CheckoutRequest,
+    request: Request,
+    user: dict = Depends(require_user),
+):
+    """Creeaza un checkout LemonSqueezy. Necesita autentificare."""
+    import httpx
+
+    api_key  = os.getenv("LS_API_KEY", "")
+    store_id = os.getenv("LS_STORE_ID", "")
+    if not api_key or not store_id:
+        raise HTTPException(503, "Plata nu este disponibila momentan")
+
+    plan = LS_PLANS.get(req.plan)
+    if not plan:
+        raise HTTPException(400, f"Plan necunoscut: {req.plan}")
+    if not plan["variant_id"]:
+        raise HTTPException(503, "Varianta pentru acest plan nu este configurata")
+
+    origin  = os.getenv("FRONTEND_URL", "https://flopiforecastro.vercel.app")
+    success = f"{origin}/upgrade/success?plan={req.plan}"
+    cancel  = f"{origin}/upgrade"
+
+    payload = {
+        "data": {
+            "type": "checkouts",
+            "attributes": {
+                "checkout_data": {
+                    "email": user["email"],
+                    "custom": {
+                        "user_id": str(user["id"]),
+                        "tier":    plan["tier"],
+                    },
+                },
+                "product_options": {
+                    "redirect_url":    success,
+                    "receipt_link_url": success,
+                },
+                "checkout_options": {
+                    "embed": False,
+                },
+            },
+            "relationships": {
+                "store": {
+                    "data": {"type": "stores", "id": store_id}
+                },
+                "variant": {
+                    "data": {"type": "variants", "id": plan["variant_id"]}
+                },
+            },
+        }
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            resp = await client.post(
+                f"{LS_API}/checkouts",
+                json=payload,
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Accept":        "application/vnd.api+json",
+                    "Content-Type":  "application/vnd.api+json",
+                },
+            )
+        if resp.status_code not in (200, 201):
+            logger.error("[ls] Checkout failed %s: %s", resp.status_code, resp.text)
+            raise HTTPException(500, "Eroare la initializarea platii")
+
+        data = resp.json()
+        url  = data["data"]["attributes"]["url"]
+        return {"url": url}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("[ls] Checkout exception: %s", e)
+        raise HTTPException(500, f"Eroare la initializarea platii: {str(e)}")
+
+
+@app.post("/api/webhook/lemonsqueezy")
+async def ls_webhook(request: Request):
+    """
+    Webhook LemonSqueezy — upgradeaza/downgradeaza tier dupa events de plata.
+    Setat in LS Dashboard → Settings → Webhooks.
+    Events: subscription_created, subscription_cancelled, subscription_expired
+    """
+    import hmac, hashlib, json
+
+    secret  = os.getenv("LS_WEBHOOK_SECRET", "")
+    payload = await request.body()
+    sig     = request.headers.get("x-signature", "")
+
+    if secret and sig:
+        expected = hmac.new(secret.encode("utf-8"), payload, hashlib.sha256).hexdigest()
+        if not hmac.compare_digest(expected, sig):
+            logger.warning("[ls] Webhook signature invalida")
+            raise HTTPException(400, "Semnatura webhook invalida")
+
+    try:
+        event = json.loads(payload)
+    except Exception:
+        raise HTTPException(400, "Payload invalid")
+
+    event_name = event.get("meta", {}).get("event_name", "")
+    custom     = event.get("meta", {}).get("custom_data", {})
+    user_id    = custom.get("user_id")
+    tier       = custom.get("tier", "analyst")
+
+    logger.info("[ls] Event: %s, user_id: %s", event_name, user_id)
+
+    from db import get_client
+    client = get_client()
+    if not client or not user_id:
+        return {"received": True}
+
+    try:
+        if event_name in ("subscription_created", "order_created"):
+            client.table("users").update({"tier": tier}).eq("id", user_id).execute()
+            logger.info("[ls] Upgraded user %s → %s", user_id, tier)
+
+        elif event_name in ("subscription_cancelled", "subscription_expired", "subscription_paused"):
+            client.table("users").update({"tier": "free"}).eq("id", user_id).execute()
+            logger.info("[ls] Downgraded user %s → free", user_id)
+    except Exception as e:
+        logger.error("[ls] DB update failed: %s", e)
+
+    return {"received": True}
 
 
 # ─────────────────────────────────────────────

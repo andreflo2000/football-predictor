@@ -998,7 +998,7 @@ export default function Home() {
       <header className="header">
         <div className="max-w-6xl mx-auto px-4 py-2 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/logo.jpg" alt="Flopi San" className="w-10 h-10 rounded-full object-cover border-2 border-blue-500/60" />
+            <img src="/logo.svg" alt="Flopi San" className="w-10 h-10" />
             <div>
               <div className="font-display text-lg text-white tracking-widest leading-none">FLOPI SAN</div>
               <div className="text-[9px] font-mono text-blue-400 tracking-[0.2em] uppercase">Forecast Academy</div>
@@ -1010,6 +1010,7 @@ export default function Home() {
             <a href="/daily" onClick={(e) => { if ((window as any).Capacitor) { e.preventDefault(); window.location.href='/daily/index.html'; }}} className="nav-link">🎯 Selecțiile zilei</a>
             <a href="/weekly" onClick={(e) => { if ((window as any).Capacitor) { e.preventDefault(); window.location.href='/weekly/index.html'; }}} className="nav-link">{tr.results}</a>
             <a href="/track-record" className="nav-link">📊 Track Record</a>
+            <a href="/upgrade" className="nav-link" style={{ color: '#f59e0b', fontWeight: 700 }}>⚡ Upgrade</a>
             {user ? (
               <div className="flex items-center gap-1 ml-1">
                 {user.tier === 'vip' && (
@@ -1039,8 +1040,8 @@ export default function Home() {
         <div className="text-center mb-10 fade-in">
           <div className="flex justify-center mb-5">
             <div className="relative">
-              <img src="/logo.jpg" alt="Flopi San Forecast Academy"
-                className="w-36 h-36 rounded-full object-cover border-4 border-blue-600/50 shadow-2xl shadow-blue-900/60" />
+              <img src="/logo.svg" alt="Flopi San Forecast Academy"
+                className="w-36 h-36" />
               <div className="absolute -bottom-1 -right-2 w-9 h-9 bg-emerald-500 rounded-full flex items-center justify-center text-base border-2 border-gray-900">🔮</div>
             </div>
           </div>

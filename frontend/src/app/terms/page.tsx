@@ -6,7 +6,7 @@ export default function Terms() {
       <header className="header">
         <div className="max-w-4xl mx-auto px-4 py-2 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/logo.jpg" alt="Flopi San" className="w-10 h-10 rounded-full object-cover border-2 border-blue-500/60" />
+            <img src="/logo.svg" alt="Flopi San" className="w-10 h-10" />
             <div>
               <div className="font-display text-lg text-white tracking-widest leading-none">FLOPI SAN</div>
               <div className="text-[9px] font-mono text-blue-400 tracking-[0.2em] uppercase">Forecast Academy</div>

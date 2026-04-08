@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="200" y2="200" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1e3a8a"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="200" y2="200" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#60a5fa"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="200" y2="200" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#fbbf24"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background hexagon -->
+  <polygon points="100,4 188,52 188,148 100,196 12,148 12,52" fill="url(#bg)" stroke="url(#accent)" stroke-width="2.5" stroke-linejoin="round"/>
+
+  <!-- Inner glow ring -->
+  <polygon points="100,14 178,57 178,143 100,186 22,143 22,57" fill="none" stroke="#1d4ed8" stroke-width="1" opacity="0.5"/>
+
+  <!-- Bar chart (BI/analytics motif) -->
+  <!-- Bar 1 - short -->
+  <rect x="48" y="118" width="18" height="30" rx="3" fill="url(#accent)" opacity="0.7"/>
+  <!-- Bar 2 - medium -->
+  <rect x="72" y="96" width="18" height="52" rx="3" fill="url(#accent)" opacity="0.85"/>
+  <!-- Bar 3 - tall -->
+  <rect x="96" y="72" width="18" height="76" rx="3" fill="url(#accent)"/>
+  <!-- Bar 4 - medium-high -->
+  <rect x="120" y="84" width="18" height="64" rx="3" fill="url(#gold)" opacity="0.9"/>
+
+  <!-- Trend line over bars -->
+  <polyline points="57,115 81,93 105,70 129,82" stroke="#f59e0b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <!-- Trend arrow tip -->
+  <circle cx="129" cy="82" r="4" fill="#f59e0b"/>
+
+  <!-- Baseline -->
+  <line x1="42" y1="150" x2="156" y2="150" stroke="#334155" stroke-width="1.5" stroke-linecap="round"/>
+
+  <!-- Football pentagon dots (subtle, top area) -->
+  <circle cx="100" cy="38" r="3" fill="#3b82f6" opacity="0.6"/>
+  <circle cx="88" cy="44" r="2" fill="#3b82f6" opacity="0.4"/>
+  <circle cx="112" cy="44" r="2" fill="#3b82f6" opacity="0.4"/>
+
+  <!-- "FS" monogram — small, bottom center -->
+  <text x="100" y="172" text-anchor="middle" font-family="Georgia, serif" font-size="12" font-weight="bold" fill="#60a5fa" letter-spacing="3" opacity="0.8">FS</text>
+</svg>

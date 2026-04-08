@@ -3,7 +3,7 @@ const API = process.env.NEXT_PUBLIC_API_URL || 'https://football-predictor-api.o
 export interface AuthUser {
   id: string
   email: string
-  tier: 'free' | 'vip'
+  tier: 'free' | 'analyst' | 'pro' | 'vip'
 }
 
 export function getToken(): string | null {
@@ -19,7 +19,24 @@ export function getUser(): AuthUser | null {
 }
 
 export function isVip(): boolean {
-  return getUser()?.tier === 'vip'
+  const tier = getUser()?.tier
+  return tier === 'vip' || tier === 'pro'
+}
+
+export function isPaid(): boolean {
+  const tier = getUser()?.tier
+  return tier === 'analyst' || tier === 'pro' || tier === 'vip'
+}
+
+export async function createCheckoutSession(plan: 'analyst' | 'pro'): Promise<string> {
+  const res = await fetch(`${API}/api/checkout/session`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ plan }),
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.detail || 'Eroare la initializarea platii')
+  return data.url
 }
 
 export function authHeaders(): Record<string, string> {

@@ -326,9 +326,54 @@ function FormBar({ pct, label }: { pct: number; label: string }) {
 
 // ── PickCard ─────────────────────────────────────────────────────────────────
 
-function PickCard({ pick, rank }: { pick: Pick; rank: number }) {
+function PickCard({ pick, rank, userTier }: { pick: Pick; rank: number; userTier?: string }) {
   const c    = confColor(pick.confidence_level)
   const pred = predLabel(pick)
+  const isLocked = (pick as any).vip_only && userTier !== 'vip' && userTier !== 'pro'
+
+  if (isLocked) {
+    return (
+      <div className="card p-4 mb-3" style={{ borderColor: 'rgba(234,179,8,0.4)', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ filter: 'blur(6px)', pointerEvents: 'none', userSelect: 'none' }}>
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[10px] font-mono text-gray-500 uppercase">Liga Confidentiala</span>
+            <span className="text-[10px] font-mono text-gray-700">#{rank}</span>
+          </div>
+          <div className="flex items-center justify-between mb-3">
+            <div className="text-base font-bold text-white">Echipa Acasa</div>
+            <div className="text-gray-600 font-bold text-sm mx-3">VS</div>
+            <div className="text-base font-bold text-white text-right">Echipa Deplasare</div>
+          </div>
+          <div className="grid grid-cols-3 gap-1.5 mb-3">
+            {['1', 'X', '2'].map((l) => (
+              <div key={l} className="rounded-lg py-2 text-center" style={{ background: 'rgba(255,255,255,0.05)' }}>
+                <div className="text-[10px] font-mono text-gray-500">{l}</div>
+                <div className="text-lg font-bold font-mono text-gray-600">??%</div>
+              </div>
+            ))}
+          </div>
+        </div>
+        {/* Overlay */}
+        <div style={{
+          position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center', gap: 8,
+          background: 'rgba(15,23,42,0.7)', backdropFilter: 'blur(2px)',
+        }}>
+          <div style={{ fontSize: 28 }}>👑</div>
+          <div style={{ fontWeight: 700, color: '#eab308', fontSize: 14 }}>Pick VIP Exclusiv</div>
+          <div style={{ color: '#94a3b8', fontSize: 12, textAlign: 'center', maxWidth: 200, lineHeight: 1.4 }}>
+            Disponibil pentru abonamentii Pro
+          </div>
+          <a href="/upgrade" style={{
+            marginTop: 4, padding: '8px 20px', background: 'linear-gradient(90deg, #f59e0b, #ef4444)',
+            color: '#fff', borderRadius: 8, fontWeight: 700, fontSize: 13, textDecoration: 'none',
+          }}>
+            Upgrade Pro
+          </a>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="card p-4 mb-3" style={{ borderColor: c.border }}>
@@ -635,7 +680,7 @@ export default function DailyPage() {
     if (perm === 'granted') {
       new Notification('🎯 Flopi San activat!', {
         body: 'Vei fi notificat când apar pick-uri noi cu confidence ridicat.',
-        icon: '/logo.jpg',
+        icon: '/logo.svg',
       })
     }
   }
@@ -659,7 +704,7 @@ export default function DailyPage() {
       <header className="header">
         <div className="max-w-4xl mx-auto px-4 py-2 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/logo.jpg" alt="Flopi San" className="w-10 h-10 rounded-full object-cover border-2 border-green-500/60" />
+            <img src="/logo.svg" alt="Flopi San" className="w-10 h-10" />
             <div>
               <div className="font-display text-lg text-white tracking-widest leading-none">FLOPI SAN</div>
               <div className="text-[9px] font-mono text-green-400 tracking-[0.2em] uppercase">Forecast Academy</div>
@@ -670,12 +715,19 @@ export default function DailyPage() {
             <a href="/daily" className="nav-link active">🎯 Selecțiile zilei</a>
             <a href="/weekly" className="nav-link">Rezultate</a>
             <a href="/track-record" className="nav-link">📊 Track Record</a>
+            <a href="/upgrade" className="nav-link" style={{ color: '#f59e0b', fontWeight: 700 }}>⚡ Upgrade</a>
             {user ? (
               <div className="flex items-center gap-1 ml-1">
-                {user.tier === 'vip' && (
+                {(user.tier === 'vip' || user.tier === 'pro') && (
                   <span className="text-[9px] font-bold px-2 py-0.5 rounded-full font-mono"
                     style={{ background: 'rgba(234,179,8,0.15)', color: '#eab308', border: '1px solid rgba(234,179,8,0.3)' }}>
-                    👑 VIP
+                    👑 {user.tier.toUpperCase()}
+                  </span>
+                )}
+                {user.tier === 'analyst' && (
+                  <span className="text-[9px] font-bold px-2 py-0.5 rounded-full font-mono"
+                    style={{ background: 'rgba(96,165,250,0.15)', color: '#60a5fa', border: '1px solid rgba(96,165,250,0.3)' }}>
+                    📊 ANALYST
                   </span>
                 )}
                 <button onClick={() => { logout(); setUser(null) }}
@@ -807,7 +859,7 @@ export default function DailyPage() {
                 )}
               </div>
             ) : (
-              shown.map((pick, i) => <PickCard key={i} pick={pick} rank={i + 1} />)
+              shown.map((pick, i) => <PickCard key={i} pick={pick} rank={i + 1} userTier={user?.tier} />)
             )}
 
             {/* Share */}

@@ -97,7 +97,7 @@ function AuthForm({ onAuth }: { onAuth: () => void }) {
       <header className="header">
         <div className="max-w-4xl mx-auto px-4 py-2 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/logo.jpg" alt="Flopi San" className="w-10 h-10 rounded-full object-cover border-2 border-blue-500/60" />
+            <img src="/logo.svg" alt="Flopi San" className="w-10 h-10" />
             <div>
               <div className="font-display text-lg text-white tracking-widest leading-none">FLOPI SAN</div>
               <div className="text-[9px] font-mono text-blue-400 tracking-[0.2em] uppercase">Forecast Academy</div>
@@ -662,7 +662,7 @@ export default function Weekly() {
       <header className="header">
         <div className="max-w-4xl mx-auto px-4 py-2 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/logo.jpg" alt="Flopi San" className="w-10 h-10 rounded-full object-cover border-2 border-blue-500/60" />
+            <img src="/logo.svg" alt="Flopi San" className="w-10 h-10" />
             <div>
               <div className="font-display text-lg text-white tracking-widest leading-none">FLOPI SAN</div>
               <div className="text-[9px] font-mono text-blue-400 tracking-[0.2em] uppercase">Forecast Academy</div>
@@ -681,11 +681,10 @@ export default function Weekly() {
       <main className="max-w-4xl mx-auto px-4 py-8" style={{ overflowX: 'hidden' }}>
         <div className="text-center mb-8 fade-in">
           <div className="flex justify-center mb-4">
-            <img src="/logo.jpg" alt="Flopi San" className="w-20 h-20 rounded-full object-cover border-4 border-blue-600/50 shadow-2xl shadow-blue-900/60" />
+            <img src="/logo.svg" alt="Flopi San" className="w-20 h-20" />
           </div>
           <h1 className="font-display text-4xl sm:text-5xl text-white tracking-widest mb-1">{tr.weekly_title}</h1>
           <div className="text-blue-400 text-xs font-mono uppercase tracking-[0.25em] mb-1">Flopi San · Forecast Academy</div>
-          <div className="text-gray-700 text-[10px] font-mono">👤 {user.email}</div>
         </div>
 
         <StatsPanel matches={matches} />

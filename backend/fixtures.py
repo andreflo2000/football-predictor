@@ -459,24 +459,62 @@ def _fetch_fixtures_for_date(target: str, known_teams: list) -> list:
 def get_today_fixtures(date: Optional[str] = None, known_teams: list = None) -> list:
     """
     Returneaza meciurile pentru data ceruta (default: azi).
-    Daca azi nu sunt meciuri din ligile suportate, cauta urmatoarele 4 zile.
-    Fallback final: meciuri demo.
+    - Daca 'date' e specificat explicit, returneaza doar pentru acea zi (fara look-ahead).
+    - Daca nu e specificat (default azi), cauta maxim 4 zile inainte daca azi nu are meciuri.
+    Returneaza [] daca nu gaseste nimic — NU mai returneaza meciuri demo.
     """
     if not API_KEY:
-        return _demo_fixtures()
+        return []
 
     base = datetime.date.fromisoformat(date) if date else datetime.date.today()
+    date_requested_explicitly = date is not None
 
-    # Cauta maxim 5 zile inainte (azi + urmatoarele 4)
+    if date_requested_explicitly:
+        # Data specificata → fetch exact, fara look-ahead
+        fixtures = _fetch_fixtures_for_date(base.isoformat(), known_teams or [])
+        # Daca nu s-a gasit nimic, incearca si EL/CL separat (uneori lipsesc din /matches general)
+        if not fixtures:
+            fixtures = _fetch_european_cups(base.isoformat(), known_teams or [])
+        return fixtures
+
+    # Default (azi) → look-ahead maxim 4 zile
     for offset in range(5):
         target   = (base + datetime.timedelta(days=offset)).isoformat()
         fixtures = _fetch_fixtures_for_date(target, known_teams or [])
+        if not fixtures:
+            # Incearca si cupele europene separat
+            fixtures = _fetch_european_cups(target, known_teams or [])
         if fixtures:
             if offset > 0:
                 print(f"    Azi nu sunt meciuri — am gasit {len(fixtures)} in {target}")
             return fixtures
 
-    return _demo_fixtures()
+    return []
+
+
+def _fetch_european_cups(date_str: str, known_teams: list) -> list:
+    """
+    Fetch specific pentru CL si EL via /competitions/{code}/matches.
+    Folosit ca fallback cand /matches general nu returneaza cupele europene.
+    """
+    if not API_KEY:
+        return []
+    headers = {"X-Auth-Token": API_KEY}
+    results = []
+    for code in ("CL", "EL"):
+        try:
+            resp = requests.get(
+                f"{BASE_URL}/competitions/{code}/matches",
+                headers=headers,
+                params={"dateFrom": date_str, "dateTo": date_str, "status": "TIMED,SCHEDULED"},
+                timeout=15,
+            )
+            if resp.status_code == 200:
+                parsed = _parse_matches(resp.json(), known_teams, default_date=date_str)
+                results.extend(parsed)
+        except Exception:
+            pass
+    return results
 
 
 def get_today_odds(known_teams: list = None) -> dict:
@@ -559,13 +597,3 @@ def get_today_odds(known_teams: list = None) -> dict:
     return odds_map
 
 
-def _demo_fixtures() -> list:
-    """Meciuri demo daca nu avem API key sau conexiune."""
-    return [
-        {"home": "Arsenal",      "away": "Chelsea",          "league": "Premier League", "flag": "🏴󠁧󠁢󠁥󠁮󠁧󠁿", "div": "E0",  "time": "17:30", "competition_code": "PL",  "status": "TIMED", "home_raw": "Arsenal FC", "away_raw": "Chelsea FC"},
-        {"home": "Bayern Munich","away": "Dortmund",         "league": "Bundesliga",      "flag": "🇩🇪",      "div": "D1",  "time": "18:30", "competition_code": "BL1", "status": "TIMED", "home_raw": "FC Bayern München", "away_raw": "Borussia Dortmund"},
-        {"home": "Inter",        "away": "Milan",            "league": "Serie A",         "flag": "🇮🇹",      "div": "I1",  "time": "20:45", "competition_code": "SA",  "status": "TIMED", "home_raw": "FC Internazionale Milano", "away_raw": "AC Milan"},
-        {"home": "Real Madrid",  "away": "Barcelona",        "league": "La Liga",         "flag": "🇪🇸",      "div": "SP1", "time": "21:00", "competition_code": "PD",  "status": "TIMED", "home_raw": "Real Madrid CF", "away_raw": "FC Barcelona"},
-        {"home": "Paris SG",     "away": "Marseille",        "league": "Ligue 1",         "flag": "🇫🇷",      "div": "F1",  "time": "20:45", "competition_code": "FL1", "status": "TIMED", "home_raw": "Paris Saint-Germain FC", "away_raw": "Olympique de Marseille"},
-        {"home": "Liverpool",    "away": "Manchester City",  "league": "Premier League",  "flag": "🏴󠁧󠁢󠁥󠁮󠁧󠁿", "div": "E0",  "time": "16:00", "competition_code": "PL",  "status": "TIMED", "home_raw": "Liverpool FC", "away_raw": "Manchester City FC"},
-    ]
