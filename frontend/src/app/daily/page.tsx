@@ -33,6 +33,7 @@ interface Pick {
   home_form: number
   away_form: number
   competition_code?: string
+  has_odds?: boolean
   // BI signals
   edge?: number
   value_bet?: boolean
