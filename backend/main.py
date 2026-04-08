@@ -20,7 +20,7 @@ from fixtures import get_today_fixtures, get_today_odds, _fetch_fixtures_for_ran
 from db import log_predictions_bulk, get_client
 import cache as redis_cache
 from auth import register_user, login_user, get_current_user, require_user
-from ingestion import compute_and_store_picks, load_picks_from_db
+from ingestion import compute_and_store_picks, load_picks_from_db, auto_mark_results
 
 logger = logging.getLogger(__name__)
 
@@ -80,6 +80,8 @@ async def startup_event():
         # Calculeaza la 07:00 si 13:00 in fiecare zi
         scheduler.add_job(compute_and_store_picks, CronTrigger(hour=7,  minute=0))
         scheduler.add_job(compute_and_store_picks, CronTrigger(hour=13, minute=0))
+        # Auto-marcare WIN/LOSS la 23:30 dupa terminarea majoritatii meciurilor
+        scheduler.add_job(auto_mark_results, CronTrigger(hour=23, minute=30))
 
         scheduler.start()
         logger.info("Scheduler pornit: pre-calcul picks la 07:00 si 13:00")
@@ -740,6 +742,18 @@ def admin_set_pick_result(
         return {"ok": True, "saved": f"{req.home} vs {req.away} ({req.pick_date}) = {req.result}"}
     except Exception as e:
         raise HTTPException(500, str(e))
+
+
+@app.post("/api/admin/picks/auto-results")
+def admin_auto_results(
+    date: Optional[str] = None,
+    x_admin_key: Optional[str] = Header(None, alias="X-Admin-Key"),
+):
+    """Trigger manual auto-marcare WIN/LOSS pentru o data. Necesita X-Admin-Key."""
+    if not ADMIN_SECRET or x_admin_key != ADMIN_SECRET:
+        raise HTTPException(403, "Unauthorized")
+    result = auto_mark_results(date)
+    return result
 
 
 @app.get("/api/admin/picks/results")

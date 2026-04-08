@@ -141,6 +141,128 @@ def compute_and_store_picks(date: str = None) -> dict:
     return payload
 
 
+def auto_mark_results(date: str = None) -> dict:
+    """
+    Fetches rezultatele meciurilor FINISHED pentru `date` din football-data.org,
+    le compara cu pick-urile salvate si marcheaza automat WIN/LOSS in pick_results.
+    Ruleaza zilnic la 23:30 Bucharest via scheduler.
+    """
+    import os, requests as req
+    from predictor import get_known_teams
+    from fixtures import _normalize_name, COMPETITIONS
+
+    target = date or datetime.date.today().isoformat()
+    logger.info("[results] Start auto-marcare rezultate pentru %s", target)
+
+    api_key = os.getenv("FOOTBALL_DATA_KEY", "")
+    if not api_key:
+        logger.warning("[results] FOOTBALL_DATA_KEY nu e setat")
+        return {"marked": 0, "error": "no api key"}
+
+    # Fetch meciuri FINISHED de azi
+    try:
+        resp = req.get(
+            "https://api.football-data.org/v4/matches",
+            headers={"X-Auth-Token": api_key},
+            params={"dateFrom": target, "dateTo": target},
+            timeout=20,
+        )
+        if resp.status_code != 200:
+            logger.error("[results] API error %s", resp.status_code)
+            return {"marked": 0, "error": f"api {resp.status_code}"}
+        data = resp.json()
+    except Exception as e:
+        logger.error("[results] Fetch failed: %s", e)
+        return {"marked": 0, "error": str(e)}
+
+    # Filtreaza doar meciurile terminate
+    known = get_known_teams()
+    finished = []
+    for m in data.get("matches", []):
+        if m.get("status") != "FINISHED":
+            continue
+        comp_code = m.get("competition", {}).get("code", "")
+        if comp_code not in COMPETITIONS:
+            continue
+        score = m.get("score", {}).get("fullTime", {})
+        home_goals = score.get("home")
+        away_goals = score.get("away")
+        if home_goals is None or away_goals is None:
+            continue
+        home_raw = m.get("homeTeam", {}).get("name", "")
+        away_raw = m.get("awayTeam", {}).get("name", "")
+        finished.append({
+            "home":       _normalize_name(home_raw, known),
+            "away":       _normalize_name(away_raw, known),
+            "home_goals": home_goals,
+            "away_goals": away_goals,
+        })
+
+    if not finished:
+        logger.info("[results] Niciun meci FINISHED gasit pentru %s", target)
+        return {"marked": 0, "finished_found": 0}
+
+    # Incarca pick-urile zilei din DB
+    db_data = load_picks_from_db(target)
+    if not db_data or not db_data.get("picks"):
+        logger.info("[results] Nu exista picks in DB pentru %s", target)
+        return {"marked": 0, "error": "no picks in db"}
+
+    picks = db_data["picks"]
+
+    # Construieste index rezultate: (home_lower, away_lower) → (home_goals, away_goals)
+    results_index = {
+        (r["home"].lower(), r["away"].lower()): (r["home_goals"], r["away_goals"])
+        for r in finished
+    }
+
+    client = get_client()
+    if not client:
+        return {"marked": 0, "error": "no db client"}
+
+    marked = 0
+    skipped = 0
+
+    for pick in picks:
+        key = (pick["home"].lower(), pick["away"].lower())
+        if key not in results_index:
+            skipped += 1
+            continue
+
+        home_goals, away_goals = results_index[key]
+        prediction = pick.get("prediction")  # 'H', 'D', 'A'
+        confidence = pick.get("confidence", 60) / 100
+
+        # Determina rezultatul real
+        if home_goals > away_goals:
+            actual = "H"
+        elif home_goals < away_goals:
+            actual = "A"
+        else:
+            actual = "D"
+
+        result = "win" if prediction == actual else "loss"
+
+        try:
+            client.table("pick_results").upsert({
+                "pick_date":    target,
+                "home":         pick["home"],
+                "away":         pick["away"],
+                "result":       result,
+                "confidence":   confidence,
+                "actual_score": f"{home_goals}-{away_goals}",
+            }, on_conflict="pick_date,home,away").execute()
+            marked += 1
+            logger.info("[results] %s vs %s: pred=%s actual=%s (%s-%s) → %s",
+                        pick["home"], pick["away"], prediction, actual,
+                        home_goals, away_goals, result)
+        except Exception as e:
+            logger.error("[results] Upsert failed pentru %s vs %s: %s", pick["home"], pick["away"], e)
+
+    logger.info("[results] Complet: %d marcate, %d sarite pentru %s", marked, skipped, target)
+    return {"marked": marked, "skipped": skipped, "finished_found": len(finished)}
+
+
 def load_picks_from_db(date: str) -> dict | None:
     """
     Citeste pick-urile pre-calculate din Supabase.
