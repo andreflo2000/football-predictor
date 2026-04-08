@@ -52,6 +52,22 @@ interface DailyResponse {
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
+function computeKelly(confidence: number, edge: number | undefined, hasOdds: boolean): number {
+  const p = confidence / 100
+  let odds: number
+  if (hasOdds && edge !== undefined && edge > 0) {
+    // Edge real disponibil: derivam cotele din edge
+    const pMarket = Math.max(0.05, p - edge / 100)
+    odds = 1 / pMarket
+  } else {
+    // Fara edge: presupunem marja de 8% a bookmakerului
+    odds = (1 / p) * 0.92
+  }
+  const b = odds - 1
+  const kelly = (b * p - (1 - p)) / b
+  return Math.max(0, Math.min(0.10, kelly))  // cap 0-10%
+}
+
 function confColor(level: string) {
   if (level === 'high')   return { bg: 'rgba(34,197,94,0.12)',  border: 'rgba(34,197,94,0.35)',  text: '#22c55e', label: 'RIDICATĂ' }
   if (level === 'medium') return { bg: 'rgba(245,158,11,0.12)', border: 'rgba(245,158,11,0.35)', text: '#f59e0b', label: 'MEDIE' }
@@ -493,6 +509,21 @@ function PickCard({ pick, rank, userTier }: { pick: Pick; rank: number; userTier
           )}
         </div>
       )}
+
+      {/* Kelly Criterion */}
+      {(() => {
+        const kelly = computeKelly(pick.confidence, pick.edge, pick.has_odds ?? false)
+        if (kelly === 0) return null
+        const pct = Math.round(kelly * 100)
+        return (
+          <div className="flex items-center gap-2 mt-2 px-3 py-1.5 rounded-lg"
+            style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.18)' }}>
+            <span className="text-[9px] font-mono text-gray-500 uppercase tracking-widest shrink-0">Kelly</span>
+            <span className="text-[11px] font-bold font-mono text-indigo-400">{pct}% bankroll</span>
+            <span className="text-[9px] text-gray-600 font-mono">· miza sugerată</span>
+          </div>
+        )
+      })()}
 
       {/* Streak indicators + Share */}
       <StreakBadges pick={pick} />

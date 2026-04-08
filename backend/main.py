@@ -6,7 +6,7 @@ import os
 import datetime
 import time
 import logging
-from fastapi import FastAPI, HTTPException, Query, Request, Depends
+from fastapi import FastAPI, HTTPException, Query, Request, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr
 from typing import Optional
@@ -23,6 +23,8 @@ from auth import register_user, login_user, get_current_user, require_user
 from ingestion import compute_and_store_picks, load_picks_from_db
 
 logger = logging.getLogger(__name__)
+
+ADMIN_SECRET = os.getenv("ADMIN_SECRET", "")
 
 # ── Sentry (erori in productie) ─────────────────────────────
 _sentry_dsn = os.getenv("SENTRY_DSN", "")
@@ -179,12 +181,38 @@ def api_leagues():
 # ─────────────────────────────────────────────
 # DAILY PICKS — endpoint principal
 # ─────────────────────────────────────────────
+
+def _mask_vip_picks(picks: list, user: Optional[dict]) -> list:
+    """Mascheaza datele vip_only pentru useri non-pro/vip."""
+    tier = (user or {}).get("tier", "free")
+    if tier in ("pro", "vip"):
+        return picks
+    result = []
+    for p in picks:
+        if p.get("vip_only"):
+            result.append({
+                **p,
+                "home_win": None, "draw": None, "away_win": None,
+                "prediction": None, "prediction_label": "VIP",
+                "confidence": None, "confidence_level": "vip",
+                "high_confidence": False,
+                "home_elo": None, "away_elo": None,
+                "home_form": None, "away_form": None,
+                "edge": None, "value_bet": None,
+                "market_signal": None, "upset_risk": None,
+            })
+        else:
+            result.append(p)
+    return result
+
+
 @app.get("/api/daily")
 @limiter.limit("30/minute")
 def daily_picks(
     request: Request,
     date: Optional[str] = None,
     min_confidence: float = Query(0.50, ge=0.0, le=1.0),
+    user: Optional[dict] = Depends(get_current_user),
 ):
     """
     Returneaza predictiile zilei, sortate descrescator dupa confidence.
@@ -203,7 +231,7 @@ def daily_picks(
     # 1. Redis cache (cel mai rapid)
     cached = redis_cache.get("daily", cache_key)
     if cached:
-        return cached
+        return {**cached, "picks": _mask_vip_picks(cached["picks"], user)}
 
     # 2. Supabase daily_picks (pre-calculat de scheduler)
     db_data = load_picks_from_db(target)
@@ -217,7 +245,7 @@ def daily_picks(
         db_data["med_conf"]    = len([p for p in filtered if 55 <= p["confidence"] < 65])
         db_data["low_conf"]    = len([p for p in filtered if p["confidence"] < 55])
         redis_cache.set("daily", cache_key, db_data, ttl=CACHE_TTL_DAILY)
-        return db_data
+        return {**db_data, "picks": _mask_vip_picks(db_data["picks"], user)}
 
     # 3. Calcul live (fallback daca DB nu are date)
     known    = get_known_teams()
@@ -297,7 +325,7 @@ def daily_picks(
     }
 
     redis_cache.set("daily", cache_key, response, ttl=CACHE_TTL_DAILY)
-    return response
+    return {**response, "picks": _mask_vip_picks(response["picks"], user)}
 
 
 LEGACY_MAP = {
@@ -647,14 +675,27 @@ def track_record():
         since = first_row.data[0]["created_at"][:10] if first_row.data else "Aprilie 2026"
         days  = (datetime.date.today() - datetime.date.fromisoformat(since)).days if since != "Aprilie 2026" else 0
 
+        # Citeste si din pick_results (WIN/LOSS marcate de admin)
+        pr_rows = client.table("pick_results").select("confidence, result").execute()
+        pr_data = pr_rows.data or []
+        pr_resolved = [r for r in pr_data if r.get("result") in ("win", "loss")]
+
+        # Combina ambele surse
+        all_resolved = resolved + [
+            {"confidence": r.get("confidence", 0.6), "result": "WIN" if r["result"] == "win" else "LOSS"}
+            for r in pr_resolved
+        ]
+        all_high = [r for r in all_resolved if r["confidence"] >= 0.65]
+        all_med  = [r for r in all_resolved if 0.55 <= r["confidence"] < 0.65]
+
         return {
-            "total":               len(resolved),
-            "high_conf_total":     len(high),
-            "high_conf_wins":      sum(1 for r in high if r["result"] == "WIN"),
-            "high_conf_accuracy":  acc(high),
-            "med_conf_total":      len(med),
-            "med_conf_wins":       sum(1 for r in med if r["result"] == "WIN"),
-            "med_conf_accuracy":   acc(med),
+            "total":               len(all_resolved),
+            "high_conf_total":     len(all_high),
+            "high_conf_wins":      sum(1 for r in all_high if r["result"] == "WIN"),
+            "high_conf_accuracy":  acc(all_high),
+            "med_conf_total":      len(all_med),
+            "med_conf_wins":       sum(1 for r in all_med if r["result"] == "WIN"),
+            "med_conf_accuracy":   acc(all_med),
             "tracking_since":      since,
             "days_tracked":        days,
         }
@@ -663,39 +704,184 @@ def track_record():
 
 
 # ─────────────────────────────────────────────
-# LEMON SQUEEZY CHECKOUT
+# ADMIN — marcare rezultate WIN/LOSS
 # ─────────────────────────────────────────────
-LS_PLANS = {
+class PickResultRequest(BaseModel):
+    pick_date: str           # YYYY-MM-DD
+    home: str
+    away: str
+    result: str              # 'win' | 'loss' | 'void'
+    confidence: float = 0.6  # 0.0-1.0
+    actual_score: Optional[str] = None
+
+
+@app.post("/api/admin/picks/result")
+def admin_set_pick_result(
+    req: PickResultRequest,
+    x_admin_key: Optional[str] = Header(None, alias="X-Admin-Key"),
+):
+    """Marcheaza rezultatul unui pick (WIN/LOSS). Necesita X-Admin-Key header."""
+    if not ADMIN_SECRET or x_admin_key != ADMIN_SECRET:
+        raise HTTPException(403, "Unauthorized")
+    if req.result not in ("win", "loss", "void"):
+        raise HTTPException(400, "result must be win, loss, or void")
+    client = get_client()
+    if client is None:
+        raise HTTPException(503, "DB indisponibil")
+    try:
+        client.table("pick_results").upsert({
+            "pick_date":    req.pick_date,
+            "home":         req.home,
+            "away":         req.away,
+            "result":       req.result,
+            "confidence":   req.confidence,
+            "actual_score": req.actual_score,
+        }, on_conflict="pick_date,home,away").execute()
+        return {"ok": True, "saved": f"{req.home} vs {req.away} ({req.pick_date}) = {req.result}"}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+
+@app.get("/api/admin/picks/results")
+def admin_get_pick_results(
+    date: Optional[str] = None,
+    x_admin_key: Optional[str] = Header(None, alias="X-Admin-Key"),
+):
+    """Lista rezultatele salvate. Necesita X-Admin-Key header."""
+    if not ADMIN_SECRET or x_admin_key != ADMIN_SECRET:
+        raise HTTPException(403, "Unauthorized")
+    client = get_client()
+    if client is None:
+        raise HTTPException(503, "DB indisponibil")
+    try:
+        q = client.table("pick_results").select("*").order("pick_date", desc=True)
+        if date:
+            q = q.eq("pick_date", date)
+        rows = q.execute()
+        return {"results": rows.data or []}
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+
+# ─────────────────────────────────────────────
+# TRACKED MATCHES — tracker personal al userului
+# ─────────────────────────────────────────────
+class TrackedMatchRequest(BaseModel):
+    home: str
+    away: str
+    league: str
+    flag: str = "⚽"
+    date: str
+    time: str = ""
+    prediction: str
+    market: str = "1X2"
+
+
+class MatchResultUpdate(BaseModel):
+    result: str   # 'pending' | 'correct' | 'wrong'
+
+
+@app.get("/api/tracked-matches")
+def get_tracked_matches(user: dict = Depends(require_user)):
+    """Returneaza toate meciurile tracked ale userului curent."""
+    client = get_client()
+    if client is None:
+        raise HTTPException(503, "DB indisponibil")
+    rows = client.table("tracked_matches").select("*").eq("user_id", user["id"]).order("added_at", desc=True).execute()
+    return {"matches": rows.data or []}
+
+
+@app.post("/api/tracked-matches")
+def add_tracked_match(req: TrackedMatchRequest, user: dict = Depends(require_user)):
+    """Adauga un meci in tracker-ul personal."""
+    client = get_client()
+    if client is None:
+        raise HTTPException(503, "DB indisponibil")
+    row = client.table("tracked_matches").insert({
+        "user_id":    user["id"],
+        "home":       req.home,
+        "away":       req.away,
+        "league":     req.league,
+        "flag":       req.flag,
+        "date":       req.date,
+        "time":       req.time,
+        "prediction": req.prediction,
+        "market":     req.market,
+        "result":     "pending",
+        "added_at":   datetime.date.today().isoformat(),
+    }).execute()
+    return row.data[0]
+
+
+@app.patch("/api/tracked-matches/{match_id}")
+def update_tracked_match(match_id: int, body: MatchResultUpdate, user: dict = Depends(require_user)):
+    """Actualizeaza rezultatul unui meci tracked."""
+    if body.result not in ("pending", "correct", "wrong"):
+        raise HTTPException(400, "result must be pending, correct, or wrong")
+    client = get_client()
+    if client is None:
+        raise HTTPException(503, "DB indisponibil")
+    existing = client.table("tracked_matches").select("user_id").eq("id", match_id).execute()
+    if not existing.data or str(existing.data[0]["user_id"]) != str(user["id"]):
+        raise HTTPException(404, "Not found")
+    client.table("tracked_matches").update({"result": body.result}).eq("id", match_id).execute()
+    return {"ok": True}
+
+
+@app.delete("/api/tracked-matches/{match_id}")
+def delete_tracked_match(match_id: int, user: dict = Depends(require_user)):
+    """Sterge un meci din tracker."""
+    client = get_client()
+    if client is None:
+        raise HTTPException(503, "DB indisponibil")
+    existing = client.table("tracked_matches").select("user_id").eq("id", match_id).execute()
+    if not existing.data or str(existing.data[0]["user_id"]) != str(user["id"]):
+        raise HTTPException(404, "Not found")
+    client.table("tracked_matches").delete().eq("id", match_id).execute()
+    return {"ok": True}
+
+
+@app.delete("/api/tracked-matches")
+def clear_tracked_matches(user: dict = Depends(require_user)):
+    """Sterge toate meciurile tracked ale userului."""
+    client = get_client()
+    if client is None:
+        raise HTTPException(503, "DB indisponibil")
+    client.table("tracked_matches").delete().eq("user_id", user["id"]).execute()
+    return {"ok": True}
+
+
+# ─────────────────────────────────────────────
+# GUMROAD CHECKOUT
+# ─────────────────────────────────────────────
+GUMROAD_PRODUCTS = {
     "analyst": {
-        "variant_id":  os.getenv("LS_VARIANT_ANALYST", ""),
-        "name":        "Analyst",
-        "price_ron":   29,
-        "tier":        "analyst",
-        "description": "Acces la toate predictiile HIGH confidence + statistici avansate",
+        "permalink": "xzbxnc",
+        "url":       "https://florianparv.gumroad.com/l/xzbxnc",
+        "name":      "Analyst",
+        "price_usd": 6,
+        "tier":      "analyst",
     },
     "pro": {
-        "variant_id":  os.getenv("LS_VARIANT_PRO", ""),
-        "name":        "Pro",
-        "price_ron":   79,
-        "tier":        "pro",
-        "description": "Tot ce include Analyst + picks VIP, acumulatoare + suport prioritar",
+        "permalink": "lnjfx",
+        "url":       "https://florianparv.gumroad.com/l/lnjfx",
+        "name":      "Pro",
+        "price_usd": 17,
+        "tier":      "pro",
     },
 }
 
-LS_API = "https://api.lemonsqueezy.com/v1"
-
 
 @app.get("/api/stripe/plans")
-def ls_plans():
+def gumroad_plans():
     """Returneaza planurile disponibile."""
     return {
         k: {
-            "name":        v["name"],
-            "price_ron":   v["price_ron"],
-            "tier":        v["tier"],
-            "description": v["description"],
+            "name":      v["name"],
+            "price_usd": v["price_usd"],
+            "tier":      v["tier"],
         }
-        for k, v in LS_PLANS.items()
+        for k, v in GUMROAD_PRODUCTS.items()
     }
 
 
@@ -705,130 +891,81 @@ class CheckoutRequest(BaseModel):
 
 @app.post("/api/checkout/session")
 @limiter.limit("10/minute")
-async def create_checkout_session(
+def create_checkout_session(
     req: CheckoutRequest,
     request: Request,
     user: dict = Depends(require_user),
 ):
-    """Creeaza un checkout LemonSqueezy. Necesita autentificare."""
-    import httpx
-
-    api_key  = os.getenv("LS_API_KEY", "")
-    store_id = os.getenv("LS_STORE_ID", "")
-    if not api_key or not store_id:
-        raise HTTPException(503, "Plata nu este disponibila momentan")
-
-    plan = LS_PLANS.get(req.plan)
+    """Returneaza URL-ul Gumroad pentru checkout. Necesita autentificare."""
+    plan = GUMROAD_PRODUCTS.get(req.plan)
     if not plan:
         raise HTTPException(400, f"Plan necunoscut: {req.plan}")
-    if not plan["variant_id"]:
-        raise HTTPException(503, "Varianta pentru acest plan nu este configurata")
 
-    origin  = os.getenv("FRONTEND_URL", "https://flopiforecastro.vercel.app")
-    success = f"{origin}/upgrade/success?plan={req.plan}"
-    cancel  = f"{origin}/upgrade"
+    # Trimitem email-ul userului catre Gumroad pentru pre-fill
+    import urllib.parse
+    params = urllib.parse.urlencode({
+        "email":   user["email"],
+        "wanted":  "true",
+        # user_id ca referinta pentru webhook
+        "referral_code": str(user["id"]),
+    })
+    checkout_url = f"{plan['url']}?{params}"
 
-    payload = {
-        "data": {
-            "type": "checkouts",
-            "attributes": {
-                "checkout_data": {
-                    "email": user["email"],
-                    "custom": {
-                        "user_id": str(user["id"]),
-                        "tier":    plan["tier"],
-                    },
-                },
-                "product_options": {
-                    "redirect_url":    success,
-                    "receipt_link_url": success,
-                },
-                "checkout_options": {
-                    "embed": False,
-                },
-            },
-            "relationships": {
-                "store": {
-                    "data": {"type": "stores", "id": store_id}
-                },
-                "variant": {
-                    "data": {"type": "variants", "id": plan["variant_id"]}
-                },
-            },
-        }
-    }
-
-    try:
-        async with httpx.AsyncClient(timeout=15) as client:
-            resp = await client.post(
-                f"{LS_API}/checkouts",
-                json=payload,
-                headers={
-                    "Authorization": f"Bearer {api_key}",
-                    "Accept":        "application/vnd.api+json",
-                    "Content-Type":  "application/vnd.api+json",
-                },
-            )
-        if resp.status_code not in (200, 201):
-            logger.error("[ls] Checkout failed %s: %s", resp.status_code, resp.text)
-            raise HTTPException(500, "Eroare la initializarea platii")
-
-        data = resp.json()
-        url  = data["data"]["attributes"]["url"]
-        return {"url": url}
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error("[ls] Checkout exception: %s", e)
-        raise HTTPException(500, f"Eroare la initializarea platii: {str(e)}")
+    return {"url": checkout_url}
 
 
-@app.post("/api/webhook/lemonsqueezy")
-async def ls_webhook(request: Request):
+@app.post("/api/webhook/gumroad")
+async def gumroad_webhook(request: Request):
     """
-    Webhook LemonSqueezy — upgradeaza/downgradeaza tier dupa events de plata.
-    Setat in LS Dashboard → Settings → Webhooks.
-    Events: subscription_created, subscription_cancelled, subscription_expired
+    Ping Gumroad — upgradeaza/downgradeaza tier dupa events de plata.
+    Setat in Gumroad Settings → Advanced → Ping.
     """
-    import hmac, hashlib, json
-
-    secret  = os.getenv("LS_WEBHOOK_SECRET", "")
-    payload = await request.body()
-    sig     = request.headers.get("x-signature", "")
-
-    if secret and sig:
-        expected = hmac.new(secret.encode("utf-8"), payload, hashlib.sha256).hexdigest()
-        if not hmac.compare_digest(expected, sig):
-            logger.warning("[ls] Webhook signature invalida")
-            raise HTTPException(400, "Semnatura webhook invalida")
-
     try:
-        event = json.loads(payload)
+        body = await request.body()
+        # Gumroad trimite form-encoded
+        from urllib.parse import parse_qs
+        data = {k: v[0] for k, v in parse_qs(body.decode("utf-8")).items()}
     except Exception:
         raise HTTPException(400, "Payload invalid")
 
-    event_name = event.get("meta", {}).get("event_name", "")
-    custom     = event.get("meta", {}).get("custom_data", {})
-    user_id    = custom.get("user_id")
-    tier       = custom.get("tier", "analyst")
+    email        = data.get("email", "")
+    permalink    = data.get("product_permalink", "")
+    cancelled    = data.get("cancelled", "false").lower() == "true"
+    refunded     = data.get("refunded", "false").lower() == "true"
 
-    logger.info("[ls] Event: %s, user_id: %s", event_name, user_id)
+    logger.info("[gumroad] Ping: permalink=%s email=%s cancelled=%s", permalink, email, cancelled)
 
-    from db import get_client
+    if not email:
+        return {"received": True}
+
+    # Identifica tier-ul din permalink
+    tier = "free"
+    for plan_key, plan_data in GUMROAD_PRODUCTS.items():
+        if plan_data["permalink"] == permalink:
+            tier = plan_data["tier"]
+            break
+
     client = get_client()
-    if not client or not user_id:
+    if not client:
         return {"received": True}
 
     try:
-        if event_name in ("subscription_created", "order_created"):
-            client.table("users").update({"tier": tier}).eq("id", user_id).execute()
-            logger.info("[ls] Upgraded user %s → %s", user_id, tier)
+        rows = client.table("users").select("id").eq("email", email).execute()
+        if not rows.data:
+            logger.warning("[gumroad] User negasit pentru email: %s", email)
+            return {"received": True}
 
-        elif event_name in ("subscription_cancelled", "subscription_expired", "subscription_paused"):
+        user_id = rows.data[0]["id"]
+
+        if cancelled or refunded:
             client.table("users").update({"tier": "free"}).eq("id", user_id).execute()
-            logger.info("[ls] Downgraded user %s → free", user_id)
+            logger.info("[gumroad] Downgraded user %s → free", user_id)
+        else:
+            client.table("users").update({"tier": tier}).eq("id", user_id).execute()
+            logger.info("[gumroad] Upgraded user %s → %s", user_id, tier)
+
     except Exception as e:
-        logger.error("[ls] DB update failed: %s", e)
+        logger.error("[gumroad] DB update failed: %s", e)
 
     return {"received": True}
 

@@ -1,13 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@supabase/supabase-js'
 import { detectLang, t } from '../i18n'
+import { getUser, getToken, authHeaders, login, register, logout as logoutAuth } from '@/lib/auth'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+const API = process.env.NEXT_PUBLIC_API_URL || 'https://football-predictor-api-n9sl.onrender.com'
 
 interface TrackedMatch {
   id: string; home: string; away: string; league: string; flag: string
@@ -76,13 +73,11 @@ function AuthForm({ onAuth }: { onAuth: () => void }) {
     setLoading(true); setError(''); setSuccess('')
     try {
       if (mode === 'register') {
-        const { error } = await supabase.auth.signUp({ email, password })
-        if (error) throw error
-        setSuccess('Cont creat! Verifică emailul pentru confirmare, apoi loghează-te.')
-        setMode('login')
+        await register(email, password)
+        setSuccess('Cont creat! Ești conectat automat.')
+        onAuth()
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password })
-        if (error) throw error
+        await login(email, password)
         onAuth()
       }
     } catch (e: any) {
@@ -204,35 +199,51 @@ function AuthForm({ onAuth }: { onAuth: () => void }) {
   )
 }
 
-// ── Supabase DB helpers ───────────────────────────────────────────────────────
-async function dbLoad(userId: string): Promise<TrackedMatch[]> {
-  const { data, error } = await supabase
-    .from('tracked_matches')
-    .select('*')
-    .eq('user_id', userId)
-    .order('added_at', { ascending: false })
-  if (error || !data) return []
-  return data.map((row: any) => ({
-    id: String(row.id), home: row.home, away: row.away, league: row.league, flag: row.flag,
-    date: row.date, time: row.time, prediction: row.prediction, market: row.market,
-    home_win: 45, draw: 27, away_win: 28,
-    result: row.result as 'correct' | 'wrong' | 'pending', addedAt: row.added_at,
-  }))
+// ── Backend API helpers ───────────────────────────────────────────────────────
+async function dbLoad(_userId: string): Promise<TrackedMatch[]> {
+  try {
+    const res = await fetch(`${API}/api/tracked-matches`, { headers: authHeaders() })
+    if (!res.ok) return []
+    const data = await res.json()
+    return (data.matches || []).map((row: any) => ({
+      id: String(row.id), home: row.home, away: row.away, league: row.league, flag: row.flag,
+      date: row.date, time: row.time || '', prediction: row.prediction, market: row.market,
+      home_win: 45, draw: 27, away_win: 28,
+      result: row.result as 'correct' | 'wrong' | 'pending', addedAt: row.added_at,
+    }))
+  } catch { return [] }
 }
-async function dbAdd(m: TrackedMatch, userId: string): Promise<string | null> {
-  const { data, error } = await supabase.from('tracked_matches').insert([{
-    home: m.home, away: m.away, league: m.league, flag: m.flag,
-    date: m.date, time: m.time, prediction: m.prediction, market: m.market,
-    result: m.result, added_at: m.addedAt, user_id: userId,
-  }]).select().single()
-  if (error || !data) return null
-  return String(data.id)
+async function dbAdd(m: TrackedMatch, _userId: string): Promise<string | null> {
+  try {
+    const res = await fetch(`${API}/api/tracked-matches`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({
+        home: m.home, away: m.away, league: m.league, flag: m.flag,
+        date: m.date, time: m.time, prediction: m.prediction, market: m.market,
+      }),
+    })
+    if (!res.ok) return null
+    const data = await res.json()
+    return String(data.id)
+  } catch { return null }
 }
 async function dbUpdate(id: string, result: string) {
-  await supabase.from('tracked_matches').update({ result }).eq('id', id)
+  try {
+    await fetch(`${API}/api/tracked-matches/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({ result }),
+    })
+  } catch {}
 }
 async function dbDelete(id: string) {
-  await supabase.from('tracked_matches').delete().eq('id', id)
+  try {
+    await fetch(`${API}/api/tracked-matches/${id}`, {
+      method: 'DELETE',
+      headers: authHeaders(),
+    })
+  } catch {}
 }
 
 function RateBar({ label, correct, total, highlight }: { label: string; correct: number; total: number; highlight?: boolean }) {
@@ -593,27 +604,13 @@ export default function Weekly() {
     setLang(detectLang())
     setMounted(true)
 
-    // Verificăm dacă utilizatorul e logat
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        dbLoad(session.user.id).then(data => { setMatches(data); setLoading(false) })
-      } else {
-        setLoading(false)
-      }
-    })
-
-    // Ascultăm schimbările de autentificare
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        dbLoad(session.user.id).then(data => { setMatches(data); setLoading(false) })
-      } else {
-        setMatches([])
-      }
-    })
-
-    return () => subscription.unsubscribe()
+    const currentUser = getUser()
+    setUser(currentUser)
+    if (currentUser) {
+      dbLoad(currentUser.id).then(data => { setMatches(data); setLoading(false) })
+    } else {
+      setLoading(false)
+    }
   }, [])
 
   useEffect(() => {
@@ -638,18 +635,24 @@ export default function Weekly() {
   }
   async function clearAll() {
     if (!confirm('Ștergi toate pronosticurile?')) return
-    await supabase.from('tracked_matches').delete().eq('user_id', user.id)
+    await fetch(`${API}/api/tracked-matches`, { method: 'DELETE', headers: authHeaders() })
     setMatches([])
   }
-  async function logout() {
-    await supabase.auth.signOut()
-    setMatches([])
+  function logout() {
+    logoutAuth()
   }
 
   if (!mounted) return null
 
   // Dacă nu e logat, arătăm formularul de autentificare
-  if (!user) return <AuthForm onAuth={() => {}} />
+  if (!user) return <AuthForm onAuth={() => {
+    const currentUser = getUser()
+    setUser(currentUser)
+    if (currentUser) {
+      setLoading(true)
+      dbLoad(currentUser.id).then(data => { setMatches(data); setLoading(false) })
+    }
+  }} />
 
   const activeMatches   = matches.filter(m => !shouldArchive(m))
   const archivedMatches = matches.filter(m => shouldArchive(m))
