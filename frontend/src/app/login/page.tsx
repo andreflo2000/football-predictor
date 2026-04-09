@@ -14,6 +14,35 @@ export default function LoginPage() {
   const [error, setError]       = useState('')
   const [loading, setLoading]   = useState(false)
 
+  // Schimbare parola
+  const [cpCurrent, setCpCurrent] = useState('')
+  const [cpNew, setCpNew]         = useState('')
+  const [cpMsg, setCpMsg]         = useState('')
+  const [cpErr, setCpErr]         = useState('')
+  const [cpLoading, setCpLoading] = useState(false)
+  const [showCp, setShowCp]       = useState(false)
+
+  async function handleChangePassword(e: React.FormEvent) {
+    e.preventDefault()
+    setCpMsg(''); setCpErr('')
+    setCpLoading(true)
+    try {
+      const r = await fetch(`${API}/api/auth/change-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+        body: JSON.stringify({ current_password: cpCurrent, new_password: cpNew }),
+      })
+      const data = await r.json()
+      if (!r.ok) throw new Error(data.detail || 'Eroare')
+      setCpMsg('Parola a fost schimbată cu succes!')
+      setCpCurrent(''); setCpNew('')
+    } catch (err: any) {
+      setCpErr(err.message)
+    } finally {
+      setCpLoading(false)
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
@@ -139,23 +168,52 @@ export default function LoginPage() {
             Continuă fără cont →
           </a>
           {getToken() && (
-            <button
-              onClick={async () => {
-                if (!confirm('Ești sigur? Contul și toate datele tale vor fi șterse permanent.')) return
-                try {
-                  await fetch(`${API}/api/auth/account`, {
-                    method: 'DELETE',
-                    headers: { Authorization: `Bearer ${getToken()}` },
-                  })
-                  logout()
-                } catch {
-                  alert('Eroare la ștergere. Contactează contact@oxiano.com')
-                }
-              }}
-              style={{ color: '#ef4444', fontSize: '11px', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'monospace' }}
-            >
-              Șterge contul și toate datele mele
-            </button>
+            <>
+              <button
+                onClick={() => setShowCp(v => !v)}
+                style={{ color: '#3b82f6', fontSize: '13px', background: 'none', border: 'none', cursor: 'pointer' }}
+              >
+                🔑 Schimbă parola
+              </button>
+
+              {showCp && (
+                <form onSubmit={handleChangePassword} style={{ textAlign: 'left', marginTop: 8, background: '#0f172a', borderRadius: 10, padding: '16px', border: '1px solid #1e3a5f' }}>
+                  <div style={{ marginBottom: 10 }}>
+                    <label style={{ color: '#94a3b8', fontSize: 12, display: 'block', marginBottom: 4 }}>Parola curentă</label>
+                    <input type="password" value={cpCurrent} onChange={e => setCpCurrent(e.target.value)} required
+                      style={{ width: '100%', padding: '8px 10px', borderRadius: 6, background: '#1e293b', border: '1px solid #334155', color: '#f1f5f9', fontSize: 14, boxSizing: 'border-box' }} />
+                  </div>
+                  <div style={{ marginBottom: 12 }}>
+                    <label style={{ color: '#94a3b8', fontSize: 12, display: 'block', marginBottom: 4 }}>Parola nouă (minim 6 caractere)</label>
+                    <input type="password" value={cpNew} onChange={e => setCpNew(e.target.value)} required minLength={6}
+                      style={{ width: '100%', padding: '8px 10px', borderRadius: 6, background: '#1e293b', border: '1px solid #334155', color: '#f1f5f9', fontSize: 14, boxSizing: 'border-box' }} />
+                  </div>
+                  {cpErr && <div style={{ color: '#fca5a5', fontSize: 12, marginBottom: 8 }}>{cpErr}</div>}
+                  {cpMsg && <div style={{ color: '#4ade80', fontSize: 12, marginBottom: 8 }}>{cpMsg}</div>}
+                  <button type="submit" disabled={cpLoading} style={{ width: '100%', padding: '8px', borderRadius: 6, background: '#3b82f6', color: '#fff', fontWeight: 700, fontSize: 13, border: 'none', cursor: 'pointer' }}>
+                    {cpLoading ? 'Se salvează...' : 'Salvează parola nouă'}
+                  </button>
+                </form>
+              )}
+
+              <button
+                onClick={async () => {
+                  if (!confirm('Ești sigur? Contul și toate datele tale vor fi șterse permanent.')) return
+                  try {
+                    await fetch(`${API}/api/auth/account`, {
+                      method: 'DELETE',
+                      headers: { Authorization: `Bearer ${getToken()}` },
+                    })
+                    logout()
+                  } catch {
+                    alert('Eroare la ștergere. Contactează contact@oxiano.com')
+                  }
+                }}
+                style={{ color: '#ef4444', fontSize: '11px', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'monospace' }}
+              >
+                Șterge contul și toate datele mele
+              </button>
+            </>
           )}
         </div>
 

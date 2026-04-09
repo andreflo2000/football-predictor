@@ -150,6 +150,32 @@ def auth_me(user: dict = Depends(require_user)):
     return user
 
 
+@app.post("/api/auth/change-password")
+@limiter.limit("5/minute")
+def auth_change_password(request: Request, body: dict, user: dict = Depends(require_user)):
+    """Schimba parola utilizatorului autentificat."""
+    from db import get_client
+    from auth import _verify, _hash
+    current = body.get("current_password", "")
+    new_pw  = body.get("new_password", "")
+    if not current or not new_pw:
+        raise HTTPException(400, "Parola curenta si parola noua sunt obligatorii")
+    if len(new_pw) < 6:
+        raise HTTPException(400, "Parola noua trebuie sa aiba minim 6 caractere")
+    if len(new_pw.encode("utf-8")) > 72:
+        raise HTTPException(400, "Parola prea lunga (max 72 caractere)")
+    client = get_client()
+    if client is None:
+        raise HTTPException(503, "DB indisponibil")
+    rows = client.table("users").select("password_hash").eq("id", int(user["id"])).execute()
+    if not rows.data:
+        raise HTTPException(404, "User negasit")
+    if not _verify(current, rows.data[0]["password_hash"]):
+        raise HTTPException(401, "Parola curenta incorecta")
+    client.table("users").update({"password_hash": _hash(new_pw)}).eq("id", int(user["id"])).execute()
+    return {"message": "Parola a fost schimbata cu succes"}
+
+
 @app.delete("/api/auth/account")
 def auth_delete_account(user: dict = Depends(require_user)):
     """Sterge contul si toate datele asociate (GDPR Art. 17)."""
