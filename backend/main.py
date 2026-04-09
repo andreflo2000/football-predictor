@@ -100,6 +100,8 @@ CACHE_TTL_FIXTURES = 600    # 10 minute
 # ─────────────────────────────────────────────
 # HEALTH
 # ─────────────────────────────────────────────
+@app.get("/")
+@app.head("/")
 @app.get("/health")
 @app.get("/api/health")
 def api_health():
