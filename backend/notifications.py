@@ -16,48 +16,81 @@ FROM_EMAIL           = "picks@oxiano.com"
 
 # ─── Helpers ────────────────────────────────────────────────────────────────
 
-def _odd(prob: float) -> str:
-    return f"{100 / max(prob, 1) * 1.08:.2f}"
+def _bar(pct: float, width: int = 8) -> str:
+    filled = round(pct / 100 * width)
+    return '█' * filled + '░' * (width - filled)
 
-def _bar(pct: float) -> str:
-    filled = round(pct / 10)
-    return '█' * filled + '░' * (10 - filled)
+def _kelly(conf: float, edge: float, has_odds: bool) -> float:
+    p = conf / 100
+    if has_odds and edge and edge > 0:
+        p_market = max(0.05, p - edge / 100)
+        odds = 1 / p_market
+    else:
+        odds = (1 / p) * 0.92
+    b = odds - 1
+    k = (b * p - (1 - p)) / b
+    return round(max(0, min(0.10, k)) * 100, 1)
 
-def _conf_emoji(conf: float) -> str:
-    if conf >= 65: return '🟢'
-    if conf >= 55: return '🟡'
-    return '🔵'
+def _pred_label(p: dict) -> tuple[str, str]:
+    """Returneaza (1/X/2, descriere)."""
+    pred = p.get('prediction', 'H')
+    if pred == 'H':   return '1', p['home']
+    if pred == 'D':   return 'X', 'Egal'
+    return '2', p['away']
 
 
 # ─── Telegram ───────────────────────────────────────────────────────────────
 
 def send_telegram(picks: list, date_str: str) -> bool:
-    """Trimite picks pe canalul Telegram."""
+    """Trimite picks pe canalul Telegram (HTML parse mode)."""
     if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHANNEL_ID:
         logger.warning("[telegram] BOT_TOKEN sau CHANNEL_ID lipsesc")
         return False
 
-    high = [p for p in picks if p["confidence"] >= 65]
-    if not high:
-        high = picks[:3]
-    shown = high[:5]
+    high = [p for p in picks if p.get('confidence', 0) >= 65]
+    med  = [p for p in picks if 55 <= p.get('confidence', 0) < 65]
 
-    lines = [f"⚽ *OXIANO — Selecțiile zilei {date_str}*\n"]
+    # Afisam max 5 picks: prioritate HIGH, completam cu MED
+    shown_high = high[:3]
+    shown_med  = med[:2] if len(shown_high) < 3 else med[:1]
+    shown = shown_high + shown_med
+    if not shown:
+        shown = picks[:3]
 
-    for p in shown:
-        pred_short = '1' if p['prediction'] == 'H' else ('X' if p['prediction'] == 'D' else '2')
-        pred_full  = p['home'] if p['prediction'] == 'H' else ('Egal' if p['prediction'] == 'D' else p['away'])
-        conf_emoji = _conf_emoji(p['confidence'])
-        lines.append(
-            f"{p['flag']} *{p['home']}* vs *{p['away']}*\n"
-            f"   {p['league']} · {p.get('time', '—')}\n"
-            f"   ➤ {pred_short} — {pred_full}  |  ~{_odd(p['home_win'] if p['prediction']=='H' else p['away_win'] if p['prediction']=='A' else p['draw'])}\n"
-            f"   {conf_emoji} Confidence: {p['confidence']}%\n"
-        )
+    lines = [f"⚽ <b>OXIANO — Picks {date_str}</b>"]
 
-    lines.append("──────────────────")
-    lines.append("⚠️ _Analiză statistică. Nu constituie sfat de pariere._")
-    lines.append("🌐 oxiano.com")
+    if shown_high:
+        lines.append(f"\n🟢 <b>HIGH CONFIDENCE ({len(shown_high)} picks)</b>")
+        for p in shown_high:
+            num, label = _pred_label(p)
+            kelly = _kelly(p['confidence'], p.get('edge', 0), p.get('has_odds', False))
+            edge  = p.get('edge', 0)
+            vbet  = ' 💎' if p.get('value_bet') else ''
+            lines.append(
+                f"\n{p.get('flag','⚽')} <b>{p['home']}</b> vs <b>{p['away']}</b>\n"
+                f"   {p['league']} · {p.get('time','—')}\n"
+                f"   ➤ <b>{num} — {label}</b>{vbet}\n"
+                f"   {_bar(p['confidence'])} {p['confidence']}%"
+                + (f"  |  Kelly: {kelly}%" if kelly > 0 else "")
+                + (f"\n   📈 Edge vs piață: +{edge:.1f}%" if edge > 0 else "")
+            )
+
+    if shown_med:
+        lines.append(f"\n🟡 <b>MEDIUM CONFIDENCE ({len(shown_med)} picks)</b>")
+        for p in shown_med:
+            num, label = _pred_label(p)
+            lines.append(
+                f"\n{p.get('flag','⚽')} <b>{p['home']}</b> vs <b>{p['away']}</b>\n"
+                f"   {p['league']} · {p.get('time','—')}\n"
+                f"   ➤ {num} — {label}  |  {p['confidence']}%"
+            )
+
+    lines.append(
+        f"\n━━━━━━━━━━━━━━━━━━\n"
+        f"📊 XGBoost + Elo + Market Intel\n"
+        f"<i>Analiză statistică. Nu constituie sfat de pariere.</i>\n"
+        f"🌐 oxiano.com"
+    )
 
     text = "\n".join(lines)
 
@@ -65,16 +98,17 @@ def send_telegram(picks: list, date_str: str) -> bool:
         r = requests.post(
             f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage",
             json={
-                "chat_id":    TELEGRAM_CHANNEL_ID,
-                "text":       text,
-                "parse_mode": "MarkdownV2",
+                "chat_id":                  TELEGRAM_CHANNEL_ID,
+                "text":                     text,
+                "parse_mode":               "HTML",
+                "disable_web_page_preview": True,
             },
             timeout=10,
         )
         if r.status_code == 200:
             logger.info("[telegram] Trimis %d picks", len(shown))
             return True
-        logger.error("[telegram] Error %d: %s", r.status_code, r.text[:200])
+        logger.error("[telegram] Error %d: %s", r.status_code, r.text[:300])
         return False
     except Exception as e:
         logger.error("[telegram] Exception: %s", e)
