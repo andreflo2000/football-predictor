@@ -64,6 +64,9 @@ def register_user(email: str, password: str) -> dict:
         if existing.data:
             raise HTTPException(400, "Email deja inregistrat")
 
+        if len(password.encode("utf-8")) > 72:
+            raise HTTPException(400, "Parola prea lunga (max 72 caractere)")
+
         hashed = _hash(password)
         client.table("users").insert({
             "email":         email,
