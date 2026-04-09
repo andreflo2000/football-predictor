@@ -86,9 +86,13 @@ async def startup_event():
         scheduler.start()
         logger.info("Scheduler pornit: pre-calcul picks la 07:00 si 13:00")
 
-        # Pre-calcul imediat la startup (in background thread)
+        # Pre-calcul la startup cu delay — asteptam DNS-ul sa fie gata
         import threading
-        threading.Thread(target=compute_and_store_picks, daemon=True).start()
+        def _delayed_compute():
+            import time
+            time.sleep(15)
+            compute_and_store_picks()
+        threading.Thread(target=_delayed_compute, daemon=True).start()
     except Exception as e:
         logger.warning("Scheduler init failed: %s", e)
 
