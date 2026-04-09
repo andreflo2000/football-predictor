@@ -995,42 +995,6 @@ export default function Home() {
 
   return (
     <div style={{ overflowX: 'hidden', minHeight: '100vh' }} className="app-bg grid-bg">
-      <header className="header">
-        <div className="max-w-6xl mx-auto px-4 py-2 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <img src="/logo.png" alt="Oxiano" style={{ width: 44, height: 44, objectFit: 'contain' }} />
-            <div className="pulse-dot ml-2 hidden sm:block" />
-          </div>
-          <nav className="flex items-center gap-1">
-            <a href="/" className="nav-link active">{tr.predictions}</a>
-            <a href="/daily" onClick={(e) => { if ((window as any).Capacitor) { e.preventDefault(); window.location.href='/daily/index.html'; }}} className="nav-link">🎯 Selecțiile zilei</a>
-            <a href="/weekly" onClick={(e) => { if ((window as any).Capacitor) { e.preventDefault(); window.location.href='/weekly/index.html'; }}} className="nav-link">{tr.results}</a>
-            <a href="/track-record" className="nav-link">📊 Track Record</a>
-            <a href="/upgrade" className="nav-link" style={{ color: '#f59e0b', fontWeight: 700 }}>⚡ Upgrade</a>
-            {user ? (
-              <div className="flex items-center gap-1 ml-1">
-                {user.tier === 'vip' && (
-                  <span className="text-[9px] font-bold px-2 py-0.5 rounded-full font-mono"
-                    style={{ background: 'rgba(234,179,8,0.15)', color: '#eab308', border: '1px solid rgba(234,179,8,0.3)' }}>
-                    👑 VIP
-                  </span>
-                )}
-                <button onClick={() => { logout(); setUser(null) }}
-                  className="nav-link text-[10px]" style={{ color: '#64748b' }}>
-                  Ieșire
-                </button>
-              </div>
-            ) : (
-              <a href="/login"
-                className="text-[10px] font-bold px-3 py-1 rounded-full ml-1"
-                style={{ background: 'rgba(59,130,246,0.15)', color: '#60a5fa', border: '1px solid rgba(59,130,246,0.3)' }}>
-                Cont
-              </a>
-            )}
-          </nav>
-        </div>
-      </header>
-      <div className="header-spacer" />
 
       <main style={{ maxWidth: '72rem', overflowX: 'hidden', padding: '0 16px' }} className="mx-auto py-8">
         <div className="text-center mb-10 fade-in">

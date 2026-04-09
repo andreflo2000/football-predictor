@@ -3,23 +3,6 @@
 export default function Privacy() {
   return (
     <div style={{ overflowX: 'hidden', minHeight: '100vh' }} className="app-bg grid-bg">
-      <header className="header">
-        <div className="max-w-4xl mx-auto px-4 py-2 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <img src="/logo.png" alt="Oxiano" className="w-10 h-10" />
-            <div>
-              <div className="font-display text-lg text-white tracking-widest leading-none">OXIANO</div>
-              <div className="text-[9px] font-mono text-blue-400 tracking-[0.2em] uppercase">Quantitative Analysis</div>
-            </div>
-          </div>
-          <nav className="flex items-center gap-1">
-            <a href="/" className="nav-link">Predicții AI</a>
-            <a href="/daily" className="nav-link">🎯 Selecțiile zilei</a>
-            <a href="/weekly" className="nav-link">Rezultate</a>
-          </nav>
-        </div>
-      </header>
-      <div className="header-spacer" />
 
       <main className="max-w-2xl mx-auto px-4 py-8" style={{ overflowX: 'hidden' }}>
         <div className="text-center mb-8 fade-in">

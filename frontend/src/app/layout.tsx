@@ -3,6 +3,7 @@ import './globals.css'
 import DisclaimerBanner from '@/components/DisclaimerBanner'
 import GdprConsent from '@/components/GdprConsent'
 import Onboarding from '@/components/Onboarding'
+import Navbar from '@/components/Navbar'
 
 export const metadata: Metadata = {
   title: 'Oxiano — Quantitative Football Analysis',
@@ -74,6 +75,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </>}
       </head>
       <body style={{width: '100vw', overflowX: 'hidden', position: 'relative'}}>
+        <Navbar />
         {children}
         <Onboarding />
         <GdprConsent />

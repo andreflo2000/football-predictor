@@ -770,53 +770,6 @@ export default function DailyPage() {
   return (
     <div className="app-bg grid-bg" style={{ minHeight: '100vh', overflowX: 'hidden' }}>
 
-      {/* Header */}
-      <header className="header">
-        <div className="max-w-4xl mx-auto px-4 py-2 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <img src="/logo.png" alt="Oxiano" className="w-10 h-10" />
-            <div>
-              <div className="font-display text-lg text-white tracking-widest leading-none">OXIANO</div>
-              <div className="text-[9px] font-mono text-green-400 tracking-[0.2em] uppercase">Quantitative Analysis</div>
-            </div>
-          </div>
-          <nav className="flex items-center gap-1">
-            <a href="/" className="nav-link">Predicții AI</a>
-            <a href="/daily" className="nav-link active">🎯 Selecțiile zilei</a>
-            <a href="/weekly" className="nav-link">Rezultate</a>
-            <a href="/track-record" className="nav-link">📊 Track Record</a>
-            <a href="/despre" className="nav-link">Despre</a>
-            <a href="/upgrade" className="nav-link" style={{ color: '#f59e0b', fontWeight: 700 }}>⚡ Upgrade</a>
-            {user ? (
-              <div className="flex items-center gap-1 ml-1">
-                {(user.tier === 'vip' || user.tier === 'pro') && (
-                  <span className="text-[9px] font-bold px-2 py-0.5 rounded-full font-mono"
-                    style={{ background: 'rgba(234,179,8,0.15)', color: '#eab308', border: '1px solid rgba(234,179,8,0.3)' }}>
-                    👑 {user.tier.toUpperCase()}
-                  </span>
-                )}
-                {user.tier === 'analyst' && (
-                  <span className="text-[9px] font-bold px-2 py-0.5 rounded-full font-mono"
-                    style={{ background: 'rgba(96,165,250,0.15)', color: '#60a5fa', border: '1px solid rgba(96,165,250,0.3)' }}>
-                    📊 ANALYST
-                  </span>
-                )}
-                <button onClick={() => { logout(); setUser(null) }}
-                  className="nav-link text-[10px]" style={{ color: '#64748b' }}>
-                  Ieșire
-                </button>
-              </div>
-            ) : (
-              <a href="/login"
-                className="text-[10px] font-bold px-3 py-1 rounded-full ml-1"
-                style={{ background: 'rgba(59,130,246,0.15)', color: '#60a5fa', border: '1px solid rgba(59,130,246,0.3)' }}>
-                Cont
-              </a>
-            )}
-          </nav>
-        </div>
-      </header>
-      <div className="header-spacer" />
 
       <main className="max-w-2xl mx-auto px-4 py-8">
 

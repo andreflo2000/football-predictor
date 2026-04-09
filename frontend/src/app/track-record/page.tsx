@@ -79,23 +79,6 @@ export default function TrackRecord() {
 
   return (
     <div style={{ overflowX: 'hidden', minHeight: '100vh' }} className="app-bg grid-bg">
-      <header className="header">
-        <div className="max-w-4xl mx-auto px-4 py-2 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <img src="/logo.png" alt="Oxiano" className="w-10 h-10" />
-            <div>
-              <div className="font-display text-lg text-white tracking-widest leading-none">OXIANO</div>
-              <div className="text-[9px] font-mono text-green-400 tracking-[0.2em] uppercase">Quantitative Analysis</div>
-            </div>
-          </div>
-          <nav className="flex items-center gap-1">
-            <a href="/daily" className="nav-link">🎯 Picks zilnice</a>
-            <a href="/weekly" className="nav-link">Săptămânal</a>
-            <a href="/upgrade" className="nav-link" style={{ color: '#facc15' }}>⚡ Upgrade</a>
-          </nav>
-        </div>
-      </header>
-      <div className="header-spacer" />
 
       <main className="max-w-3xl mx-auto px-4 py-8">
 

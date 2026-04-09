@@ -89,23 +89,6 @@ function AuthForm({ onAuth }: { onAuth: () => void }) {
 
   return (
     <div style={{ overflowX: 'hidden', minHeight: '100vh' }} className="app-bg grid-bg">
-      <header className="header">
-        <div className="max-w-4xl mx-auto px-4 py-2 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <img src="/logo.png" alt="Oxiano" className="w-10 h-10" />
-            <div>
-              <div className="font-display text-lg text-white tracking-widest leading-none">OXIANO</div>
-              <div className="text-[9px] font-mono text-blue-400 tracking-[0.2em] uppercase">Quantitative Analysis</div>
-            </div>
-          </div>
-          <nav className="flex items-center gap-1">
-            <a href="/" onClick={(e) => { if ((window as any).Capacitor) { e.preventDefault(); window.location.href='/index.html'; }}} className="nav-link">Predicții AI</a>
-            <a href="/daily" onClick={(e) => { if ((window as any).Capacitor) { e.preventDefault(); window.location.href='/daily/index.html'; }}} className="nav-link">🎯 Azi</a>
-            <a href="/weekly" className="nav-link active">Rezultate</a>
-          </nav>
-        </div>
-      </header>
-      <div className="header-spacer" />
 
       <main className="max-w-sm mx-auto px-4 py-12">
         <div className="text-center mb-8 fade-in">
@@ -662,24 +645,6 @@ export default function Weekly() {
 
   return (
     <div className="app-bg grid-bg min-h-screen" style={{ overflowX: 'hidden' }}>
-      <header className="header">
-        <div className="max-w-4xl mx-auto px-4 py-2 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <img src="/logo.png" alt="Oxiano" className="w-10 h-10" />
-            <div>
-              <div className="font-display text-lg text-white tracking-widest leading-none">OXIANO</div>
-              <div className="text-[9px] font-mono text-blue-400 tracking-[0.2em] uppercase">Quantitative Analysis</div>
-            </div>
-          </div>
-          <nav className="flex items-center gap-1">
-            <a href="/" onClick={(e) => { if ((window as any).Capacitor) { e.preventDefault(); window.location.href='/index.html'; }}} className="nav-link">{tr.predictions}</a>
-            <a href="/daily" onClick={(e) => { if ((window as any).Capacitor) { e.preventDefault(); window.location.href='/daily/index.html'; }}} className="nav-link">🎯 Azi</a>
-            <a href="/weekly" className="nav-link active">{tr.results}</a>
-            <button onClick={logout} className="nav-link text-gray-600 hover:text-red-400 text-xs">⎋</button>
-          </nav>
-        </div>
-      </header>
-      <div className="header-spacer" />
 
       <main className="max-w-4xl mx-auto px-4 py-8" style={{ overflowX: 'hidden' }}>
         <div className="text-center mb-8 fade-in">
