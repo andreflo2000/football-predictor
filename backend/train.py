@@ -875,6 +875,9 @@ def main():
     model, le, feature_means = train_model(X, y)
     team_stats               = build_team_stats(hist, elo_ratings)
 
+    # Trim h2h_history la ultimele 6 per pereche — suficient pentru inference, economiseste memorie
+    h2h_history_trimmed = {k: v[-6:] for k, v in h2h_history.items()}
+
     print(">>> Salvez modelul...")
     with open(MODEL_PATH, "wb") as f:
         pickle.dump({
@@ -884,7 +887,7 @@ def main():
             "label_encoder":  le,
             "elo_ratings":    elo_ratings,
             "feature_means":  feature_means,
-            "h2h_history":    h2h_history,
+            "h2h_history":    h2h_history_trimmed,
         }, f)
     print(">>> Model salvat!")
 
