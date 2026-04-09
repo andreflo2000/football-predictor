@@ -6,6 +6,7 @@ import os
 import datetime
 import time
 import logging
+import requests
 from fastapi import FastAPI, HTTPException, Query, Request, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr
@@ -565,12 +566,45 @@ def predict_get(
 
 
 # ─────────────────────────────────────────────
-# STANDINGS stub (nu avem date live de clasament)
+# STANDINGS — football-data.org v4
 # ─────────────────────────────────────────────
 @app.get("/api/standings/{league}")
 def api_standings(league: str):
-    """Returns empty standings — no live standings data source yet."""
-    return {"standings": [], "league": league, "note": "Standings not available"}
+    """Returneaza clasamentul curent pentru o liga (football-data.org)."""
+    from fixtures import API_KEY, BASE_URL
+    if not API_KEY:
+        return {"standings": [], "league": league}
+    try:
+        r = requests.get(
+            f"{BASE_URL}/competitions/{league}/standings",
+            headers={"X-Auth-Token": API_KEY},
+            timeout=10,
+        )
+        if r.status_code != 200:
+            return {"standings": [], "league": league}
+        data = r.json()
+        table = data.get("standings", [{}])[0].get("table", [])
+        standings = []
+        for row in table:
+            team = row.get("team", {})
+            standings.append({
+                "position":      row.get("position", 0),
+                "team":          team.get("shortName") or team.get("name", ""),
+                "team_id":       team.get("id", 0),
+                "played":        row.get("playedGames", 0),
+                "won":           row.get("won", 0),
+                "draw":          row.get("draw", 0),
+                "lost":          row.get("lost", 0),
+                "goals_for":     row.get("goalsFor", 0),
+                "goals_against": row.get("goalsAgainst", 0),
+                "goal_diff":     row.get("goalDifference", 0),
+                "points":        row.get("points", 0),
+                "form":          row.get("form") or "",
+            })
+        return {"standings": standings, "league": league}
+    except Exception as e:
+        logger.warning("[standings] %s: %s", league, e)
+        return {"standings": [], "league": league}
 
 
 # ─────────────────────────────────────────────
