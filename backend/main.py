@@ -707,6 +707,56 @@ def track_record():
         return {"total": 0, "tracking_since": "Aprilie 2026", "error": str(e)}
 
 
+@app.get("/api/track-record/history")
+def track_record_history(limit: int = Query(100, le=500)):
+    """Returneaza istoricul individual al pick-urilor marcate WIN/LOSS/VOID."""
+    client = get_client()
+    if client is None:
+        return {"results": []}
+    try:
+        rows = client.table("pick_results").select("*").order("pick_date", desc=True).limit(limit).execute()
+        data = rows.data or []
+
+        # Calculeaza equity curve (stake fix 1 unitate, odds medii 2.0)
+        results = []
+        running_units = 0.0
+        for r in reversed(data):  # cronologic pentru equity
+            if r["result"] == "win":
+                running_units += 1.0
+            elif r["result"] == "loss":
+                running_units -= 1.0
+            results.append({
+                "date":         r["pick_date"],
+                "home":         r["home"],
+                "away":         r["away"],
+                "result":       r["result"],
+                "confidence":   round(r.get("confidence", 0.6) * 100, 1),
+                "actual_score": r.get("actual_score", ""),
+                "equity":       round(running_units, 2),
+            })
+
+        results.reverse()  # cel mai recent primul
+
+        resolved = [r for r in data if r["result"] in ("win", "loss")]
+        wins = sum(1 for r in resolved if r["result"] == "win")
+        high = [r for r in resolved if r.get("confidence", 0) >= 0.65]
+        high_wins = sum(1 for r in high if r["result"] == "win")
+
+        return {
+            "results": results,
+            "summary": {
+                "total":         len(resolved),
+                "wins":          wins,
+                "losses":        len(resolved) - wins,
+                "accuracy":      round(wins / len(resolved) * 100, 1) if resolved else 0,
+                "high_conf_accuracy": round(high_wins / len(high) * 100, 1) if high else 0,
+                "final_equity":  round(running_units, 2),
+            }
+        }
+    except Exception as e:
+        return {"results": [], "error": str(e)}
+
+
 # ─────────────────────────────────────────────
 # ADMIN — marcare rezultate WIN/LOSS
 # ─────────────────────────────────────────────
