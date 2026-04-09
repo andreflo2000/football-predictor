@@ -1,19 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 
-interface Pick {
-  home: string; away: string; league: string; flag: string; time?: string
-  prediction: 'H' | 'D' | 'A'; prediction_label?: string
-  confidence: number; home_win: number; draw: number; away_win: number
-  edge?: number; has_odds?: boolean; value_bet?: boolean
-}
-
-function getBB(): Pick[] {
-  try { return JSON.parse(localStorage.getItem('oxiano_bb') || '[]') } catch { return [] }
-}
-function saveBB(picks: Pick[]) {
-  localStorage.setItem('oxiano_bb', JSON.stringify(picks))
-}
+import { getBetBuilder as getBB, saveBetBuilder as saveBB, type BetPick as Pick } from '@/lib/betBuilder'
 
 function predShort(p: Pick) {
   if (p.prediction === 'H') return { short: '1', full: p.home, prob: p.home_win }

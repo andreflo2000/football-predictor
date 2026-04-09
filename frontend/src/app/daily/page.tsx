@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { getUser, logout, isVip, type AuthUser } from '@/lib/auth'
 import PickSkeleton from '@/components/PickSkeleton'
+import { getBetBuilder, saveBetBuilder } from '@/lib/betBuilder'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -346,14 +347,7 @@ function FormBar({ pct, label }: { pct: number; label: string }) {
   )
 }
 
-// ── Bet Builder helpers ───────────────────────────────────────────────────────
-
-export function getBetBuilder(): Pick[] {
-  try { return JSON.parse(localStorage.getItem('oxiano_bb') || '[]') } catch { return [] }
-}
-export function saveBetBuilder(picks: Pick[]) {
-  localStorage.setItem('oxiano_bb', JSON.stringify(picks))
-}
+// ── Bet Builder ───────────────────────────────────────────────────────────────
 
 function AddToBetBuilder({ pick }: { pick: Pick }) {
   const [added, setAdded] = useState(false)
