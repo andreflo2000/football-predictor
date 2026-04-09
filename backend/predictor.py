@@ -17,10 +17,11 @@ _team_stats    = None
 _label_encoder = None
 _elo_ratings   = None
 _feature_means = None
+_h2h_history   = None
 
 
 def load_model():
-    global _model, _features, _team_stats, _label_encoder, _elo_ratings, _feature_means
+    global _model, _features, _team_stats, _label_encoder, _elo_ratings, _feature_means, _h2h_history
 
     if not os.path.exists(MODEL_PATH):
         raise FileNotFoundError(
@@ -34,6 +35,7 @@ def load_model():
     _label_encoder = data.get("label_encoder")
     _elo_ratings   = data.get("elo_ratings", {})
     _feature_means = data.get("feature_means", {})
+    _h2h_history   = data.get("h2h_history", {})
     print(f"Model AI incarcat: {len(_team_stats)} echipe, {len(_features)} features")
 
 
@@ -132,11 +134,37 @@ def _build_feature_vector(home_team: str, away_team: str,
     feat["xg_a"]    = xg_a
     feat["xg_diff"] = xg_diff
 
-    # H2H defaults (neutral)
-    feat["h2h_hw"] = 0.45
-    feat["h2h_dr"] = 0.25
-    feat["h2h_gd"] = 0.0
-    feat["h2h_n"]  = 0
+    # H2H real (din istoricul antrenamentului)
+    if _h2h_history:
+        key = tuple(sorted([home_team, away_team]))
+        recent = _h2h_history.get(key, [])[-6:]
+        if recent:
+            hw = dr = 0
+            gd_sum = 0.0
+            for r in recent:
+                if r["home"] == home_team:
+                    hw += int(r["ftr"] == "H")
+                    dr += int(r["ftr"] == "D")
+                    gd_sum += r["hg"] - r["ag"]
+                else:
+                    hw += int(r["ftr"] == "A")
+                    dr += int(r["ftr"] == "D")
+                    gd_sum += r["ag"] - r["hg"]
+            n = len(recent)
+            feat["h2h_hw"] = hw / n
+            feat["h2h_dr"] = dr / n
+            feat["h2h_gd"] = gd_sum / n
+            feat["h2h_n"]  = n
+        else:
+            feat["h2h_hw"] = 0.45
+            feat["h2h_dr"] = 0.25
+            feat["h2h_gd"] = 0.0
+            feat["h2h_n"]  = 0
+    else:
+        feat["h2h_hw"] = 0.45
+        feat["h2h_dr"] = 0.25
+        feat["h2h_gd"] = 0.0
+        feat["h2h_n"]  = 0
 
     # Elo
     feat["h_elo"]      = h_elo

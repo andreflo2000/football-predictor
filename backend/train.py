@@ -677,7 +677,7 @@ def build_h2h_features(data):
         history.setdefault(key, []).append(
             {"home": home, "away": away, "ftr": ftr, "hg": hg, "ag": ag})
 
-    return pd.DataFrame(rows).set_index("match_idx")
+    return pd.DataFrame(rows).set_index("match_idx"), history
 
 
 # ─────────────────────────────────────────────────────────
@@ -870,7 +870,7 @@ def main():
     market_df               = build_market_features(data)
     elo_df, elo_ratings     = build_elo_features(data)
     team_df, hist           = build_team_features(data, xg_lookup=xg_lookup)
-    h2h_df                  = build_h2h_features(data)
+    h2h_df, h2h_history      = build_h2h_features(data)
     X, y                    = assemble(data, team_df, h2h_df, elo_df, odds_df, market_df)
     model, le, feature_means = train_model(X, y)
     team_stats               = build_team_stats(hist, elo_ratings)
@@ -884,6 +884,7 @@ def main():
             "label_encoder":  le,
             "elo_ratings":    elo_ratings,
             "feature_means":  feature_means,
+            "h2h_history":    h2h_history,
         }, f)
     print(">>> Model salvat!")
 
