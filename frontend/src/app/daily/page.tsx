@@ -346,6 +346,48 @@ function FormBar({ pct, label }: { pct: number; label: string }) {
   )
 }
 
+// ── Bet Builder helpers ───────────────────────────────────────────────────────
+
+export function getBetBuilder(): Pick[] {
+  try { return JSON.parse(localStorage.getItem('oxiano_bb') || '[]') } catch { return [] }
+}
+export function saveBetBuilder(picks: Pick[]) {
+  localStorage.setItem('oxiano_bb', JSON.stringify(picks))
+}
+
+function AddToBetBuilder({ pick }: { pick: Pick }) {
+  const [added, setAdded] = useState(false)
+
+  useEffect(() => {
+    const bb = getBetBuilder()
+    setAdded(bb.some(p => p.home === pick.home && p.away === pick.away))
+  }, [pick.home, pick.away])
+
+  function toggle() {
+    const bb = getBetBuilder()
+    if (added) {
+      saveBetBuilder(bb.filter(p => !(p.home === pick.home && p.away === pick.away)))
+      setAdded(false)
+    } else {
+      saveBetBuilder([...bb, pick])
+      setAdded(true)
+    }
+  }
+
+  return (
+    <button onClick={toggle}
+      className="text-[9px] font-bold px-2.5 py-1 rounded-lg font-mono"
+      style={{
+        background: added ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.05)',
+        color: added ? '#4ade80' : '#6b7280',
+        border: `1px solid ${added ? 'rgba(34,197,94,0.35)' : 'rgba(255,255,255,0.1)'}`,
+        transition: 'all 0.15s',
+      }}>
+      {added ? '✓ În bilet' : '+ Bilet'}
+    </button>
+  )
+}
+
 // ── PickCard ─────────────────────────────────────────────────────────────────
 
 function PickCard({ pick, rank, userTier }: { pick: Pick; rank: number; userTier?: string }) {
@@ -525,9 +567,9 @@ function PickCard({ pick, rank, userTier }: { pick: Pick; rank: number; userTier
         )
       })()}
 
-      {/* Streak indicators + Share */}
+      {/* Streak indicators + Share + Bet Builder */}
       <StreakBadges pick={pick} />
-      <div className="flex gap-2 mt-2">
+      <div className="flex gap-2 mt-2 flex-wrap">
         <button
           onClick={() => {
             const dateStr = pick.time
@@ -552,6 +594,7 @@ function PickCard({ pick, rank, userTier }: { pick: Pick; rank: number; userTier
           style={{ background: 'rgba(38,120,188,0.1)', color: '#2678bc', border: '1px solid rgba(38,120,188,0.2)' }}>
           ✈️ TG
         </button>
+        <AddToBetBuilder pick={pick} />
       </div>
     </div>
   )

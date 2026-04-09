@@ -4,12 +4,12 @@ import { usePathname } from 'next/navigation'
 import { getToken, logout } from '@/lib/auth'
 
 const LINKS = [
-  { href: '/',            label: 'Predicții AI',      icon: '🔮' },
-  { href: '/daily',       label: 'Selecțiile zilei',  icon: '🎯' },
-  { href: '/weekly',      label: 'Rezultate',         icon: '📅' },
-  { href: '/track-record',label: 'Track Record',      icon: '📊' },
-  { href: '/despre',      label: 'Despre',            icon: 'ℹ️'  },
-  { href: '/upgrade',     label: 'Upgrade',           icon: '⚡', highlight: true },
+  { href: '/',             label: 'Predicții AI',     icon: '🔮' },
+  { href: '/daily',        label: 'Selecțiile zilei', icon: '🎯' },
+  { href: '/bet-builder',  label: 'Bet Builder',      icon: '🎰' },
+  { href: '/track-record', label: 'Track Record',     icon: '📊' },
+  { href: '/despre',       label: 'Despre',           icon: 'ℹ️'  },
+  { href: '/upgrade',      label: 'Upgrade',          icon: '⚡', highlight: true },
 ]
 
 export default function Navbar() {
@@ -43,9 +43,7 @@ export default function Navbar() {
 
           {/* Logo */}
           <a href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none', flexShrink: 0 }}>
-            <img src="/logo.png" alt="Oxiano" style={{ width: 36, height: 36, objectFit: 'contain' }} />
-            <span style={{ color: '#fff', fontWeight: 800, fontSize: 15, letterSpacing: '0.1em', display: 'none' }}
-              className="sm-show">OXIANO</span>
+            <img src="/logo.png" alt="Oxiano" className="navbar-logo" style={{ objectFit: 'contain' }} />
           </a>
 
           {/* Desktop links */}
@@ -178,9 +176,10 @@ export default function Navbar() {
         @media (max-width: 768px) {
           .desktop-nav { display: none !important; }
           .mobile-menu-btn { display: block !important; }
+          .navbar-logo { width: 36px; height: 36px; }
         }
         @media (min-width: 769px) {
-          .sm-show { display: inline !important; }
+          .navbar-logo { width: 52px; height: 52px; }
         }
       `}</style>
     </>

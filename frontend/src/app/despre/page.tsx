@@ -98,10 +98,10 @@ export default function DesprePage() {
         <div style={{ background: '#0f1f35', border: '1px solid #1e3a5f', borderRadius: 16, padding: '36px 32px', marginBottom: 48 }}>
           <h2 style={{ color: '#fff', fontSize: 22, fontWeight: 700, margin: '0 0 18px' }}>De ce există Oxiano</h2>
           <p style={{ color: '#9ca3af', fontSize: 15, lineHeight: 1.8, margin: '0 0 14px' }}>
-            Piața de pronosticuri sportive este dominată de opinii subiective, statistici selective și prezentări înșelătoare ale track record-ului. Tipscteri cu sute de mii de urmăritori raportează acuratețe de 70-80% — fără date verificabile, fără metodologie transparentă, fără risc asumat.
+            Oxiano s-a născut dintr-o convingere simplă: fotbalul poate fi analizat cu aceleași instrumente cu care fondurile quant analizează piețele financiare. Gradient boosting, ratinguri Elo dinamice, integrare de date de piață — aplicate sistematic, pe volum mare, fără subiectivitate.
           </p>
           <p style={{ color: '#9ca3af', fontSize: 15, lineHeight: 1.8, margin: 0 }}>
-            Oxiano este răspunsul la această problemă. Fiecare cifră din platformă — acuratețe, confidence, edge, Kelly — are o formulă matematică documentată și este calculată pe date reale, verificabile, din surse publice. Nu vindem certitudini. Vindem structură analitică.
+            Fiecare cifră din platformă — acuratețe, confidence, edge, Kelly — are o formulă matematică documentată și este calculată pe date reale, verificabile, din surse publice. Nu vindem certitudini. Vindem structură analitică aplicată unui sport complex.
           </p>
         </div>
 
