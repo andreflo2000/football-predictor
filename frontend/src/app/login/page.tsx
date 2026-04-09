@@ -7,11 +7,12 @@ const API = process.env.NEXT_PUBLIC_API_URL || 'https://football-predictor-api-n
 
 export default function LoginPage() {
   const router = useRouter()
-  const [mode, setMode]       = useState<'login' | 'register'>('login')
-  const [email, setEmail]     = useState('')
-  const [password, setPass]   = useState('')
-  const [error, setError]     = useState('')
-  const [loading, setLoading] = useState(false)
+  const [mode, setMode]         = useState<'login' | 'register'>('login')
+  const [email, setEmail]       = useState('')
+  const [password, setPass]     = useState('')
+  const [showPass, setShowPass] = useState(false)
+  const [error, setError]       = useState('')
+  const [loading, setLoading]   = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -87,16 +88,29 @@ export default function LoginPage() {
             <label style={{ color: '#94a3b8', fontSize: '13px', display: 'block', marginBottom: '6px' }}>
               Parolă {mode === 'register' && <span style={{ color: '#64748b' }}>(minim 6 caractere)</span>}
             </label>
-            <input
-              type="password" value={password} onChange={e => setPass(e.target.value)}
-              required minLength={6} placeholder="••••••••"
-              style={{
-                width: '100%', padding: '10px 12px', borderRadius: '8px',
-                background: '#0f172a', border: '1px solid #334155',
-                color: '#f1f5f9', fontSize: '15px', boxSizing: 'border-box',
-                outline: 'none',
-              }}
-            />
+            <div style={{ position: 'relative' }}>
+              <input
+                type={showPass ? 'text' : 'password'} value={password} onChange={e => setPass(e.target.value)}
+                required minLength={6} placeholder="••••••••"
+                style={{
+                  width: '100%', padding: '10px 40px 10px 12px', borderRadius: '8px',
+                  background: '#0f172a', border: '1px solid #334155',
+                  color: '#f1f5f9', fontSize: '15px', boxSizing: 'border-box',
+                  outline: 'none',
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPass(v => !v)}
+                style={{
+                  position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)',
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  color: '#64748b', fontSize: '16px', padding: '0',
+                }}
+              >
+                {showPass ? '🙈' : '👁️'}
+              </button>
+            </div>
           </div>
 
           {error && (
