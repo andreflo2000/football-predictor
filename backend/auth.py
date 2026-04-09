@@ -7,7 +7,7 @@ import logging
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-from passlib.context import CryptContext
+import bcrypt as _bcrypt
 from jose import JWTError, jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -20,19 +20,21 @@ SECRET_KEY   = os.getenv("JWT_SECRET", "flopi-dev-secret-CHANGE-IN-PROD")
 ALGORITHM    = "HS256"
 ACCESS_TTL   = 60 * 24 * 7   # 7 zile in minute
 
-pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
-bearer  = HTTPBearer(auto_error=False)
+bearer = HTTPBearer(auto_error=False)
 
 
 # ─── helpers ────────────────────────────────────────────────
 
 
 def _hash(password: str) -> str:
-    return pwd_ctx.hash(password)
+    return _bcrypt.hashpw(password.encode("utf-8"), _bcrypt.gensalt()).decode("utf-8")
 
 
 def _verify(plain: str, hashed: str) -> bool:
-    return pwd_ctx.verify(plain, hashed)
+    try:
+        return _bcrypt.checkpw(plain.encode("utf-8"), hashed.encode("utf-8"))
+    except Exception:
+        return False
 
 
 def _create_token(user_id: int, email: str, tier: str) -> str:
