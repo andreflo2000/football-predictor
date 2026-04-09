@@ -750,7 +750,7 @@ export default function DailyPage() {
     if (perm === 'granted') {
       new Notification('🎯 Oxiano activat!', {
         body: 'Vei fi notificat când apar pick-uri noi cu confidence ridicat.',
-        icon: '/logo.svg',
+        icon: '/logo.png',
       })
     }
   }
@@ -774,7 +774,7 @@ export default function DailyPage() {
       <header className="header">
         <div className="max-w-4xl mx-auto px-4 py-2 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/logo.svg" alt="Oxiano" className="w-10 h-10" />
+            <img src="/logo.png" alt="Oxiano" className="w-10 h-10" />
             <div>
               <div className="font-display text-lg text-white tracking-widest leading-none">OXIANO</div>
               <div className="text-[9px] font-mono text-green-400 tracking-[0.2em] uppercase">Quantitative Analysis</div>

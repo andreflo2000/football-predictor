@@ -998,11 +998,7 @@ export default function Home() {
       <header className="header">
         <div className="max-w-6xl mx-auto px-4 py-2 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/logo.svg" alt="Oxiano" className="w-10 h-10" />
-            <div>
-              <div className="font-display text-lg text-white tracking-widest leading-none">OXIANO</div>
-              <div className="text-[9px] font-mono text-blue-400 tracking-[0.2em] uppercase">Quantitative Analysis</div>
-            </div>
+            <img src="/logo.png" alt="Oxiano" style={{ width: 44, height: 44, objectFit: 'contain' }} />
             <div className="pulse-dot ml-2 hidden sm:block" />
           </div>
           <nav className="flex items-center gap-1">
@@ -1040,13 +1036,11 @@ export default function Home() {
         <div className="text-center mb-10 fade-in">
           <div className="flex justify-center mb-5">
             <div className="relative">
-              <img src="/logo.svg" alt="Oxiano"
-                className="w-36 h-36" />
-              <div className="absolute -bottom-1 -right-2 w-9 h-9 bg-emerald-500 rounded-full flex items-center justify-center text-base border-2 border-gray-900">🔮</div>
+              <img src="/logo.png" alt="Oxiano"
+                style={{ width: 144, height: 144, objectFit: 'contain' }} />
             </div>
           </div>
-          <h1 className="font-display text-4xl text-white mb-1" style={{ letterSpacing: '0.05em' }}>OXIANO</h1>
-          <div className="text-blue-400 text-sm font-mono uppercase tracking-widest mb-3">Quantitative Analysis</div>
+          <div className="text-blue-400 text-sm font-mono uppercase tracking-widest mb-3">Advanced Quantitative Intelligence</div>
           <p className="text-gray-500 text-xs font-mono uppercase tracking-widest">{tr.hero_sub}</p>
         </div>
 

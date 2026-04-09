@@ -6,12 +6,12 @@ interface LogoProps {
 export default function Logo({ size = 40, className = '' }: LogoProps) {
   return (
     <img
-      src="/logo.svg"
+      src="/logo.png"
       alt="Oxiano"
       width={size}
       height={size}
       className={className}
-      style={{ width: size, height: size }}
+      style={{ width: size, height: size, objectFit: 'contain' }}
     />
   )
 }
