@@ -785,6 +785,7 @@ export default function DailyPage() {
             <a href="/daily" className="nav-link active">🎯 Selecțiile zilei</a>
             <a href="/weekly" className="nav-link">Rezultate</a>
             <a href="/track-record" className="nav-link">📊 Track Record</a>
+            <a href="/despre" className="nav-link">Despre</a>
             <a href="/upgrade" className="nav-link" style={{ color: '#f59e0b', fontWeight: 700 }}>⚡ Upgrade</a>
             {user ? (
               <div className="flex items-center gap-1 ml-1">
