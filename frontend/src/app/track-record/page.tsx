@@ -38,9 +38,18 @@ interface History {
 }
 
 const backtesting = [
-  { label: 'Confidence ≥ 65%', accuracy: 75, sample: '~33K meciuri', color: '#22c55e' },
-  { label: 'Confidence ≥ 55%', accuracy: 65, sample: '~85K meciuri', color: '#f59e0b' },
-  { label: 'Toate predicțiile', accuracy: 49.8, sample: '225K meciuri', color: '#818cf8' },
+  { label: 'Confidence > 70%',  accuracy: 78.5, sample: '~0.8 picks/zi · out-of-sample', color: '#22c55e' },
+  { label: 'Confidence ≥ 65%',  accuracy: 74.1, sample: '~1.1 picks/zi · out-of-sample', color: '#4ade80' },
+  { label: 'Confidence ≥ 60%',  accuracy: 66.4, sample: '~1.5 picks/zi · out-of-sample', color: '#f59e0b' },
+  { label: 'Toate predicțiile', accuracy: 54.6, sample: '1.105 meciuri · Oct 2025–Mar 2026', color: '#818cf8' },
+]
+
+const leagueStats = [
+  { league: 'La Liga 🇪🇸',       acc65: 86.1, acc70: 92.9, picks65: 36 },
+  { league: 'Bundesliga 🇩🇪',    acc65: 79.4, acc70: 82.6, picks65: 34 },
+  { league: 'Ligue 1 🇫🇷',       acc65: 79.4, acc70: 76.9, picks65: 34 },
+  { league: 'Serie A 🇮🇹',       acc65: 71.1, acc70: 71.9, picks65: 45 },
+  { league: 'Premier League 🏴󠁧󠁢󠁥󠁮󠁧󠁿', acc65: 70.0, acc70: 71.4, picks65: 40 },
 ]
 
 export default function TrackRecord() {
@@ -100,7 +109,7 @@ export default function TrackRecord() {
             Transparență totală · Date reale · Actualizat zilnic
           </div>
           <p className="text-gray-600 text-xs font-mono">
-            Backtesting 225K meciuri 2010–2025 · Tracking live din {stats?.tracking_since || 'Aprilie 2026'}
+            Backtest out-of-sample 1.105 meciuri · Oct 2025–Mar 2026 · Tracking live din {stats?.tracking_since || 'Aprilie 2026'}
           </p>
         </div>
 
@@ -256,6 +265,42 @@ export default function TrackRecord() {
               </div>
             </div>
           )}
+        </div>
+
+        {/* Per ligă */}
+        <div className="mb-6 fade-in">
+          <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3 text-center">
+            Acuratețe per ligă · Out-of-sample Oct 2025–Mar 2026
+          </div>
+          <div className="card overflow-hidden">
+            <table className="w-full text-xs font-mono">
+              <thead>
+                <tr style={{ borderBottom: '1px solid #1f2937' }}>
+                  <th className="text-left p-3 text-gray-600">Ligă</th>
+                  <th className="text-center p-3 text-gray-600">Conf ≥65%</th>
+                  <th className="text-center p-3 text-gray-600">Conf ≥70%</th>
+                  <th className="text-right p-3 text-gray-600">Picks analizate</th>
+                </tr>
+              </thead>
+              <tbody>
+                {leagueStats.map((l, i) => (
+                  <tr key={i} style={{ borderBottom: '1px solid #111827' }}>
+                    <td className="p-3 text-gray-300">{l.league}</td>
+                    <td className="p-3 text-center font-bold" style={{ color: l.acc65 >= 80 ? '#4ade80' : l.acc65 >= 70 ? '#f59e0b' : '#818cf8' }}>
+                      {l.acc65}%
+                    </td>
+                    <td className="p-3 text-center font-bold" style={{ color: l.acc70 >= 80 ? '#4ade80' : '#f59e0b' }}>
+                      {l.acc70}%
+                    </td>
+                    <td className="p-3 text-right text-gray-500">{l.picks65}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="text-center mt-2 text-[10px] text-gray-700 font-mono">
+            * Valide doar cu cote disponibile · Backtest out-of-sample pe 6 luni
+          </div>
         </div>
 
         {/* Metodologie */}
