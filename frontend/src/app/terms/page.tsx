@@ -6,10 +6,10 @@ export default function Terms() {
       <header className="header">
         <div className="max-w-4xl mx-auto px-4 py-2 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/logo.svg" alt="Flopi San" className="w-10 h-10" />
+            <img src="/logo.svg" alt="Oxiano" className="w-10 h-10" />
             <div>
-              <div className="font-display text-lg text-white tracking-widest leading-none">FLOPI SAN</div>
-              <div className="text-[9px] font-mono text-blue-400 tracking-[0.2em] uppercase">Forecast Academy</div>
+              <div className="font-display text-lg text-white tracking-widest leading-none">OXIANO</div>
+              <div className="text-[9px] font-mono text-blue-400 tracking-[0.2em] uppercase">Quantitative Analysis</div>
             </div>
           </div>
           <nav className="flex items-center gap-1">
@@ -27,7 +27,7 @@ export default function Terms() {
             TERMENI ȘI CONDIȚII
           </h1>
           <div className="text-blue-400 text-xs font-mono uppercase tracking-widest">
-            Flopi San Forecast Academy · Ultima actualizare: Aprilie 2026
+            Oxiano · Ultima actualizare: Aprilie 2026
           </div>
         </div>
 
@@ -37,7 +37,7 @@ export default function Terms() {
           <div className="rounded-2xl p-5" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)' }}>
             <div className="text-[10px] font-bold text-red-400 uppercase tracking-widest mb-3">Disclaimer important</div>
             <p className="text-sm text-gray-300 leading-relaxed font-medium">
-              Flopi San Forecast Academy este o platformă de <strong>analiză statistică sportivă și business intelligence</strong>.
+              Oxiano este o platformă de <strong>analiză statistică sportivă și business intelligence</strong>.
               Predicțiile generate sunt produse matematice (XGBoost, Elo, Poisson) cu scop
               exclusiv <strong>educațional și informativ</strong>.
             </p>
@@ -50,7 +50,7 @@ export default function Terms() {
           <div className="card p-5">
             <div className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-3">1. Acceptarea termenilor</div>
             <p className="text-sm text-gray-400 leading-relaxed">
-              Prin accesarea sau utilizarea aplicației Flopi San Forecast Academy, ești de acord cu acești Termeni și Condiții.
+              Prin accesarea sau utilizarea aplicației Oxiano, ești de acord cu acești Termeni și Condiții.
               Dacă nu ești de acord, te rugăm să nu folosești aplicația. Îți rezervăm dreptul de a modifica acești termeni oricând,
               cu notificare prealabilă prin actualizarea datei de mai sus.
             </p>
@@ -59,7 +59,7 @@ export default function Terms() {
           <div className="card p-5">
             <div className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-3">2. Descrierea serviciului</div>
             <div className="space-y-2 text-sm text-gray-400 leading-relaxed">
-              <p>Flopi San Forecast Academy oferă:</p>
+              <p>Oxiano oferă:</p>
               <ul className="space-y-1 mt-2">
                 <li className="flex items-start gap-2"><span className="text-blue-400 shrink-0">·</span><span>Analiză statistică a meciurilor de fotbal prin modele matematice (XGBoost, Elo Rating, Poisson)</span></li>
                 <li className="flex items-start gap-2"><span className="text-blue-400 shrink-0">·</span><span>Indicatori de probabilitate bazați pe date istorice (225.000+ meciuri)</span></li>
@@ -72,7 +72,7 @@ export default function Terms() {
           <div className="card p-5">
             <div className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-3">3. Limitarea răspunderii</div>
             <div className="space-y-2 text-sm text-gray-400 leading-relaxed">
-              <p>Flopi San Forecast Academy <strong className="text-gray-300">nu este responsabilă</strong> pentru:</p>
+              <p>Oxiano <strong className="text-gray-300">nu este responsabilă</strong> pentru:</p>
               <ul className="space-y-1 mt-2">
                 <li className="flex items-start gap-2"><span className="text-red-500 shrink-0">·</span><span>Pierderi financiare rezultate din utilizarea predicțiilor noastre</span></li>
                 <li className="flex items-start gap-2"><span className="text-red-500 shrink-0">·</span><span>Decizii de pariere luate pe baza informațiilor din aplicație</span></li>
@@ -98,7 +98,7 @@ export default function Terms() {
               <p>Este permis să:</p>
               <ul className="space-y-1 mt-2">
                 <li className="flex items-start gap-2"><span className="text-green-500 shrink-0">·</span><span>Folosești aplicația în scop personal și educațional</span></li>
-                <li className="flex items-start gap-2"><span className="text-green-500 shrink-0">·</span><span>Distribui predicțiile cu menționarea sursei (Flopi San)</span></li>
+                <li className="flex items-start gap-2"><span className="text-green-500 shrink-0">·</span><span>Distribui predicțiile cu menționarea sursei (Oxiano)</span></li>
                 <li className="flex items-start gap-2"><span className="text-green-500 shrink-0">·</span><span>Integrezi API-ul în propriile proiecte de analiză (cu abonament Business)</span></li>
               </ul>
               <p className="mt-3">Este interzis să:</p>
@@ -114,7 +114,7 @@ export default function Terms() {
             <div className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-3">6. Proprietate intelectuală</div>
             <p className="text-sm text-gray-400 leading-relaxed">
               Modelele AI, algoritmii, design-ul și conținutul aplicației sunt proprietatea exclusivă a
-              Flopi San Forecast Academy. Codul sursă este protejat prin drepturi de autor.
+              Oxiano. Codul sursă este protejat prin drepturi de autor.
               Datele sportive sunt furnizate de terți sub licențele lor proprii.
             </p>
           </div>
@@ -146,22 +146,22 @@ export default function Terms() {
               Pentru întrebări legate de acești termeni:
             </p>
             <div className="mt-2 p-3 bg-gray-800/40 rounded-lg">
-              <p className="text-sm text-blue-300 font-mono">flopisan.forecast@gmail.com</p>
-              <p className="text-xs text-gray-600 font-mono mt-1">Flopi San Forecast Academy · România</p>
+              <p className="text-sm text-blue-300 font-mono">contact@oxiano.com</p>
+              <p className="text-xs text-gray-600 font-mono mt-1">Oxiano · România</p>
             </div>
           </div>
 
         </div>
 
         <div className="text-center mt-8 text-xs text-gray-700 font-mono">
-          © 2026 Flopi San Forecast Academy · Toate drepturile rezervate
+          © 2026 Oxiano · Toate drepturile rezervate
         </div>
       </main>
 
       <footer className="border-t border-blue-900/40 mt-12 py-6">
         <div className="max-w-4xl mx-auto px-4 text-center">
           <p className="text-xs font-mono text-gray-700">
-            Flopi San Forecast Academy — Scop educațional. Nu reprezintă sfaturi de pariuri.
+            Oxiano — Scop educațional. Nu reprezintă sfaturi de pariuri.
           </p>
         </div>
       </footer>

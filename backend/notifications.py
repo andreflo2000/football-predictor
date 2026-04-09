@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 RESEND_API_KEY       = os.getenv("RESEND_API_KEY", "")
 TELEGRAM_BOT_TOKEN   = os.getenv("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_CHANNEL_ID  = os.getenv("TELEGRAM_CHANNEL_ID", "")  # ex: "@FlopiSanOfficial"
-FROM_EMAIL           = "picks@flopiforecastro.vercel.app"
+FROM_EMAIL           = "picks@oxiano.com"
 
 
 # ─── Helpers ────────────────────────────────────────────────────────────────
@@ -42,7 +42,7 @@ def send_telegram(picks: list, date_str: str) -> bool:
         high = picks[:3]
     shown = high[:5]
 
-    lines = [f"⚽ *FLOPI SAN — Selecțiile zilei {date_str}*\n"]
+    lines = [f"⚽ *OXIANO — Selecțiile zilei {date_str}*\n"]
 
     for p in shown:
         pred_short = '1' if p['prediction'] == 'H' else ('X' if p['prediction'] == 'D' else '2')
@@ -57,7 +57,7 @@ def send_telegram(picks: list, date_str: str) -> bool:
 
     lines.append("──────────────────")
     lines.append("⚠️ _Analiză statistică. Nu constituie sfat de pariere._")
-    lines.append("🌐 flopiforecastro\\.vercel\\.app")
+    lines.append("🌐 oxiano.com")
 
     text = "\n".join(lines)
 
@@ -112,7 +112,7 @@ def send_email_digest(picks: list, date_str: str, subscribers: list[str]) -> int
 <body style="background:#0f172a;font-family:monospace;margin:0;padding:24px">
   <div style="max-width:560px;margin:0 auto">
     <div style="text-align:center;margin-bottom:24px">
-      <h1 style="color:#f1f5f9;font-size:22px;letter-spacing:0.1em;margin:0">⚽ FLOPI SAN</h1>
+      <h1 style="color:#f1f5f9;font-size:22px;letter-spacing:0.1em;margin:0">⚽ OXIANO</h1>
       <p style="color:#3b82f6;font-size:11px;margin:4px 0 0;text-transform:uppercase;letter-spacing:0.2em">Selecțiile zilei · {date_str}</p>
     </div>
 
@@ -130,21 +130,21 @@ def send_email_digest(picks: list, date_str: str, subscribers: list[str]) -> int
 
     <div style="margin-top:20px;padding:12px;background:#1e293b;border-radius:8px;border-left:3px solid #ef4444">
       <p style="color:#94a3b8;font-size:11px;margin:0;line-height:1.6">
-        ⚠️ <strong style="color:#f1f5f9">Disclaimer:</strong> Flopi San oferă analiză statistică cu scop educațional.
+        ⚠️ <strong style="color:#f1f5f9">Disclaimer:</strong> Oxiano oferă analiză statistică cu scop educațional.
         Nu reprezintă sfat de pariere sau recomandare financiară.
       </p>
     </div>
 
     <div style="text-align:center;margin-top:20px">
-      <a href="https://flopiforecastro.vercel.app/daily"
+      <a href="https://oxiano.com/daily"
         style="background:#3b82f6;color:#fff;text-decoration:none;padding:10px 24px;border-radius:8px;font-size:13px;font-weight:700">
         Vezi toate pick-urile →
       </a>
     </div>
 
     <p style="text-align:center;color:#334155;font-size:10px;margin-top:20px">
-      Flopi San Forecast Academy · flopiforecastro.vercel.app<br>
-      <a href="https://flopiforecastro.vercel.app/privacy" style="color:#475569">Dezabonare / Confidențialitate</a>
+      Oxiano · oxiano.com<br>
+      <a href="https://oxiano.com/privacy" style="color:#475569">Dezabonare / Confidențialitate</a>
     </p>
   </div>
 </body></html>"""
@@ -158,7 +158,7 @@ def send_email_digest(picks: list, date_str: str, subscribers: list[str]) -> int
         for email in subscribers[:50]:
             try:
                 resend.Emails.send({
-                    "from":    f"Flopi San <{FROM_EMAIL}>",
+                    "from":    f"Oxiano <{FROM_EMAIL}>",
                     "to":      [email],
                     "subject": f"⚽ Pick-urile zilei {date_str} — {len(shown)} selecții HIGH conf",
                     "html":    html,

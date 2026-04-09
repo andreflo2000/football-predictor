@@ -1,5 +1,5 @@
 """
-FLOPI SAN — Backend API
+OXIANO — Backend API
 """
 
 import os
@@ -34,13 +34,13 @@ if _sentry_dsn:
 # ── Rate limiter ─────────────────────────────────────────────
 limiter = Limiter(key_func=get_remote_address, default_limits=["60/minute"])
 
-app = FastAPI(title="Flopi San API")
+app = FastAPI(title="Oxiano API")
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 ALLOWED_ORIGINS = [
-    "https://flopiforecastro.vercel.app",
-    "https://www.flopiforecastro.vercel.app",
+    "https://oxiano.com",
+    "https://www.oxiano.com",
     # development local
     "http://localhost:3000",
     "http://localhost:3001",
@@ -110,7 +110,7 @@ CACHE_TTL_FIXTURES = 600    # 10 minute
 @app.get("/api/health")
 def api_health():
     import datetime as _dt
-    return {"status": "ok", "service": "Flopi San API", "ts": _dt.datetime.utcnow().isoformat()}
+    return {"status": "ok", "service": "Oxiano API", "ts": _dt.datetime.utcnow().isoformat()}
 
 @app.get("/ping")
 @app.head("/ping")

@@ -15,7 +15,7 @@ const STEPS = [
   {
     icon: '⚠️',
     title: 'Scop educațional',
-    desc: 'Flopi San este un instrument de business intelligence și analiză statistică. Nu reprezintă sfat de pariere sau recomandare financiară.',
+    desc: 'Oxiano este un instrument de business intelligence și analiză statistică. Nu reprezintă sfat de pariere sau recomandare financiară.',
   },
   {
     icon: '🎯',

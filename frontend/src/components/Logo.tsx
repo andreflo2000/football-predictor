@@ -7,7 +7,7 @@ export default function Logo({ size = 40, className = '' }: LogoProps) {
   return (
     <img
       src="/logo.svg"
-      alt="Flopi San"
+      alt="Oxiano"
       width={size}
       height={size}
       className={className}

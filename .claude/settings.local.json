@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(/c/Users/user/AppData/Local/Programs/Python/Python313/python.exe:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(curl -s \"https://football-predictor-api-n9sl.onrender.com/api/daily\")",
+      "Bash(ls backend/data/csv/club/*.csv)",
+      "Bash(python train.py)",
+      "Bash(python -c \"import matplotlib; import scipy; print\\('deps ok'\\)\")",
+      "Bash(pip install:*)",
+      "Bash(python monte_carlo.py)",
+      "Bash(python -X utf8 monte_carlo.py)",
+      "Bash(curl -s https://football-predictor-api-n9sl.onrender.com/health)",
+      "Bash(curl -s https://football-predictor-api-n9sl.onrender.com/api/stripe/plans)",
+      "Bash(curl -s -X POST https://football-predictor-api-n9sl.onrender.com/api/checkout/session -H \"Content-Type: application/json\" -d '{\"plan\":\"analyst\"}')",
+      "Bash(curl -s https://football-predictor-api-n9sl.onrender.com/api/daily)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); picks=d.get\\('picks',[]\\); print\\(f'Total picks: {len\\(picks\\)}'\\); vip=[p for p in picks if p.get\\('vip_only'\\)]; print\\(f'VIP picks: {len\\(vip\\)}'\\); print\\(f'VIP prediction visible: {vip[0].get\\(\\\\\"prediction\\\\\"\\) if vip else \\\\\"N/A\\\\\"}'\\)\")",
+      "Bash(curl -s \"https://football-predictor-api-n9sl.onrender.com/api/webhook/gumroad\" -X POST -d \"email=test@test.com&product_permalink=xzbxnc&cancelled=false\")",
+      "Bash(curl:*)",
+      "Bash(python:*)"
+    ]
+  }
+}

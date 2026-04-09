@@ -45,8 +45,8 @@ export default function LoginPage() {
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: '24px' }}>
           <div style={{ fontSize: '32px', marginBottom: '4px' }}>⚽</div>
-          <div style={{ color: '#f1f5f9', fontSize: '20px', fontWeight: 700 }}>Flopi San</div>
-          <div style={{ color: '#94a3b8', fontSize: '13px' }}>Forecast Academy</div>
+          <div style={{ color: '#f1f5f9', fontSize: '20px', fontWeight: 700 }}>Oxiano</div>
+          <div style={{ color: '#94a3b8', fontSize: '13px' }}>Quantitative Analysis</div>
         </div>
 
         {/* Toggle */}
@@ -149,7 +149,7 @@ export default function LoginPage() {
                   })
                   logout()
                 } catch {
-                  alert('Eroare la ștergere. Contactează flopisan.forecast@gmail.com')
+                  alert('Eroare la ștergere. Contactează contact@oxiano.com')
                 }
               }}
               style={{ color: '#ef4444', fontSize: '11px', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'monospace' }}

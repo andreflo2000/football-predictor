@@ -92,10 +92,10 @@ function AuthForm({ onAuth }: { onAuth: () => void }) {
       <header className="header">
         <div className="max-w-4xl mx-auto px-4 py-2 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/logo.svg" alt="Flopi San" className="w-10 h-10" />
+            <img src="/logo.svg" alt="Oxiano" className="w-10 h-10" />
             <div>
-              <div className="font-display text-lg text-white tracking-widest leading-none">FLOPI SAN</div>
-              <div className="text-[9px] font-mono text-blue-400 tracking-[0.2em] uppercase">Forecast Academy</div>
+              <div className="font-display text-lg text-white tracking-widest leading-none">OXIANO</div>
+              <div className="text-[9px] font-mono text-blue-400 tracking-[0.2em] uppercase">Quantitative Analysis</div>
             </div>
           </div>
           <nav className="flex items-center gap-1">
@@ -191,7 +191,7 @@ function AuthForm({ onAuth }: { onAuth: () => void }) {
 
       <footer className="border-t border-blue-900/40 mt-12 py-6">
         <div className="max-w-4xl mx-auto px-4 text-center">
-          <p className="text-xs font-mono text-gray-700">Flopi San Forecast Academy — Scop educațional.</p>
+          <p className="text-xs font-mono text-gray-700">Oxiano — Scop educațional.</p>
           <a href="/privacy" className="text-xs font-mono text-blue-600 hover:text-blue-400 mt-1 block">Politică de confidențialitate</a>
         </div>
       </footer>
@@ -665,10 +665,10 @@ export default function Weekly() {
       <header className="header">
         <div className="max-w-4xl mx-auto px-4 py-2 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/logo.svg" alt="Flopi San" className="w-10 h-10" />
+            <img src="/logo.svg" alt="Oxiano" className="w-10 h-10" />
             <div>
-              <div className="font-display text-lg text-white tracking-widest leading-none">FLOPI SAN</div>
-              <div className="text-[9px] font-mono text-blue-400 tracking-[0.2em] uppercase">Forecast Academy</div>
+              <div className="font-display text-lg text-white tracking-widest leading-none">OXIANO</div>
+              <div className="text-[9px] font-mono text-blue-400 tracking-[0.2em] uppercase">Quantitative Analysis</div>
             </div>
           </div>
           <nav className="flex items-center gap-1">
@@ -684,10 +684,10 @@ export default function Weekly() {
       <main className="max-w-4xl mx-auto px-4 py-8" style={{ overflowX: 'hidden' }}>
         <div className="text-center mb-8 fade-in">
           <div className="flex justify-center mb-4">
-            <img src="/logo.svg" alt="Flopi San" className="w-20 h-20" />
+            <img src="/logo.svg" alt="Oxiano" className="w-20 h-20" />
           </div>
           <h1 className="font-display text-4xl sm:text-5xl text-white tracking-widest mb-1">{tr.weekly_title}</h1>
-          <div className="text-blue-400 text-xs font-mono uppercase tracking-[0.25em] mb-1">Flopi San · Forecast Academy</div>
+          <div className="text-blue-400 text-xs font-mono uppercase tracking-[0.25em] mb-1">Oxiano · Quantitative Analysis</div>
         </div>
 
         <StatsPanel matches={matches} />

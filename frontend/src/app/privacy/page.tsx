@@ -6,10 +6,10 @@ export default function Privacy() {
       <header className="header">
         <div className="max-w-4xl mx-auto px-4 py-2 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/logo.svg" alt="Flopi San" className="w-10 h-10" />
+            <img src="/logo.svg" alt="Oxiano" className="w-10 h-10" />
             <div>
-              <div className="font-display text-lg text-white tracking-widest leading-none">FLOPI SAN</div>
-              <div className="text-[9px] font-mono text-blue-400 tracking-[0.2em] uppercase">Forecast Academy</div>
+              <div className="font-display text-lg text-white tracking-widest leading-none">OXIANO</div>
+              <div className="text-[9px] font-mono text-blue-400 tracking-[0.2em] uppercase">Quantitative Analysis</div>
             </div>
           </div>
           <nav className="flex items-center gap-1">
@@ -27,7 +27,7 @@ export default function Privacy() {
             POLITICĂ DE CONFIDENȚIALITATE
           </h1>
           <div className="text-blue-400 text-xs font-mono uppercase tracking-widest">
-            Flopi San Forecast Academy · Ultima actualizare: Martie 2026
+            Oxiano · Ultima actualizare: Martie 2026
           </div>
         </div>
 
@@ -36,7 +36,7 @@ export default function Privacy() {
           <div className="card p-5">
             <div className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-3">1. Introducere</div>
             <p className="text-sm text-gray-400 leading-relaxed">
-              Flopi San Forecast Academy ("aplicația", "noi") respectă confidențialitatea utilizatorilor săi.
+              Oxiano ("aplicația", "noi") respectă confidențialitatea utilizatorilor săi.
               Această politică explică ce date colectăm, cum le folosim și cum le protejăm.
               Prin utilizarea aplicației, ești de acord cu această politică.
             </p>
@@ -128,7 +128,7 @@ export default function Privacy() {
                 <li className="flex items-start gap-2"><span className="text-blue-400 shrink-0">·</span><span><strong className="text-gray-300">Portabilitate</strong> — să primești datele în format JSON la cerere</span></li>
                 <li className="flex items-start gap-2"><span className="text-blue-400 shrink-0">·</span><span><strong className="text-gray-300">Opoziție</strong> — să te opui prelucrării datelor tale</span></li>
               </ul>
-              <p className="mt-3">Pentru exercitarea drepturilor, contactează-ne la <span className="text-blue-400 font-mono">flopisan.forecast@gmail.com</span>. Răspundem în maxim <strong className="text-gray-300">30 de zile</strong>.</p>
+              <p className="mt-3">Pentru exercitarea drepturilor, contactează-ne la <span className="text-blue-400 font-mono">contact@oxiano.com</span>. Răspundem în maxim <strong className="text-gray-300">30 de zile</strong>.</p>
             </div>
           </div>
 
@@ -138,8 +138,8 @@ export default function Privacy() {
               Pentru orice întrebare legată de confidențialitate, ne poți contacta la:
             </p>
             <div className="mt-2 p-3 bg-gray-800/40 rounded-lg">
-              <p className="text-sm text-blue-300 font-mono">flopisan.forecast@gmail.com</p>
-              <p className="text-xs text-gray-600 font-mono mt-1">Flopi San Forecast Academy · România</p>
+              <p className="text-sm text-blue-300 font-mono">contact@oxiano.com</p>
+              <p className="text-xs text-gray-600 font-mono mt-1">Oxiano · România</p>
             </div>
           </div>
 
@@ -147,7 +147,7 @@ export default function Privacy() {
             <div className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-3">9. Modificări</div>
             <p className="text-sm text-gray-400 leading-relaxed">
               Această politică poate fi actualizată periodic. Versiunea curentă este întotdeauna disponibilă
-              la adresa <span className="text-blue-400 font-mono">flopiforecastro.vercel.app/privacy</span>.
+              la adresa <span className="text-blue-400 font-mono">oxiano.com/privacy</span>.
               Continuarea utilizării aplicației după modificări constituie acceptul noii politici.
             </p>
           </div>
@@ -155,14 +155,14 @@ export default function Privacy() {
         </div>
 
         <div className="text-center mt-8 text-xs text-gray-700 font-mono">
-          © 2026 Flopi San Forecast Academy · Toate drepturile rezervate
+          © 2026 Oxiano · Toate drepturile rezervate
         </div>
       </main>
 
       <footer className="border-t border-blue-900/40 mt-12 py-6">
         <div className="max-w-4xl mx-auto px-4 text-center">
           <p className="text-xs font-mono text-gray-700">
-            Flopi San Forecast Academy — Scop educațional. Nu reprezintă sfaturi de pariuri.
+            Oxiano — Scop educațional. Nu reprezintă sfaturi de pariuri.
           </p>
         </div>
       </footer>

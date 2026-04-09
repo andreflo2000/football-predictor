@@ -1,5 +1,5 @@
 """
-FLOPI SAN - Modul predictie AI
+OXIANO - Modul predictie AI
 Folosit de main.py pentru a prezice rezultatele meciurilor.
 Incarca model.pkl generat de train.py si construieste vectorul complet de features.
 """

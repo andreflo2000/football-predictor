@@ -74,7 +74,7 @@ export default function UpgradePage() {
       {/* Nav */}
       <nav style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
         <Link href="/" style={{ fontWeight: 700, fontSize: 18, color: '#60a5fa', textDecoration: 'none' }}>
-          Flopi San
+          Oxiano
         </Link>
         <Link href="/daily" style={{ color: '#94a3b8', fontSize: 14, textDecoration: 'none' }}>
           Selectiile zilei
@@ -239,7 +239,7 @@ export default function UpgradePage() {
           <Link href="/terms" style={{ color: '#60a5fa', textDecoration: 'none' }}>Termenii si Conditiile</Link>
           {' '}si{' '}
           <Link href="/privacy" style={{ color: '#60a5fa', textDecoration: 'none' }}>Politica de Confidentialitate</Link>.
-          Flopi San ofera analize statistice. Nu constituie sfat de pariere.
+          Oxiano ofera analize statistice. Nu constituie sfat de pariere.
           Jocul de noroc poate crea dependenta. 18+
         </div>
       </div>

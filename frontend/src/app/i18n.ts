@@ -14,7 +14,7 @@ export const t = {
     // Header / Nav
     predictions: 'Predicții AI',
     results: 'Rezultate',
-    tagline: 'Forecast Academy',
+    tagline: 'Quantitative Analysis',
 
     // Hero
     hero_sub: 'xG · Elo · XGBoost · Poisson · 10 Ligi Active',
@@ -70,7 +70,7 @@ export const t = {
     combined: 'Predicție combinată',
 
     // Footer
-    footer: 'Flopi San Forecast Academy — Scop educațional. Nu reprezintă sfaturi de pariuri.',
+    footer: 'Oxiano — Scop educațional. Nu reprezintă sfaturi de pariuri.',
 
     // Loading
     loading: 'Maestrul calculează...',
@@ -119,7 +119,7 @@ export const t = {
   en: {
     predictions: 'AI Predictions',
     results: 'Results',
-    tagline: 'Forecast Academy',
+    tagline: 'Quantitative Analysis',
     hero_sub: 'xG · Elo · XGBoost · Poisson · 10 Active Leagues',
     select_league: 'League / Competition',
     select_league_placeholder: 'Select league...',
@@ -157,7 +157,7 @@ export const t = {
     no_standings: 'Standings unavailable for this league',
     method: 'Method',
     combined: 'Combined prediction',
-    footer: 'Flopi San Forecast Academy — Educational purposes only. Not betting advice.',
+    footer: 'Oxiano — Educational purposes only. Not betting advice.',
     loading: 'The Master is calculating...',
     loading_sub: 'xG · Elo · XGBoost',
     weekly_title: 'PREDICTION TRACKER',

@@ -90,7 +90,7 @@ function buildShareCard(p: Pick, dateStr: string): string {
 
   return [
     `╔══════════════════════════╗`,
-    `   ⚽ FLOPI SAN · PREDICȚIE AI`,
+    `   ⚽ OXIANO · PREDICȚIE AI`,
     `╚══════════════════════════╝`,
     ``,
     `${p.flag} ${p.league}`,
@@ -116,7 +116,7 @@ function buildShareCard(p: Pick, dateStr: string): string {
     `⚠️  Analiză statistică.`,
     `    Nu constituie sfat de pariere.`,
     ``,
-    `🌐 flopiforecastro.vercel.app`,
+    `🌐 oxiano.com`,
   ].join('\n')
 }
 
@@ -135,7 +135,7 @@ function buildAccumulatorCard(picks: Pick[], dateStr: string): string {
 
   return [
     `╔══════════════════════════╗`,
-    `  🎁 FLOPI SAN · 3 PONTURI`,
+    `  🎁 OXIANO · 3 PONTURI`,
     `╚══════════════════════════╝`,
     ``,
     `📅 ${dateStr}`,
@@ -148,7 +148,7 @@ function buildAccumulatorCard(picks: Pick[], dateStr: string): string {
     `⚠️  Analiză statistică.`,
     `    Nu constituie sfat de pariere.`,
     ``,
-    `🌐 flopiforecastro.vercel.app`,
+    `🌐 oxiano.com`,
   ].join('\n')
 }
 
@@ -748,7 +748,7 @@ export default function DailyPage() {
     const perm = await Notification.requestPermission()
     setNotifPerm(perm)
     if (perm === 'granted') {
-      new Notification('🎯 Flopi San activat!', {
+      new Notification('🎯 Oxiano activat!', {
         body: 'Vei fi notificat când apar pick-uri noi cu confidence ridicat.',
         icon: '/logo.svg',
       })
@@ -764,7 +764,7 @@ export default function DailyPage() {
       const pred = predLabel(p)
       return `${i + 1}. ${p.flag} ${p.home} vs ${p.away}\n   ${pred.short} — ${pred.full} · ${p.confidence}% conf`
     }).join('\n\n')
-    return `🎯 FLOPI SAN — Pick-urile zilei ${formatDate(today())}\n\n${lines}\n\n🤖 Model AI · flopiforecastro.vercel.app`
+    return `🎯 OXIANO — Pick-urile zilei ${formatDate(today())}\n\n${lines}\n\n🤖 Model AI · oxiano.com`
   }
 
   return (
@@ -774,10 +774,10 @@ export default function DailyPage() {
       <header className="header">
         <div className="max-w-4xl mx-auto px-4 py-2 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/logo.svg" alt="Flopi San" className="w-10 h-10" />
+            <img src="/logo.svg" alt="Oxiano" className="w-10 h-10" />
             <div>
-              <div className="font-display text-lg text-white tracking-widest leading-none">FLOPI SAN</div>
-              <div className="text-[9px] font-mono text-green-400 tracking-[0.2em] uppercase">Forecast Academy</div>
+              <div className="font-display text-lg text-white tracking-widest leading-none">OXIANO</div>
+              <div className="text-[9px] font-mono text-green-400 tracking-[0.2em] uppercase">Quantitative Analysis</div>
             </div>
           </div>
           <nav className="flex items-center gap-1">
@@ -942,7 +942,7 @@ export default function DailyPage() {
                   📤 WhatsApp
                 </button>
                 <button
-                  onClick={() => window.open(`https://t.me/share/url?url=flopiforecastro.vercel.app&text=${encodeURIComponent(shareText())}`, '_blank')}
+                  onClick={() => window.open(`https://t.me/share/url?url=oxiano.com&text=${encodeURIComponent(shareText())}`, '_blank')}
                   className="flex-1 py-2.5 rounded-xl text-sm font-bold"
                   style={{ background: 'linear-gradient(135deg, #2AABEE, #229ED9)', color: 'white' }}>
                   ✈️ Telegram
@@ -984,7 +984,7 @@ export default function DailyPage() {
       <footer className="border-t border-green-900/30 mt-12 py-6">
         <div className="max-w-4xl mx-auto px-4 text-center">
           <p className="text-xs font-mono text-gray-700">
-            Flopi San Forecast Academy — Scop educațional. Nu reprezintă sfaturi de pariuri.
+            Oxiano — Scop educațional. Nu reprezintă sfaturi de pariuri.
           </p>
           <a href="/privacy" className="text-xs font-mono text-green-600 hover:text-green-400 mt-1 block">
             Politică de confidențialitate

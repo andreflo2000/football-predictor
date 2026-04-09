@@ -5,21 +5,31 @@ import GdprConsent from '@/components/GdprConsent'
 import Onboarding from '@/components/Onboarding'
 
 export const metadata: Metadata = {
-  title: 'Flopi San — Forecast Academy',
-  description: 'Predicții fotbal bazate pe xG, Elo și XGBoost. 100 ligi, 15 piețe de pariuri, clasament live, tracker pronosticuri.',
-  keywords: ['predicții fotbal', 'football predictions', 'pariuri fotbal', 'xG', 'statistici fotbal', 'Premier League', 'La Liga'],
-  authors: [{ name: 'Flopi San' }],
+  title: 'Oxiano — Quantitative Football Analysis',
+  description: 'AI-powered football predictions based on XGBoost, Elo ratings and market intelligence. La Liga 86% accuracy at high confidence.',
+  keywords: ['quantitative football analysis', 'AI sports metrics', 'football predictions', 'xG model', 'La Liga predictions', 'Premier League predictions', 'sports intelligence SaaS'],
+  authors: [{ name: 'Oxiano' }],
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'Flopi San',
+    title: 'Oxiano',
   },
   openGraph: {
-    title: 'Flopi San — Forecast Academy',
-    description: 'Predicții fotbal AI cu xG, Elo și XGBoost. 100 ligi acoperite.',
+    title: 'Oxiano — Quantitative Football Analysis',
+    description: 'AI-powered football predictions. La Liga: 86% accuracy at ≥65% confidence.',
     type: 'website',
     locale: 'ro_RO',
+    url: 'https://oxiano.com',
+    siteName: 'Oxiano',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Oxiano — Quantitative Football Analysis',
+    description: 'AI football predictions. La Liga 86% accuracy.',
+  },
+  alternates: {
+    canonical: 'https://oxiano.com',
   },
   other: {
     'mobile-web-app-capable': 'yes',

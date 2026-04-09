@@ -257,7 +257,7 @@ function shareOnWhatsApp(prediction: Prediction, fixture: Fixture) {
   const away_w = pred.away_win ?? 0
   const conf = calcConfidence(home_w, draw, away_w)
   const top3 = getTop3Bets(prediction)
-  const text = `⚽ *FLOPI SAN — Predicție AI*\n\n` +
+  const text = `⚽ *OXIANO — Predicție AI*\n\n` +
     `🏟️ *${prediction.home_team}* vs *${prediction.away_team}*\n` +
     `📅 ${getDayLabel(fixture.date)} · ${formatDateRO(fixture.date)}${fixture.time ? ` · 🕐 ${fixture.time}` : ''}\n` +
     `🎯 Încredere AI: *${conf.score}%* (${conf.label})\n\n` +
@@ -267,7 +267,7 @@ function shareOnWhatsApp(prediction: Prediction, fixture: Fixture) {
     `2️⃣ ${prediction.away_team}: *${away_w}%* (cotă ~${(100/Math.max(away_w,1)*1.08).toFixed(2)})\n\n` +
     `🏆 *Top 3 pariuri recomandate:*\n` +
     top3.map((b, i) => `${i+1}. ${b.name} — ${b.probability}% ${b.confidence}`).join('\n') + '\n\n' +
-    `🔮 _Generat de Flopi San Forecast Academy_\n🌐 flopiforecastro.vercel.app`
+    `🔮 _Generat de Oxiano_\n🌐 oxiano.com`
   window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank')
 }
 
@@ -278,7 +278,7 @@ function shareOnTelegram(prediction: Prediction, fixture: Fixture) {
   const away_w = pred.away_win ?? 0
   const conf = calcConfidence(home_w, draw, away_w)
   const top3 = getTop3Bets(prediction)
-  const text = `⚽ FLOPI SAN — Predicție AI\n\n` +
+  const text = `⚽ OXIANO — Predicție AI\n\n` +
     `🏟️ ${prediction.home_team} vs ${prediction.away_team}\n` +
     `📅 ${getDayLabel(fixture.date)} · ${formatDateRO(fixture.date)}${fixture.time ? ` · ${fixture.time}` : ''}\n` +
     `🎯 Încredere AI: ${conf.score}% (${conf.label})\n\n` +
@@ -288,8 +288,8 @@ function shareOnTelegram(prediction: Prediction, fixture: Fixture) {
     `2. ${prediction.away_team}: ${away_w}%\n\n` +
     `🏆 Top 3 pariuri:\n` +
     top3.map((b, i) => `${i+1}. ${b.name} — ${b.probability}%`).join('\n') + '\n\n' +
-    `🔮 Flopi San Forecast Academy\n🌐 flopiforecastro.vercel.app`
-  window.open(`https://t.me/share/url?url=flopiforecastro.vercel.app&text=${encodeURIComponent(text)}`, '_blank')
+    `🔮 Oxiano\n🌐 oxiano.com`
+  window.open(`https://t.me/share/url?url=oxiano.com&text=${encodeURIComponent(text)}`, '_blank')
 }
 
 function FormBadge({ result }: { result: string }) {
@@ -998,10 +998,10 @@ export default function Home() {
       <header className="header">
         <div className="max-w-6xl mx-auto px-4 py-2 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/logo.svg" alt="Flopi San" className="w-10 h-10" />
+            <img src="/logo.svg" alt="Oxiano" className="w-10 h-10" />
             <div>
-              <div className="font-display text-lg text-white tracking-widest leading-none">FLOPI SAN</div>
-              <div className="text-[9px] font-mono text-blue-400 tracking-[0.2em] uppercase">Forecast Academy</div>
+              <div className="font-display text-lg text-white tracking-widest leading-none">OXIANO</div>
+              <div className="text-[9px] font-mono text-blue-400 tracking-[0.2em] uppercase">Quantitative Analysis</div>
             </div>
             <div className="pulse-dot ml-2 hidden sm:block" />
           </div>
@@ -1040,13 +1040,13 @@ export default function Home() {
         <div className="text-center mb-10 fade-in">
           <div className="flex justify-center mb-5">
             <div className="relative">
-              <img src="/logo.svg" alt="Flopi San Forecast Academy"
+              <img src="/logo.svg" alt="Oxiano"
                 className="w-36 h-36" />
               <div className="absolute -bottom-1 -right-2 w-9 h-9 bg-emerald-500 rounded-full flex items-center justify-center text-base border-2 border-gray-900">🔮</div>
             </div>
           </div>
-          <h1 className="font-display text-4xl text-white mb-1" style={{ letterSpacing: '0.05em' }}>FLOPI SAN</h1>
-          <div className="text-blue-400 text-sm font-mono uppercase tracking-widest mb-3">Forecast Academy</div>
+          <h1 className="font-display text-4xl text-white mb-1" style={{ letterSpacing: '0.05em' }}>OXIANO</h1>
+          <div className="text-blue-400 text-sm font-mono uppercase tracking-widest mb-3">Quantitative Analysis</div>
           <p className="text-gray-500 text-xs font-mono uppercase tracking-widest">{tr.hero_sub}</p>
         </div>
 
