@@ -120,19 +120,39 @@ export default function Navbar() {
             </Link>
           </nav>
 
-          {/* Mobile hamburger */}
-          <button
-            onClick={() => setOpen(v => !v)}
-            className="mobile-menu-btn"
-            style={{
-              background: 'none', border: 'none', cursor: 'pointer',
-              color: '#9ca3af', fontSize: 22, padding: '4px 8px',
-              display: 'none',
-            }}
-            aria-label="Menu"
-          >
-            {open ? '✕' : '☰'}
-          </button>
+          {/* Mobile: lang + hamburger */}
+          <div className="mobile-menu-btn" style={{ display: 'none', alignItems: 'center', gap: 8 }}>
+            <select
+              value={lang}
+              onChange={e => setLang(e.target.value as 'ro' | 'en')}
+              style={{
+                padding: '6px 10px',
+                borderRadius: 6,
+                border: '1px solid rgba(255,255,255,0.15)',
+                background: 'rgba(255,255,255,0.08)',
+                color: '#e5e7eb',
+                fontSize: 13,
+                fontWeight: 700,
+                fontFamily: 'monospace',
+                cursor: 'pointer',
+                outline: 'none',
+              }}
+            >
+              <option value="ro" style={{ background: '#0a1628', color: '#e5e7eb' }}>RO</option>
+              <option value="en" style={{ background: '#0a1628', color: '#e5e7eb' }}>EN</option>
+            </select>
+            <button
+              onClick={() => setOpen(v => !v)}
+              style={{
+                background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
+                borderRadius: 8, cursor: 'pointer',
+                color: '#e5e7eb', fontSize: 26, padding: '6px 12px',
+              }}
+              aria-label="Menu"
+            >
+              {open ? '✕' : '☰'}
+            </button>
+          </div>
         </div>
       </header>
 
@@ -240,8 +260,8 @@ export default function Navbar() {
       <style>{`
         @media (max-width: 768px) {
           .desktop-nav { display: none !important; }
-          .mobile-menu-btn { display: block !important; }
-          .navbar-logo { width: 48px; height: 48px; }
+          .mobile-menu-btn { display: flex !important; }
+          .navbar-logo { height: 52px; width: auto; max-width: 160px; }
         }
         @media (min-width: 769px) {
           .navbar-logo { height: 56px; width: auto; max-width: 180px; }
