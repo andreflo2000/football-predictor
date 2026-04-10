@@ -8,7 +8,7 @@ const PLANS = (lang: 'ro' | 'en') => [
   {
     id: 'analyst' as const,
     name: 'Analyst',
-    price: 29,
+    price: 39,
     badge: null,
     features: lang === 'en' ? [
       'All HIGH confidence predictions',
@@ -28,7 +28,7 @@ const PLANS = (lang: 'ro' | 'en') => [
   {
     id: 'pro' as const,
     name: 'Pro',
-    price: 79,
+    price: 99,
     badge: lang === 'en' ? 'Recommended' : 'Recomandat',
     features: lang === 'en' ? [
       'Everything in Analyst',

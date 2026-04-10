@@ -917,14 +917,14 @@ GUMROAD_PRODUCTS = {
         "permalink": "xzbxnc",
         "url":       "https://florianparv.gumroad.com/l/xzbxnc",
         "name":      "Analyst",
-        "price_usd": 6,
+        "price_usd": 8,
         "tier":      "analyst",
     },
     "pro": {
         "permalink": "lnjfx",
         "url":       "https://florianparv.gumroad.com/l/lnjfx",
         "name":      "Pro",
-        "price_usd": 17,
+        "price_usd": 20,
         "tier":      "pro",
     },
 }
