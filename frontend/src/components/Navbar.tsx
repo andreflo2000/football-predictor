@@ -98,8 +98,8 @@ export default function Navbar() {
                 outline: 'none',
               }}
             >
-              <option value="ro" style={{ background: '#0a1628', color: '#e5e7eb' }}>🇷🇴 RO</option>
-              <option value="en" style={{ background: '#0a1628', color: '#e5e7eb' }}>🇬🇧 EN</option>
+              <option value="ro" style={{ background: '#0a1628', color: '#e5e7eb' }}>🇷🇴</option>
+              <option value="en" style={{ background: '#0a1628', color: '#e5e7eb' }}>🇬🇧</option>
             </select>
 
             <a href="/login" style={{
@@ -187,8 +187,8 @@ export default function Navbar() {
                 outline: 'none',
               }}
             >
-              <option value="ro" style={{ background: '#0a1628', color: '#e5e7eb' }}>🇷🇴 Română</option>
-              <option value="en" style={{ background: '#0a1628', color: '#e5e7eb' }}>🇬🇧 English</option>
+              <option value="ro" style={{ background: '#0a1628', color: '#e5e7eb' }}>🇷🇴</option>
+              <option value="en" style={{ background: '#0a1628', color: '#e5e7eb' }}>🇬🇧</option>
             </select>
           </div>
 
