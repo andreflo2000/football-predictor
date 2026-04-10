@@ -10,6 +10,9 @@ import datetime
 from difflib import get_close_matches
 from typing import Optional
 from zoneinfo import ZoneInfo
+import cache as redis_cache
+
+ODDS_CACHE_TTL = 5400  # 90 minute
 
 BUCHAREST_TZ = ZoneInfo("Europe/Bucharest")
 
@@ -520,11 +523,17 @@ def _fetch_european_cups(date_str: str, known_teams: list) -> list:
 def get_today_odds(known_teams: list = None) -> dict:
     """
     Descarca cotele de azi din The-Odds-API (gratis: 500 req/luna).
+    Cache Redis 90 min — evita consumul inutil de quota.
     Returneaza un dict: (home_normalized, away_normalized) -> {B365H, B365D, B365A, ...}
     Necesita env var ODDS_API_KEY.
     """
     if not ODDS_API_KEY:
         return {}
+
+    cache_key = datetime.datetime.now(BUCHAREST_TZ).strftime("%Y-%m-%d")
+    cached = redis_cache.get("odds", cache_key)
+    if cached:
+        return {tuple(k.split("|")): v for k, v in cached.items()}
 
     odds_map = {}
 
@@ -593,6 +602,10 @@ def get_today_odds(known_teams: list = None) -> dict:
                 "PSD":   b365_d or avg_d,
                 "PSA":   b365_a or avg_a,
             }
+
+    if odds_map:
+        serializable = {f"{k[0]}|{k[1]}": v for k, v in odds_map.items()}
+        redis_cache.set("odds", cache_key, serializable, ttl=ODDS_CACHE_TTL)
 
     return odds_map
 
