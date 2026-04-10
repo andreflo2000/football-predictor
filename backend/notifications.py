@@ -50,46 +50,60 @@ def send_telegram(picks: list, date_str: str) -> bool:
     high = [p for p in picks if p.get('confidence', 0) >= 65]
     med  = [p for p in picks if 55 <= p.get('confidence', 0) < 65]
 
-    # Afisam max 5 picks: prioritate HIGH, completam cu MED
-    shown_high = high[:3]
+    shown_high = high[:4]
     shown_med  = med[:2] if len(shown_high) < 3 else med[:1]
     shown = shown_high + shown_med
     if not shown:
         shown = picks[:3]
 
-    lines = [f"⚽ <b>OXIANO — Picks {date_str}</b>"]
+    total_high = len(high)
+    total_med  = len(med)
 
+    # ── HEADER ──────────────────────────────────────────────────
+    lines = [
+        f"╔══════════════════════════╗",
+        f"║  🔬 <b>OXIANO DAILY ANALYSIS</b>   ║",
+        f"╚══════════════════════════╝",
+        f"",
+        f"📅 <b>{date_str}</b>  ·  XGBoost + Elo + Market Edge",
+        f"<code>{'─' * 32}</code>",
+    ]
+
+    # ── HIGH CONFIDENCE ─────────────────────────────────────────
     if shown_high:
-        lines.append(f"\n🟢 <b>HIGH CONFIDENCE ({len(shown_high)} picks)</b>")
+        lines.append(f"\n🟢 <b>HIGH CONFIDENCE</b>  <code>[{total_high} picks ≥65%]</code>")
         for p in shown_high:
             num, label = _pred_label(p)
             kelly = _kelly(p['confidence'], p.get('edge', 0), p.get('has_odds', False))
             edge  = p.get('edge', 0)
-            vbet  = ' 💎' if p.get('value_bet') else ''
+            conf  = p['confidence']
+            vbet  = ' <b>💎 VALUE</b>' if p.get('value_bet') else ''
             lines.append(
-                f"\n{p.get('flag','⚽')} <b>{p['home']}</b> vs <b>{p['away']}</b>\n"
-                f"   {p['league']} · {p.get('time','—')}\n"
-                f"   ➤ <b>{num} — {label}</b>{vbet}\n"
-                f"   {_bar(p['confidence'])} {p['confidence']}%"
-                + (f"  |  Kelly: {kelly}%" if kelly > 0 else "")
-                + (f"\n   📈 Edge vs piață: +{edge:.1f}%" if edge > 0 else "")
+                f"\n{p.get('flag','⚽')} <b>{p['home']} — {p['away']}</b>\n"
+                f"<code>  {p['league']:<22} {p.get('time','—'):>5}</code>\n"
+                f"<code>  Prediction : {num} · {label:<16}</code>{vbet}\n"
+                f"<code>  Confidence : {_bar(conf, 10)} {conf:.1f}%</code>"
+                + (f"\n<code>  Kelly      : {kelly}% stake</code>" if kelly > 0 else "")
+                + (f"\n<code>  Market edge: +{edge:.1f}%</code>" if edge > 0 else "")
             )
 
+    # ── MEDIUM CONFIDENCE ───────────────────────────────────────
     if shown_med:
-        lines.append(f"\n🟡 <b>MEDIUM CONFIDENCE ({len(shown_med)} picks)</b>")
+        lines.append(f"\n🟡 <b>MEDIUM CONFIDENCE</b>  <code>[{total_med} picks 55–65%]</code>")
         for p in shown_med:
             num, label = _pred_label(p)
+            conf = p['confidence']
             lines.append(
-                f"\n{p.get('flag','⚽')} <b>{p['home']}</b> vs <b>{p['away']}</b>\n"
-                f"   {p['league']} · {p.get('time','—')}\n"
-                f"   ➤ {num} — {label}  |  {p['confidence']}%"
+                f"\n{p.get('flag','⚽')} <b>{p['home']} — {p['away']}</b>\n"
+                f"<code>  {p['league']:<22} {p.get('time','—'):>5}</code>\n"
+                f"<code>  {num} · {label:<18} {conf:.1f}%</code>"
             )
 
+    # ── FOOTER ──────────────────────────────────────────────────
     lines.append(
-        f"\n━━━━━━━━━━━━━━━━━━\n"
-        f"📊 XGBoost + Elo + Market Intel\n"
-        f"<i>Analiză statistică. Nu constituie sfat de pariere.</i>\n"
-        f"🌐 oxiano.com"
+        f"\n<code>{'─' * 32}</code>\n"
+        f"<i>Statistical analysis only. Not betting advice.</i>\n"
+        f"🌐 <a href=\"https://oxiano.com/daily\">oxiano.com/daily</a>"
     )
 
     text = "\n".join(lines)
