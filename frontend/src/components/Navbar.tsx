@@ -81,21 +81,26 @@ export default function Navbar() {
             })}
 
             {/* Lang toggle */}
-            <div style={{ display: 'flex', marginLeft: 8, borderRadius: 6, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' }}>
-              {(['ro', 'en'] as const).map(l => (
-                <button key={l} onClick={() => setLang(l)} style={{
-                  padding: '5px 10px',
-                  fontSize: 11, fontWeight: 700, fontFamily: 'monospace',
-                  cursor: 'pointer',
-                  background: lang === l ? '#22d3ee' : 'transparent',
-                  color: lang === l ? '#000' : '#6b7280',
-                  border: 'none',
-                  transition: 'all 0.15s',
-                }}>
-                  {l.toUpperCase()}
-                </button>
-              ))}
-            </div>
+            <select
+              value={lang}
+              onChange={e => setLang(e.target.value as 'ro' | 'en')}
+              style={{
+                marginLeft: 8,
+                padding: '5px 8px',
+                borderRadius: 6,
+                border: '1px solid rgba(255,255,255,0.12)',
+                background: 'rgba(255,255,255,0.06)',
+                color: '#e5e7eb',
+                fontSize: 12,
+                fontWeight: 700,
+                fontFamily: 'monospace',
+                cursor: 'pointer',
+                outline: 'none',
+              }}
+            >
+              <option value="ro" style={{ background: '#0a1628', color: '#e5e7eb' }}>🇷🇴 RO</option>
+              <option value="en" style={{ background: '#0a1628', color: '#e5e7eb' }}>🇬🇧 EN</option>
+            </select>
 
             <a href="/login" style={{
               marginLeft: 8,
@@ -164,19 +169,27 @@ export default function Navbar() {
           })}
 
           {/* Lang toggle mobile */}
-          <div style={{ display: 'flex', gap: 8, padding: '8px 18px' }} onClick={e => e.stopPropagation()}>
-            {(['ro', 'en'] as const).map(l => (
-              <button key={l} onClick={() => setLang(l)} style={{
-                flex: 1, padding: '10px', borderRadius: 8,
-                fontSize: 13, fontWeight: 700, fontFamily: 'monospace',
+          <div style={{ padding: '4px 18px' }} onClick={e => e.stopPropagation()}>
+            <select
+              value={lang}
+              onChange={e => setLang(e.target.value as 'ro' | 'en')}
+              style={{
+                width: '100%',
+                padding: '12px 14px',
+                borderRadius: 10,
+                border: '1px solid rgba(255,255,255,0.08)',
+                background: 'rgba(255,255,255,0.04)',
+                color: '#e5e7eb',
+                fontSize: 14,
+                fontWeight: 700,
+                fontFamily: 'monospace',
                 cursor: 'pointer',
-                background: lang === l ? 'rgba(34,197,94,0.2)' : 'rgba(255,255,255,0.03)',
-                color: lang === l ? '#4ade80' : '#6b7280',
-                border: lang === l ? '1px solid rgba(34,197,94,0.4)' : '1px solid rgba(255,255,255,0.05)',
-              }}>
-                {l.toUpperCase()}
-              </button>
-            ))}
+                outline: 'none',
+              }}
+            >
+              <option value="ro" style={{ background: '#0a1628', color: '#e5e7eb' }}>🇷🇴 Română</option>
+              <option value="en" style={{ background: '#0a1628', color: '#e5e7eb' }}>🇬🇧 English</option>
+            </select>
           </div>
 
           <a href="/login" style={{
