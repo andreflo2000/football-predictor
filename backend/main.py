@@ -98,8 +98,8 @@ async def startup_event():
         logger.warning("Scheduler init failed: %s", e)
 
 
-CACHE_TTL_DAILY    = 1800   # 30 minute
-CACHE_TTL_FIXTURES = 600    # 10 minute
+CACHE_TTL_DAILY    = 900    # 15 minute
+CACHE_TTL_FIXTURES = 86400  # 24 ore
 
 
 # ─────────────────────────────────────────────
