@@ -59,7 +59,7 @@ export default function Navbar() {
 
           {/* Logo */}
           <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none', flexShrink: 0 }}>
-            <img src="/logo.png" alt="Oxiano" className="navbar-logo" style={{ objectFit: 'contain' }} />
+            <img src="/logo-icon.jpg" alt="Oxiano" className="navbar-logo" style={{ objectFit: 'contain' }} />
           </Link>
 
           {/* Desktop links */}

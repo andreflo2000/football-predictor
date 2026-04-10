@@ -1000,11 +1000,10 @@ export default function Home() {
         <div className="text-center mb-10 fade-in">
           <div className="flex justify-center mb-5">
             <div className="relative">
-              <img src="/logo.png" alt="Oxiano"
+              <img src="/logo-icon.jpg" alt="Oxiano"
                 style={{ width: 260, height: 260, objectFit: 'contain' }} />
             </div>
           </div>
-          <div className="text-blue-400 text-sm font-mono uppercase tracking-widest mb-3">Advanced Quantitative Intelligence</div>
           <p className="text-gray-500 text-xs font-mono uppercase tracking-widest">{tr.hero_sub}</p>
         </div>
 

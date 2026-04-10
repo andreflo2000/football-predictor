@@ -44,7 +44,7 @@ export default function DesprePage() {
       <nav style={{ borderBottom: '1px solid #1f2937', padding: '14px 24px' }}>
         <div style={{ maxWidth: 1000, margin: '0 auto' }}>
           <a href="/" style={{ display: 'inline-flex', textDecoration: 'none' }}>
-            <img src="/logo.png" alt="Oxiano" style={{ height: 56, width: 'auto', objectFit: 'contain' }} />
+            <img src="/logo-icon.jpg" alt="Oxiano" style={{ height: 56, width: 'auto', objectFit: 'contain' }} />
           </a>
         </div>
       </nav>
