@@ -785,7 +785,7 @@ export default function DailyPage() {
     fetch(`${API_BASE}/api/daily?min_confidence=0.45`)
       .then(r => r.json())
       .then(d => { setData(d); setLoading(false) })
-      .catch(() => { setError(lang === 'en' ? 'Server not responding. Refresh the page.' : 'Serverul nu răspunde. Reîncarcă pagina.'); setLoading(false) })
+      .catch(() => { setLoading(false) })
     if ('Notification' in window) setNotifPerm(Notification.permission)
   }, [])
 
@@ -851,11 +851,21 @@ export default function DailyPage() {
             {[0,1,2,3].map(i => <PickSkeleton key={i} />)}
           </div>
         )}
-        {error && (
-          <div className="card p-6 text-center text-red-400 font-mono text-sm">{error}</div>
+        {!loading && (!data || data.picks?.length === 0) && (
+          <div className="card p-8 text-center" style={{ border: '1px solid rgba(34,197,94,0.15)' }}>
+            <div style={{ fontSize: 36, marginBottom: 12 }}>⏳</div>
+            <div style={{ color: '#4ade80', fontWeight: 700, fontSize: 16, marginBottom: 8 }}>
+              {lang === 'en' ? 'Picks being calculated...' : 'Picks în curs de calcul...'}
+            </div>
+            <div style={{ color: '#6b7280', fontSize: 13 }}>
+              {lang === 'en'
+                ? 'Auto-updated at 07:00 and 13:00 Bucharest time.'
+                : 'Actualizare automată la 07:00 și 13:00 ora Bucureștilor.'}
+            </div>
+          </div>
         )}
 
-        {!loading && !error && data && (
+        {!loading && data && data.picks?.length > 0 && (
           <>
             {/* Stats bar */}
             <div className="grid grid-cols-3 gap-2 mb-5">

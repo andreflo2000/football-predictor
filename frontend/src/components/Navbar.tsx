@@ -48,6 +48,7 @@ export default function Navbar() {
         borderBottom: '1px solid rgba(34,197,94,0.18)',
         backdropFilter: 'blur(16px)',
         WebkitBackdropFilter: 'blur(16px)',
+        paddingTop: 'env(safe-area-inset-top)',
       }}>
         <div style={{
           maxWidth: 1200, margin: '0 auto',
