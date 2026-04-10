@@ -1101,6 +1101,29 @@ async def gumroad_webhook(request: Request):
 
 
 # ─────────────────────────────────────────────
+# ADMIN — TEST TELEGRAM
+# ─────────────────────────────────────────────
+@app.post("/api/admin/test-telegram")
+def admin_test_telegram(
+    x_admin_key: Optional[str] = Header(None, alias="X-Admin-Key"),
+):
+    if not ADMIN_SECRET or x_admin_key != ADMIN_SECRET:
+        raise HTTPException(status_code=403, detail="Forbidden")
+    from notifications import send_telegram
+    import datetime
+    fake_picks = [{
+        "home": "Real Madrid", "away": "Barcelona",
+        "league": "La Liga", "time": "21:00",
+        "flag": "🇪🇸", "confidence": 72,
+        "prediction": "H", "prediction_label": "1",
+        "edge": 4.2, "value_bet": True, "has_odds": True,
+    }]
+    date_str = datetime.datetime.now().strftime("%d.%m.%Y")
+    ok = send_telegram(fake_picks, date_str)
+    return {"sent": ok}
+
+
+# ─────────────────────────────────────────────
 # ECHIPE CUNOSCUTE
 # ─────────────────────────────────────────────
 @app.get("/teams")
