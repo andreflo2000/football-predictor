@@ -1001,7 +1001,7 @@ export default function Home() {
           <div className="flex justify-center mb-5">
             <div className="relative">
               <img src="/logo.png" alt="Oxiano"
-                style={{ width: 144, height: 144, objectFit: 'contain' }} />
+                style={{ width: 200, height: 200, objectFit: 'contain' }} />
             </div>
           </div>
           <div className="text-blue-400 text-sm font-mono uppercase tracking-widest mb-3">Advanced Quantitative Intelligence</div>
