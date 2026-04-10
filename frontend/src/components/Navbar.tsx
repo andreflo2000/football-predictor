@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { getToken, logout } from '@/lib/auth'
 import { useLang } from '@/lib/LangContext'
 
@@ -25,6 +26,7 @@ const LINKS = {
 
 export default function Navbar() {
   const pathname  = usePathname()
+  const router    = useRouter()
   const [open, setOpen]     = useState(false)
   const [logged, setLogged] = useState(false)
   const { lang, setLang }   = useLang()
@@ -55,16 +57,16 @@ export default function Navbar() {
         }}>
 
           {/* Logo */}
-          <a href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none', flexShrink: 0 }}>
+          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none', flexShrink: 0 }}>
             <img src="/logo.png" alt="Oxiano" className="navbar-logo" style={{ objectFit: 'contain' }} />
-          </a>
+          </Link>
 
           {/* Desktop links */}
           <nav style={{ display: 'flex', alignItems: 'center', gap: 2 }} className="desktop-nav">
             {links.map(l => {
               const active = pathname === l.href || (l.href !== '/' && pathname?.startsWith(l.href))
               return (
-                <a key={l.href} href={l.href} style={{
+                <Link key={l.href} href={l.href} style={{
                   padding: '6px 10px',
                   borderRadius: 7,
                   textDecoration: 'none',
@@ -76,7 +78,7 @@ export default function Navbar() {
                   whiteSpace: 'nowrap',
                 }}>
                   {l.icon} {l.label}
-                </a>
+                </Link>
               )
             })}
 
@@ -102,7 +104,7 @@ export default function Navbar() {
               <option value="en" style={{ background: '#0a1628', color: '#e5e7eb' }}>EN</option>
             </select>
 
-            <a href="/login" style={{
+            <Link href="/login" style={{
               marginLeft: 8,
               padding: '6px 14px',
               borderRadius: 7,
@@ -115,7 +117,7 @@ export default function Navbar() {
               whiteSpace: 'nowrap',
             }}>
               {logged ? (lang === 'ro' ? '👤 Cont' : '👤 Account') : '🔑 Login'}
-            </a>
+            </Link>
           </nav>
 
           {/* Mobile hamburger */}
@@ -150,7 +152,7 @@ export default function Navbar() {
           {links.map(l => {
             const active = pathname === l.href || (l.href !== '/' && pathname?.startsWith(l.href))
             return (
-              <a key={l.href} href={l.href} style={{
+              <Link key={l.href} href={l.href} onClick={() => setOpen(false)} style={{
                 padding: '14px 18px',
                 borderRadius: 10,
                 textDecoration: 'none',
@@ -164,7 +166,7 @@ export default function Navbar() {
                 <span style={{ fontSize: 20 }}>{l.icon}</span>
                 {l.label}
                 {active && <span style={{ marginLeft: 'auto', color: '#4ade80', fontSize: 12 }}>●</span>}
-              </a>
+              </Link>
             )
           })}
 
@@ -192,7 +194,7 @@ export default function Navbar() {
             </select>
           </div>
 
-          <a href="/login" style={{
+          <Link href="/login" onClick={() => setOpen(false)} style={{
             marginTop: 4,
             padding: '14px 18px',
             borderRadius: 10,
@@ -208,7 +210,7 @@ export default function Navbar() {
             {logged
               ? (lang === 'ro' ? 'Contul meu' : 'My Account')
               : (lang === 'ro' ? 'Login / Înregistrare' : 'Login / Register')}
-          </a>
+          </Link>
 
           {logged && (
             <button

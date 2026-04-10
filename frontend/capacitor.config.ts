@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 const config: CapacitorConfig = {
-  appId: 'com.flopisan.app',
-  appName: 'Flopi San',
+  appId: 'com.oxiano.app',
+  appName: 'Oxiano',
   webDir: 'out',
   server: {
     androidScheme: 'https'
