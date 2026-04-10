@@ -51,10 +51,10 @@ export default function BetBuilderPage() {
 
   return (
     <div className="app-bg grid-bg" style={{ minHeight: '100vh' }}>
-      <main style={{ maxWidth: 640, margin: '0 auto', padding: '24px 16px' }}>
+      <main style={{ maxWidth: 640, margin: '0 auto', padding: '24px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
 
         {/* Header */}
-        <div style={{ marginBottom: 24 }}>
+        <div style={{ marginBottom: 24, textAlign: 'center', width: '100%' }}>
           <div style={{ fontSize: 11, color: '#22d3ee', letterSpacing: '0.15em', textTransform: 'uppercase', fontFamily: 'monospace', marginBottom: 6 }}>
             Oxiano · Combo Analyzer
           </div>

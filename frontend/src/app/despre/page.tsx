@@ -41,12 +41,12 @@ export default function DesprePage() {
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #051F14 0%, #0A1128 100%)', color: '#e5e7eb', fontFamily: 'system-ui, sans-serif' }}>
 
       {/* Nav */}
-      <nav style={{ borderBottom: '1px solid #1f2937', padding: '14px 24px' }}>
-        <div style={{ maxWidth: 1000, margin: '0 auto', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}>
+      <nav style={{ borderBottom: '1px solid #1f2937', padding: '20px 24px' }}>
+        <div style={{ maxWidth: 1000, margin: '0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
           <a href="/" style={{ display: 'inline-flex', textDecoration: 'none' }}>
-            <img src="/logo-icon.jpg" alt="Oxiano" style={{ height: 36, width: 'auto', objectFit: 'contain' }} />
+            <img src="/logo-icon.jpg" alt="Oxiano" style={{ height: 48, width: 'auto', objectFit: 'contain' }} />
           </a>
-          <span style={{ color: '#22d3ee', fontSize: 10, fontFamily: 'monospace', fontWeight: 600, letterSpacing: '0.15em', textTransform: 'uppercase' }}>
+          <span style={{ color: '#22d3ee', fontSize: 10, fontFamily: 'monospace', fontWeight: 600, letterSpacing: '0.18em', textTransform: 'uppercase' }}>
             Advanced Quantitative Intelligence
           </span>
         </div>

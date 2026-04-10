@@ -139,6 +139,59 @@ export default function TrackRecord() {
           </div>
         )}
 
+        {/* Equity Curve Chart */}
+        {hasLiveData && history && history.results.length > 1 && (() => {
+          const pts = history.results.map((r, i) => {
+            const cumEq = history.results.slice(0, i + 1).reduce((s, x) => s + x.equity, 0)
+            return cumEq
+          })
+          const W = 600, H = 140, PAD = 24
+          const minV = Math.min(0, ...pts), maxV = Math.max(0, ...pts)
+          const range = maxV - minV || 1
+          const x = (i: number) => PAD + (i / (pts.length - 1)) * (W - PAD * 2)
+          const y = (v: number) => PAD + (1 - (v - minV) / range) * (H - PAD * 2)
+          const zero = y(0)
+          const pathD = pts.map((v, i) => `${i === 0 ? 'M' : 'L'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ')
+          const fillD = `${pathD} L${x(pts.length - 1).toFixed(1)},${zero.toFixed(1)} L${x(0).toFixed(1)},${zero.toFixed(1)} Z`
+          const isPositive = pts[pts.length - 1] >= 0
+          const color = isPositive ? '#22c55e' : '#f87171'
+          return (
+            <div className="card mb-6 fade-in" style={{ padding: '16px 12px 8px' }}>
+              <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3 text-center">
+                {lang === 'en' ? 'Equity Curve (1u stake)' : 'Curbă Equity (stake 1u)'}
+              </div>
+              <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto', display: 'block' }}>
+                <defs>
+                  <linearGradient id="eqGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={color} stopOpacity="0.25" />
+                    <stop offset="100%" stopColor={color} stopOpacity="0.02" />
+                  </linearGradient>
+                </defs>
+                {/* Grid lines */}
+                {[0.25, 0.5, 0.75].map(t => (
+                  <line key={t} x1={PAD} x2={W - PAD} y1={PAD + t * (H - PAD * 2)} y2={PAD + t * (H - PAD * 2)}
+                    stroke="rgba(255,255,255,0.04)" strokeWidth="1" />
+                ))}
+                {/* Zero line */}
+                <line x1={PAD} x2={W - PAD} y1={zero} y2={zero}
+                  stroke="rgba(255,255,255,0.12)" strokeWidth="1" strokeDasharray="4,4" />
+                {/* Fill */}
+                <path d={fillD} fill="url(#eqGrad)" />
+                {/* Line */}
+                <path d={pathD} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                {/* Last point dot */}
+                <circle cx={x(pts.length - 1)} cy={y(pts[pts.length - 1])} r="4" fill={color} />
+                {/* Labels */}
+                <text x={PAD} y={H - 4} fontSize="9" fill="#4b5563" fontFamily="monospace">0</text>
+                <text x={W - PAD} y={H - 4} fontSize="9" fill="#4b5563" fontFamily="monospace" textAnchor="end">{history.results.length} picks</text>
+                <text x={W - PAD + 2} y={y(pts[pts.length - 1]) + 4} fontSize="10" fill={color} fontFamily="monospace" fontWeight="bold">
+                  {pts[pts.length - 1] >= 0 ? '+' : ''}{pts[pts.length - 1].toFixed(1)}u
+                </text>
+              </svg>
+            </div>
+          )
+        })()}
+
         {/* Backtesting */}
         <div className="mb-6 fade-in">
           <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3 text-center">

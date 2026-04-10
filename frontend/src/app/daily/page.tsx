@@ -77,9 +77,9 @@ function confColor(level: string, lang: 'ro' | 'en' = 'ro') {
 }
 
 function predLabel(p: Pick, lang: 'ro' | 'en' = 'ro') {
-  if (p.prediction === 'H') return { emoji: '🏠', short: '1',  full: p.home,  prob: p.home_win }
-  if (p.prediction === 'A') return { emoji: '✈️', short: '2',  full: p.away,  prob: p.away_win }
-  return                           { emoji: '🤝', short: 'X',  full: lang === 'en' ? 'Draw' : 'Egal',  prob: p.draw }
+  if (p.prediction === 'H') return { emoji: '◀', short: '1',  full: p.home,  prob: p.home_win }
+  if (p.prediction === 'A') return { emoji: '▶', short: '2',  full: p.away,  prob: p.away_win }
+  return                           { emoji: '▬', short: 'X',  full: lang === 'en' ? 'Draw' : 'Egal',  prob: p.draw }
 }
 
 // ── Format share profesional WhatsApp/Telegram ───────────────────────────────
