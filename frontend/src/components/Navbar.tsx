@@ -2,27 +2,40 @@
 import { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import { getToken, logout } from '@/lib/auth'
+import { useLang } from '@/lib/LangContext'
 
-const LINKS = [
-  { href: '/',             label: 'Predicții AI',     icon: '🔮' },
-  { href: '/daily',        label: 'Selecțiile zilei', icon: '🎯' },
-  { href: '/bet-builder',  label: 'Bet Builder',      icon: '🎰' },
-  { href: '/track-record', label: 'Track Record',     icon: '📊' },
-  { href: '/despre',       label: 'Despre',           icon: 'ℹ️'  },
-  { href: '/upgrade',      label: 'Upgrade',          icon: '⚡', highlight: true },
-]
+const LINKS = {
+  ro: [
+    { href: '/',             label: 'Predicții AI',     icon: '🔮' },
+    { href: '/daily',        label: 'Selecțiile zilei', icon: '🎯' },
+    { href: '/bet-builder',  label: 'Bet Builder',      icon: '🎰' },
+    { href: '/track-record', label: 'Track Record',     icon: '📊' },
+    { href: '/despre',       label: 'Despre',           icon: 'ℹ️'  },
+    { href: '/upgrade',      label: 'Upgrade',          icon: '⚡', highlight: true },
+  ],
+  en: [
+    { href: '/',             label: 'AI Predictions',   icon: '🔮' },
+    { href: '/daily',        label: "Daily Picks",      icon: '🎯' },
+    { href: '/bet-builder',  label: 'Bet Builder',      icon: '🎰' },
+    { href: '/track-record', label: 'Track Record',     icon: '📊' },
+    { href: '/despre',       label: 'About',            icon: 'ℹ️'  },
+    { href: '/upgrade',      label: 'Upgrade',          icon: '⚡', highlight: true },
+  ],
+}
 
 export default function Navbar() {
   const pathname  = usePathname()
-  const [open, setOpen]       = useState(false)
-  const [logged, setLogged]   = useState(false)
+  const [open, setOpen]     = useState(false)
+  const [logged, setLogged] = useState(false)
+  const { lang, setLang }   = useLang()
 
   useEffect(() => {
     setLogged(!!getToken())
   }, [pathname])
 
-  // Nu afisa navbar pe paginile care au propriul layout complet (manual PDF)
   if (pathname?.startsWith('/manual')) return null
+
+  const links = LINKS[lang]
 
   return (
     <>
@@ -48,7 +61,7 @@ export default function Navbar() {
 
           {/* Desktop links */}
           <nav style={{ display: 'flex', alignItems: 'center', gap: 2 }} className="desktop-nav">
-            {LINKS.map(l => {
+            {links.map(l => {
               const active = pathname === l.href || (l.href !== '/' && pathname?.startsWith(l.href))
               return (
                 <a key={l.href} href={l.href} style={{
@@ -66,8 +79,26 @@ export default function Navbar() {
                 </a>
               )
             })}
+
+            {/* Lang toggle */}
+            <div style={{ display: 'flex', marginLeft: 8, borderRadius: 6, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' }}>
+              {(['ro', 'en'] as const).map(l => (
+                <button key={l} onClick={() => setLang(l)} style={{
+                  padding: '5px 10px',
+                  fontSize: 11, fontWeight: 700, fontFamily: 'monospace',
+                  cursor: 'pointer',
+                  background: lang === l ? '#22d3ee' : 'transparent',
+                  color: lang === l ? '#000' : '#6b7280',
+                  border: 'none',
+                  transition: 'all 0.15s',
+                }}>
+                  {l.toUpperCase()}
+                </button>
+              ))}
+            </div>
+
             <a href="/login" style={{
-              marginLeft: 6,
+              marginLeft: 8,
               padding: '6px 14px',
               borderRadius: 7,
               textDecoration: 'none',
@@ -78,7 +109,7 @@ export default function Navbar() {
               border: `1px solid ${logged ? 'rgba(34,197,94,0.3)' : 'rgba(37,99,235,0.4)'}`,
               whiteSpace: 'nowrap',
             }}>
-              {logged ? '👤 Cont' : '🔑 Login'}
+              {logged ? (lang === 'ro' ? '👤 Cont' : '👤 Account') : '🔑 Login'}
             </a>
           </nav>
 
@@ -111,7 +142,7 @@ export default function Navbar() {
           }}
           onClick={() => setOpen(false)}
         >
-          {LINKS.map(l => {
+          {links.map(l => {
             const active = pathname === l.href || (l.href !== '/' && pathname?.startsWith(l.href))
             return (
               <a key={l.href} href={l.href} style={{
@@ -131,8 +162,25 @@ export default function Navbar() {
               </a>
             )
           })}
+
+          {/* Lang toggle mobile */}
+          <div style={{ display: 'flex', gap: 8, padding: '8px 18px' }} onClick={e => e.stopPropagation()}>
+            {(['ro', 'en'] as const).map(l => (
+              <button key={l} onClick={() => setLang(l)} style={{
+                flex: 1, padding: '10px', borderRadius: 8,
+                fontSize: 13, fontWeight: 700, fontFamily: 'monospace',
+                cursor: 'pointer',
+                background: lang === l ? 'rgba(34,197,94,0.2)' : 'rgba(255,255,255,0.03)',
+                color: lang === l ? '#4ade80' : '#6b7280',
+                border: lang === l ? '1px solid rgba(34,197,94,0.4)' : '1px solid rgba(255,255,255,0.05)',
+              }}>
+                {l.toUpperCase()}
+              </button>
+            ))}
+          </div>
+
           <a href="/login" style={{
-            marginTop: 8,
+            marginTop: 4,
             padding: '14px 18px',
             borderRadius: 10,
             textDecoration: 'none',
@@ -144,7 +192,9 @@ export default function Navbar() {
             display: 'flex', alignItems: 'center', gap: 12,
           }}>
             <span style={{ fontSize: 20 }}>{logged ? '👤' : '🔑'}</span>
-            {logged ? 'Contul meu' : 'Login / Înregistrare'}
+            {logged
+              ? (lang === 'ro' ? 'Contul meu' : 'My Account')
+              : (lang === 'ro' ? 'Login / Înregistrare' : 'Login / Register')}
           </a>
 
           {logged && (
@@ -163,7 +213,7 @@ export default function Navbar() {
                 textAlign: 'left',
               }}
             >
-              Deconectare
+              {lang === 'ro' ? 'Deconectare' : 'Sign out'}
             </button>
           )}
         </div>

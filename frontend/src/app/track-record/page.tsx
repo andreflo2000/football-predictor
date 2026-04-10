@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
+import { useLang } from '@/lib/LangContext'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'https://football-predictor-api-n9sl.onrender.com'
 
@@ -38,10 +39,10 @@ interface History {
 }
 
 const backtesting = [
-  { label: 'Confidence > 70%',  accuracy: 78.5, sample: '~0.8 picks/zi · out-of-sample', color: '#22c55e' },
-  { label: 'Confidence ≥ 65%',  accuracy: 74.1, sample: '~1.1 picks/zi · out-of-sample', color: '#4ade80' },
-  { label: 'Confidence ≥ 60%',  accuracy: 66.4, sample: '~1.5 picks/zi · out-of-sample', color: '#f59e0b' },
-  { label: 'Toate predicțiile', accuracy: 54.6, sample: '1.105 meciuri · Oct 2025–Mar 2026', color: '#818cf8' },
+  { label: 'Confidence > 70%',  accuracy: 78.5, sampleRo: '~0.8 picks/zi · out-of-sample',            sampleEn: '~0.8 picks/day · out-of-sample',           color: '#22c55e' },
+  { label: 'Confidence ≥ 65%',  accuracy: 74.1, sampleRo: '~1.1 picks/zi · out-of-sample',            sampleEn: '~1.1 picks/day · out-of-sample',           color: '#4ade80' },
+  { label: 'Confidence ≥ 60%',  accuracy: 66.4, sampleRo: '~1.5 picks/zi · out-of-sample',            sampleEn: '~1.5 picks/day · out-of-sample',           color: '#f59e0b' },
+  { label_ro: 'Toate predicțiile', label_en: 'All predictions', accuracy: 54.6, sampleRo: '1.105 meciuri · Oct 2025–Mar 2026', sampleEn: '1,105 matches · Oct 2025–Mar 2026', color: '#818cf8' },
 ]
 
 const leagueStats = [
@@ -57,6 +58,7 @@ export default function TrackRecord() {
   const [history, setHistory] = useState<History | null>(null)
   const [loading, setLoading] = useState(true)
   const [filter, setFilter]   = useState<'all' | 'high' | 'med'>('all')
+  const { lang }              = useLang()
 
   useEffect(() => {
     Promise.all([
@@ -89,10 +91,12 @@ export default function TrackRecord() {
             TRACK RECORD
           </h1>
           <div className="text-green-400 text-xs font-mono uppercase tracking-widest mb-1">
-            Transparență totală · Date reale · Actualizat zilnic
+            {lang === 'en' ? 'Full transparency · Real data · Updated daily' : 'Transparență totală · Date reale · Actualizat zilnic'}
           </div>
           <p className="text-gray-600 text-xs font-mono">
-            Backtest out-of-sample 1.105 meciuri · Oct 2025–Mar 2026 · Tracking live din {stats?.tracking_since || 'Aprilie 2026'}
+            {lang === 'en'
+              ? `Out-of-sample backtest 1,105 matches · Oct 2025–Mar 2026 · Live tracking since ${stats?.tracking_since || 'April 2026'}`
+              : `Backtest out-of-sample 1.105 meciuri · Oct 2025–Mar 2026 · Tracking live din ${stats?.tracking_since || 'Aprilie 2026'}`}
           </p>
         </div>
 
@@ -126,11 +130,11 @@ export default function TrackRecord() {
           <div className="grid grid-cols-2 gap-3 mb-6 fade-in">
             <div className="card p-4 text-center">
               <div className="text-3xl font-bold font-mono text-green-400">{history.summary.high_conf_accuracy}%</div>
-              <div className="text-[10px] font-mono text-gray-500 mt-1">Acuratețe ≥65% conf (live)</div>
+              <div className="text-[10px] font-mono text-gray-500 mt-1">{lang === 'en' ? 'Accuracy ≥65% conf (live)' : 'Acuratețe ≥65% conf (live)'}</div>
             </div>
             <div className="card p-4 text-center">
               <div className="text-3xl font-bold font-mono text-amber-400">{history.summary.accuracy}%</div>
-              <div className="text-[10px] font-mono text-gray-500 mt-1">Acuratețe generală (live)</div>
+              <div className="text-[10px] font-mono text-gray-500 mt-1">{lang === 'en' ? 'Overall accuracy (live)' : 'Acuratețe generală (live)'}</div>
             </div>
           </div>
         )}
@@ -138,15 +142,15 @@ export default function TrackRecord() {
         {/* Backtesting */}
         <div className="mb-6 fade-in">
           <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3 text-center">
-            Backtesting · 225.000 meciuri · 2010–2025
+            {lang === 'en' ? 'Backtesting · 225,000 matches · 2010–2025' : 'Backtesting · 225.000 meciuri · 2010–2025'}
           </div>
           <div className="space-y-3">
-            {backtesting.map(b => (
-              <div key={b.label} className="card p-4">
+            {backtesting.map((b: any) => (
+              <div key={b.label ?? b.label_ro} className="card p-4">
                 <div className="flex items-center justify-between mb-2">
                   <div>
-                    <div className="text-sm font-bold text-white">{b.label}</div>
-                    <div className="text-[10px] text-gray-600 font-mono">{b.sample}</div>
+                    <div className="text-sm font-bold text-white">{b.label ?? (lang === 'en' ? b.label_en : b.label_ro)}</div>
+                    <div className="text-[10px] text-gray-600 font-mono">{lang === 'en' ? b.sampleEn : b.sampleRo}</div>
                   </div>
                   <div className="text-3xl font-bold font-mono" style={{ color: b.color }}>
                     {b.accuracy}%
@@ -160,7 +164,7 @@ export default function TrackRecord() {
             ))}
           </div>
           <div className="text-center mt-2 text-[10px] text-gray-700 font-mono">
-            * Random baseline = 33.3% · Modelul depășește cu +50% față de hazard
+            {lang === 'en' ? '* Random baseline = 33.3% · Model outperforms chance by +50%' : '* Random baseline = 33.3% · Modelul depășește cu +50% față de hazard'}
           </div>
         </div>
 
@@ -168,7 +172,7 @@ export default function TrackRecord() {
         <div className="mb-6 fade-in">
           <div className="flex items-center justify-between mb-3">
             <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
-              Istoric detaliat
+              {lang === 'en' ? 'Detailed history' : 'Istoric detaliat'}
             </div>
             <div className="flex gap-1">
               {(['all', 'high', 'med'] as const).map(f => (
@@ -179,7 +183,7 @@ export default function TrackRecord() {
                     color: filter === f ? '#22c55e' : '#6b7280',
                     border: `1px solid ${filter === f ? '#22c55e44' : '#1f2937'}`,
                   }}>
-                  {f === 'all' ? 'Toate' : f === 'high' ? '≥65%' : '55-65%'}
+                  {f === 'all' ? (lang === 'en' ? 'All' : 'Toate') : f === 'high' ? '≥65%' : '55-65%'}
                 </button>
               ))}
             </div>
@@ -188,7 +192,7 @@ export default function TrackRecord() {
           {loading && (
             <div className="card p-8 text-center">
               <div className="spinner mx-auto mb-3" />
-              <div className="text-gray-600 text-xs font-mono">Se încarcă istoricul...</div>
+              <div className="text-gray-600 text-xs font-mono">{lang === 'en' ? 'Loading history...' : 'Se încarcă istoricul...'}</div>
             </div>
           )}
 
@@ -198,11 +202,11 @@ export default function TrackRecord() {
                 <table className="w-full text-xs font-mono">
                   <thead>
                     <tr style={{ borderBottom: '1px solid #1f2937' }}>
-                      <th className="text-left p-3 text-gray-600">Data</th>
-                      <th className="text-left p-3 text-gray-600">Meci</th>
+                      <th className="text-left p-3 text-gray-600">{lang === 'en' ? 'Date' : 'Data'}</th>
+                      <th className="text-left p-3 text-gray-600">{lang === 'en' ? 'Match' : 'Meci'}</th>
                       <th className="text-center p-3 text-gray-600">Conf</th>
-                      <th className="text-center p-3 text-gray-600">Scor</th>
-                      <th className="text-center p-3 text-gray-600">Rezultat</th>
+                      <th className="text-center p-3 text-gray-600">{lang === 'en' ? 'Score' : 'Scor'}</th>
+                      <th className="text-center p-3 text-gray-600">{lang === 'en' ? 'Result' : 'Rezultat'}</th>
                       <th className="text-right p-3 text-gray-600">Equity</th>
                     </tr>
                   </thead>
@@ -242,9 +246,9 @@ export default function TrackRecord() {
           {!loading && filtered.length === 0 && (
             <div className="card p-8 text-center">
               <div className="text-3xl mb-3 opacity-40">🕐</div>
-              <div className="text-gray-500 text-sm font-mono mb-1">Tracking activ din Aprilie 2026</div>
+              <div className="text-gray-500 text-sm font-mono mb-1">{lang === 'en' ? 'Live tracking since April 2026' : 'Tracking activ din Aprilie 2026'}</div>
               <div className="text-gray-700 text-xs font-mono">
-                Rezultatele apar după finalizarea meciurilor și marcarea automată la 23:30.
+                {lang === 'en' ? 'Results appear after matches finish and are auto-marked at 23:30.' : 'Rezultatele apar după finalizarea meciurilor și marcarea automată la 23:30.'}
               </div>
             </div>
           )}
@@ -253,16 +257,16 @@ export default function TrackRecord() {
         {/* Per ligă */}
         <div className="mb-6 fade-in">
           <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3 text-center">
-            Acuratețe per ligă · Out-of-sample Oct 2025–Mar 2026
+            {lang === 'en' ? 'Accuracy per league · Out-of-sample Oct 2025–Mar 2026' : 'Acuratețe per ligă · Out-of-sample Oct 2025–Mar 2026'}
           </div>
           <div className="card overflow-hidden">
             <table className="w-full text-xs font-mono">
               <thead>
                 <tr style={{ borderBottom: '1px solid #1f2937' }}>
-                  <th className="text-left p-3 text-gray-600">Ligă</th>
+                  <th className="text-left p-3 text-gray-600">{lang === 'en' ? 'League' : 'Ligă'}</th>
                   <th className="text-center p-3 text-gray-600">Conf ≥65%</th>
                   <th className="text-center p-3 text-gray-600">Conf ≥70%</th>
-                  <th className="text-right p-3 text-gray-600">Picks analizate</th>
+                  <th className="text-right p-3 text-gray-600">{lang === 'en' ? 'Picks analysed' : 'Picks analizate'}</th>
                 </tr>
               </thead>
               <tbody>
@@ -282,24 +286,24 @@ export default function TrackRecord() {
             </table>
           </div>
           <div className="text-center mt-2 text-[10px] text-gray-700 font-mono">
-            * Valide doar cu cote disponibile · Backtest out-of-sample pe 6 luni
+            {lang === 'en' ? '* Valid only with available odds · 6-month out-of-sample backtest' : '* Valide doar cu cote disponibile · Backtest out-of-sample pe 6 luni'}
           </div>
         </div>
 
         {/* Metodologie */}
         <div className="card p-5 fade-in">
-          <div className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-3">Metodologie</div>
+          <div className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-3">{lang === 'en' ? 'Methodology' : 'Metodologie'}</div>
           <div className="space-y-2 text-xs text-gray-400 leading-relaxed">
-            <p>· <strong className="text-gray-300">Model:</strong> XGBoost cu 84 de variabile (Elo, formă, xG, H2H, cote)</p>
-            <p>· <strong className="text-gray-300">Antrenament:</strong> 225.000 meciuri din ligile majore europene (2010–2025)</p>
-            <p>· <strong className="text-gray-300">Piață evaluată:</strong> 1X2 (rezultat final)</p>
-            <p>· <strong className="text-gray-300">Equity curve:</strong> stake fix 1 unitate, odds medii 2.0 (even money)</p>
-            <p>· <strong className="text-gray-300">Auto-update:</strong> rezultatele se marchează automat zilnic la 23:30 din API-Football</p>
+            <p>· <strong className="text-gray-300">Model:</strong> {lang === 'en' ? 'XGBoost with 84 features (Elo, form, xG, H2H, odds)' : 'XGBoost cu 84 de variabile (Elo, formă, xG, H2H, cote)'}</p>
+            <p>· <strong className="text-gray-300">{lang === 'en' ? 'Training:' : 'Antrenament:'}</strong> {lang === 'en' ? '225,000 matches from major European leagues (2010–2025)' : '225.000 meciuri din ligile majore europene (2010–2025)'}</p>
+            <p>· <strong className="text-gray-300">{lang === 'en' ? 'Market:' : 'Piață evaluată:'}</strong> 1X2 {lang === 'en' ? '(full-time result)' : '(rezultat final)'}</p>
+            <p>· <strong className="text-gray-300">Equity curve:</strong> {lang === 'en' ? 'fixed 1-unit stake, avg odds 2.0 (even money)' : 'stake fix 1 unitate, odds medii 2.0 (even money)'}</p>
+            <p>· <strong className="text-gray-300">Auto-update:</strong> {lang === 'en' ? 'results auto-marked daily at 23:30 from API-Football' : 'rezultatele se marchează automat zilnic la 23:30 din API-Football'}</p>
           </div>
         </div>
 
         <div className="text-center mt-6 text-[10px] text-gray-700 font-mono">
-          Performanțele trecute nu garantează rezultate viitoare. Analiză statistică · Nu sfat de pariere.
+          {lang === 'en' ? 'Past performance does not guarantee future results. Statistical analysis · Not betting advice.' : 'Performanțele trecute nu garantează rezultate viitoare. Analiză statistică · Nu sfat de pariere.'}
         </div>
       </main>
     </div>

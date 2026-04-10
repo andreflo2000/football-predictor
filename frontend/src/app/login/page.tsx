@@ -2,11 +2,13 @@
 import { useState } from 'react'
 import { login, register, getToken, logout } from '@/lib/auth'
 import { useRouter } from 'next/navigation'
+import { useLang } from '@/lib/LangContext'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'https://football-predictor-api-n9sl.onrender.com'
 
 export default function LoginPage() {
   const router = useRouter()
+  const { lang } = useLang()
   const [mode, setMode]         = useState<'login' | 'register'>('login')
   const [email, setEmail]       = useState('')
   const [password, setPass]     = useState('')
@@ -34,7 +36,7 @@ export default function LoginPage() {
       })
       const data = await r.json()
       if (!r.ok) throw new Error(data.detail || 'Eroare')
-      setCpMsg('Parola a fost schimbată cu succes!')
+      setCpMsg(lang === 'en' ? 'Password changed successfully!' : 'Parola a fost schimbată cu succes!')
       setCpCurrent(''); setCpNew('')
     } catch (err: any) {
       setCpErr(err.message)
@@ -91,7 +93,7 @@ export default function LoginPage() {
               color: mode === m ? '#fff' : '#94a3b8',
               transition: 'all 0.2s',
             }}>
-              {m === 'login' ? 'Autentificare' : 'Cont nou'}
+              {m === 'login' ? (lang === 'en' ? 'Sign In' : 'Autentificare') : (lang === 'en' ? 'New account' : 'Cont nou')}
             </button>
           ))}
         </div>
@@ -115,7 +117,7 @@ export default function LoginPage() {
 
           <div style={{ marginBottom: '24px' }}>
             <label style={{ color: '#94a3b8', fontSize: '13px', display: 'block', marginBottom: '6px' }}>
-              Parolă {mode === 'register' && <span style={{ color: '#64748b' }}>(minim 6 caractere)</span>}
+              {lang === 'en' ? 'Password' : 'Parolă'} {mode === 'register' && <span style={{ color: '#64748b' }}>({lang === 'en' ? 'min 6 characters' : 'minim 6 caractere'})</span>}
             </label>
             <div style={{ position: 'relative' }}>
               <input
@@ -159,13 +161,13 @@ export default function LoginPage() {
             border: 'none', cursor: loading ? 'not-allowed' : 'pointer',
             opacity: loading ? 0.7 : 1,
           }}>
-            {loading ? 'Se procesează...' : mode === 'login' ? 'Intră în cont' : 'Creează cont'}
+            {loading ? (lang === 'en' ? 'Processing...' : 'Se procesează...') : mode === 'login' ? (lang === 'en' ? 'Sign In' : 'Intră în cont') : (lang === 'en' ? 'Create account' : 'Creează cont')}
           </button>
         </form>
 
         <div style={{ textAlign: 'center', marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
           <a href="/daily" style={{ color: '#64748b', fontSize: '13px', textDecoration: 'none' }}>
-            Continuă fără cont →
+            {lang === 'en' ? 'Continue without account →' : 'Continuă fără cont →'}
           </a>
           {getToken() && (
             <>
@@ -173,32 +175,32 @@ export default function LoginPage() {
                 onClick={() => setShowCp(v => !v)}
                 style={{ color: '#3b82f6', fontSize: '13px', background: 'none', border: 'none', cursor: 'pointer' }}
               >
-                🔑 Schimbă parola
+                🔑 {lang === 'en' ? 'Change password' : 'Schimbă parola'}
               </button>
 
               {showCp && (
                 <form onSubmit={handleChangePassword} style={{ textAlign: 'left', marginTop: 8, background: '#0f172a', borderRadius: 10, padding: '16px', border: '1px solid #1e3a5f' }}>
                   <div style={{ marginBottom: 10 }}>
-                    <label style={{ color: '#94a3b8', fontSize: 12, display: 'block', marginBottom: 4 }}>Parola curentă</label>
+                    <label style={{ color: '#94a3b8', fontSize: 12, display: 'block', marginBottom: 4 }}>{lang === 'en' ? 'Current password' : 'Parola curentă'}</label>
                     <input type="password" value={cpCurrent} onChange={e => setCpCurrent(e.target.value)} required
                       style={{ width: '100%', padding: '8px 10px', borderRadius: 6, background: '#1e293b', border: '1px solid #334155', color: '#f1f5f9', fontSize: 14, boxSizing: 'border-box' }} />
                   </div>
                   <div style={{ marginBottom: 12 }}>
-                    <label style={{ color: '#94a3b8', fontSize: 12, display: 'block', marginBottom: 4 }}>Parola nouă (minim 6 caractere)</label>
+                    <label style={{ color: '#94a3b8', fontSize: 12, display: 'block', marginBottom: 4 }}>{lang === 'en' ? 'New password (min 6 characters)' : 'Parola nouă (minim 6 caractere)'}</label>
                     <input type="password" value={cpNew} onChange={e => setCpNew(e.target.value)} required minLength={6}
                       style={{ width: '100%', padding: '8px 10px', borderRadius: 6, background: '#1e293b', border: '1px solid #334155', color: '#f1f5f9', fontSize: 14, boxSizing: 'border-box' }} />
                   </div>
                   {cpErr && <div style={{ color: '#fca5a5', fontSize: 12, marginBottom: 8 }}>{cpErr}</div>}
                   {cpMsg && <div style={{ color: '#4ade80', fontSize: 12, marginBottom: 8 }}>{cpMsg}</div>}
                   <button type="submit" disabled={cpLoading} style={{ width: '100%', padding: '8px', borderRadius: 6, background: '#3b82f6', color: '#fff', fontWeight: 700, fontSize: 13, border: 'none', cursor: 'pointer' }}>
-                    {cpLoading ? 'Se salvează...' : 'Salvează parola nouă'}
+                    {cpLoading ? (lang === 'en' ? 'Saving...' : 'Se salvează...') : (lang === 'en' ? 'Save new password' : 'Salvează parola nouă')}
                   </button>
                 </form>
               )}
 
               <button
                 onClick={async () => {
-                  if (!confirm('Ești sigur? Contul și toate datele tale vor fi șterse permanent.')) return
+                  if (!confirm(lang === 'en' ? 'Are you sure? Your account and all data will be permanently deleted.' : 'Ești sigur? Contul și toate datele tale vor fi șterse permanent.')) return
                   try {
                     await fetch(`${API}/api/auth/account`, {
                       method: 'DELETE',
@@ -211,15 +213,15 @@ export default function LoginPage() {
                 }}
                 style={{ color: '#ef4444', fontSize: '11px', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'monospace' }}
               >
-                Șterge contul și toate datele mele
+                {lang === 'en' ? 'Delete my account and all data' : 'Șterge contul și toate datele mele'}
               </button>
             </>
           )}
         </div>
 
         <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #1e293b', textAlign: 'center' }}>
-          <a href="/terms" style={{ color: '#475569', fontSize: '10px', fontFamily: 'monospace', marginRight: '12px' }}>Termeni</a>
-          <a href="/privacy" style={{ color: '#475569', fontSize: '10px', fontFamily: 'monospace' }}>Confidențialitate</a>
+          <a href="/terms" style={{ color: '#475569', fontSize: '10px', fontFamily: 'monospace', marginRight: '12px' }}>{lang === 'en' ? 'Terms' : 'Termeni'}</a>
+          <a href="/privacy" style={{ color: '#475569', fontSize: '10px', fontFamily: 'monospace' }}>{lang === 'en' ? 'Privacy' : 'Confidențialitate'}</a>
         </div>
       </div>
     </div>

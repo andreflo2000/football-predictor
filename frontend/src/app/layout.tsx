@@ -4,6 +4,7 @@ import DisclaimerBanner from '@/components/DisclaimerBanner'
 import GdprConsent from '@/components/GdprConsent'
 import Onboarding from '@/components/Onboarding'
 import Navbar from '@/components/Navbar'
+import { LangProvider } from '@/lib/LangContext'
 
 export const metadata: Metadata = {
   title: 'Oxiano — Quantitative Football Analysis',
@@ -75,11 +76,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </>}
       </head>
       <body style={{width: '100vw', overflowX: 'hidden', position: 'relative'}}>
+        <LangProvider>
         <Navbar />
         {children}
         <Onboarding />
         <GdprConsent />
         <DisclaimerBanner />
+        </LangProvider>
         <script dangerouslySetInnerHTML={{__html: `
           document.addEventListener('touchstart', function(e) {
             if (e.touches.length > 1) e.preventDefault();

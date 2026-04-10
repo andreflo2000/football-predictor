@@ -26,7 +26,7 @@ data/            # fetcher.py, leagues.py, scrape_fbref.py
 ## Structura frontend (`/frontend/src`)
 ```
 app/daily/       # Picks zilnice — pagina principala
-app/upgrade/     # Pricing Analyst 29 RON / Pro 79 RON (LemonSqueezy)
+app/upgrade/     # Pricing Analyst 29 RON / Pro 79 RON (Gumroad)
 app/login/       # Register/login toggle + delete GDPR
 app/track-record/ # Statistici acuratete live
 app/weekly/      # Picks saptamanale
@@ -67,8 +67,8 @@ TELEGRAM_BOT_TOKEN, TELEGRAM_CHANNEL_ID
 RESEND_API_KEY
 SENTRY_DSN
 FRONTEND_URL
-# LemonSqueezy (de adaugat):
-LS_API_KEY, LS_STORE_ID, LS_VARIANT_ANALYST, LS_VARIANT_PRO, LS_WEBHOOK_SECRET
+# Gumroad (de adaugat):
+GUMROAD_ACCESS_TOKEN, GUMROAD_PRODUCT_ID_ANALYST, GUMROAD_PRODUCT_ID_PRO, GUMROAD_WEBHOOK_SECRET
 ```
 
 ## Comenzi utile
@@ -88,7 +88,7 @@ cd frontend && npm run build && npx cap sync android
 
 ## Context business
 - Proiect: **Flopi San** — predictii fotbal bazate pe quant analysis / BI (nu sfat de pariere)
-- Utilizator: persoana fizica, fara SRL activ momentan → **LemonSqueezy** (nu Stripe)
+- Utilizator: persoana fizica, fara SRL activ momentan → **Gumroad** (nu Stripe)
 - SRL se activeaza dupa tractiune → migrare la Stripe
 - Fara licenta ONJN → disclaimere obligatorii pe toate paginile
 
@@ -100,7 +100,7 @@ cd frontend && npm run build && npx cap sync android
 - [x] VIP blur overlay (cod gata, asteapta LS)
 - [x] Google Analytics 4 + Sentry
 - [x] Android Capacitor (build ready)
-- [ ] LemonSqueezy conectat (env vars de adaugat pe Render)
+- [ ] Gumroad conectat (env vars de adaugat pe Render)
 - [ ] Track record auto-update WIN/LOSS
 - [ ] SEO pages /predictii/premier-league etc.
 
