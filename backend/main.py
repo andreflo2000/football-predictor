@@ -275,85 +275,20 @@ def daily_picks(
         redis_cache.set("daily", cache_key, db_data, ttl=CACHE_TTL_DAILY)
         return {**db_data, "picks": _mask_vip_picks(db_data["picks"], user)}
 
-    # 3. Calcul live (fallback daca DB nu are date)
-    known    = get_known_teams()
-    fixtures = get_today_fixtures(date=target, known_teams=known)
-    actual_date = fixtures[0].get("date", target) if fixtures else target
-    odds_map = get_today_odds(known_teams=known)
-
-    picks  = []
-    errors = []
-
-    for fix in fixtures:
-        try:
-            key  = (fix["home"].lower(), fix["away"].lower())
-            odds = odds_map.get(key)
-            result = predict_match(home_team=fix["home"], away_team=fix["away"], odds=odds)
-
-            if result["confidence"] < min_confidence:
-                continue
-
-            picks.append({
-                "home":             fix["home"],
-                "away":             fix["away"],
-                "home_raw":         fix.get("home_raw", fix["home"]),
-                "away_raw":         fix.get("away_raw", fix["away"]),
-                "league":           fix["league"],
-                "flag":             fix["flag"],
-                "time":             fix.get("time", ""),
-                "competition_code": fix.get("competition_code", ""),
-                "home_win":         round(result["home_win"] * 100, 1),
-                "draw":             round(result["draw"] * 100, 1),
-                "away_win":         round(result["away_win"] * 100, 1),
-                "prediction":       result["prediction"],
-                "prediction_label": result["prediction_label"],
-                "confidence":       round(result["confidence"] * 100, 1),
-                "confidence_level": result["confidence_level"],
-                "high_confidence":  result["high_confidence"],
-                "home_elo":         result.get("home_elo", 1500),
-                "away_elo":         result.get("away_elo", 1500),
-                "home_form":        round(result.get("home_form", 0.4) * 100, 0),
-                "away_form":        round(result.get("away_form", 0.4) * 100, 0),
-                "has_odds":         odds is not None,
-                "vip_only":         False,
-                "model_version":    "xgb-v1",
-                "edge":             result.get("edge", 0.0),
-                "value_bet":        result.get("value_bet", False),
-                "market_signal":    result.get("market_signal", "NO_ODDS"),
-                "upset_risk":       result.get("upset_risk", False),
-            })
-        except Exception as e:
-            errors.append({"match": f"{fix['home']} vs {fix['away']}", "error": str(e)})
-
-    picks.sort(key=lambda x: x["confidence"], reverse=True)
-
-    # CLV logging
-    if picks:
-        try:
-            log_predictions_bulk(picks, actual_date)
-        except Exception:
-            pass
-
-    high_conf = [p for p in picks if p["confidence"] >= 65]
-    med_conf  = [p for p in picks if 55 <= p["confidence"] < 65]
-    low_conf  = [p for p in picks if p["confidence"] < 55]
-
-    response = {
-        "date":           actual_date,
+    # 3. Nu exista date — picks in curs de calcul (scheduler 07:00/13:00)
+    return {
+        "date":           target,
         "requested_date": target,
-        "total_fixtures": len(fixtures),
-        "total_picks":    len(picks),
-        "high_conf":      len(high_conf),
-        "med_conf":       len(med_conf),
-        "low_conf":       len(low_conf),
-        "picks":          picks,
-        "errors":         errors[:5],
+        "total_fixtures": 0,
+        "total_picks":    0,
+        "high_conf":      0,
+        "med_conf":       0,
+        "low_conf":       0,
+        "picks":          [],
+        "errors":         [],
         "cached":         False,
-        "source":         "live",
+        "source":         "pending",
     }
-
-    redis_cache.set("daily", cache_key, response, ttl=CACHE_TTL_DAILY)
-    return {**response, "picks": _mask_vip_picks(response["picks"], user)}
 
 
 LEGACY_MAP = {
