@@ -1,4 +1,5 @@
 'use client'
+import Link from 'next/link'
 
 export default function DisclaimerBanner() {
   return (
@@ -13,9 +14,9 @@ export default function DisclaimerBanner() {
         {' '}— Oxiano oferă <strong style={{ color: '#cbd5e1' }}>analiză statistică și business intelligence</strong> cu scop
         informativ și educațional. Nu constituie sfat de pariere, investiție sau recomandare financiară.
         Utilizatorul este singurul responsabil pentru deciziile proprii.{' '}
-        <a href="/terms" style={{ color: '#60a5fa', textDecoration: 'underline' }}>T&C</a>
+        <Link href="/terms" style={{ color: '#60a5fa', textDecoration: 'underline' }}>T&C</Link>
         {' · '}
-        <a href="/privacy" style={{ color: '#60a5fa', textDecoration: 'underline' }}>Confidențialitate</a>
+        <Link href="/privacy" style={{ color: '#60a5fa', textDecoration: 'underline' }}>Confidențialitate</Link>
       </p>
     </div>
   )

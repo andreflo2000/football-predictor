@@ -1,16 +1,17 @@
 'use client'
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 
 export default function GdprConsent() {
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
-    const accepted = localStorage.getItem('flopi_gdpr')
+    const accepted = localStorage.getItem('oxiano_gdpr')
     if (!accepted) setVisible(true)
   }, [])
 
   function accept() {
-    localStorage.setItem('flopi_gdpr', 'accepted')
+    localStorage.setItem('oxiano_gdpr', 'accepted')
     setVisible(false)
   }
 
@@ -34,9 +35,9 @@ export default function GdprConsent() {
             <p style={{ color: '#94a3b8', fontSize: '11px', margin: 0, lineHeight: 1.5 }}>
               Folosim cookies esențiale pentru funcționarea aplicației și stocăm local pronosticurile tale.
               Nu folosim cookies de marketing sau tracking terți.{' '}
-              <a href="/privacy" style={{ color: '#60a5fa' }}>Politica de confidențialitate</a>
+              <Link href="/privacy" style={{ color: '#60a5fa' }}>Politica de confidențialitate</Link>
               {' · '}
-              <a href="/terms" style={{ color: '#60a5fa' }}>Termeni și condiții</a>
+              <Link href="/terms" style={{ color: '#60a5fa' }}>Termeni și condiții</Link>
             </p>
           </div>
           <button

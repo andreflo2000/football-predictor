@@ -62,9 +62,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
-      </head>
-      <head>
-        {/* Google Analytics — inlocuieste G-XXXXXXXXXX cu ID-ul tau din analytics.google.com */}
+        {/* Google Analytics */}
         {process.env.NEXT_PUBLIC_GA_ID && <>
           <script async src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID}`} />
           <script dangerouslySetInnerHTML={{ __html: `
