@@ -161,10 +161,10 @@ export default function Navbar() {
       {open && (
         <div
           style={{
-            position: 'fixed', top: 80, left: 0, right: 0, bottom: 0,
+            position: 'fixed', top: 'calc(80px + env(safe-area-inset-top))', left: 0, right: 0, bottom: 0,
             background: 'rgba(3, 10, 6, 0.98)',
             zIndex: 999,
-            padding: '16px',
+            padding: '20px 16px 16px',
             display: 'flex', flexDirection: 'column', gap: 4,
             overflowY: 'auto',
           }}

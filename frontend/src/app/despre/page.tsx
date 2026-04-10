@@ -42,10 +42,13 @@ export default function DesprePage() {
 
       {/* Nav */}
       <nav style={{ borderBottom: '1px solid #1f2937', padding: '14px 24px' }}>
-        <div style={{ maxWidth: 1000, margin: '0 auto' }}>
+        <div style={{ maxWidth: 1000, margin: '0 auto', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}>
           <a href="/" style={{ display: 'inline-flex', textDecoration: 'none' }}>
-            <img src="/logo-icon.jpg" alt="Oxiano" style={{ height: 56, width: 'auto', objectFit: 'contain' }} />
+            <img src="/logo-icon.jpg" alt="Oxiano" style={{ height: 36, width: 'auto', objectFit: 'contain' }} />
           </a>
+          <span style={{ color: '#22d3ee', fontSize: 10, fontFamily: 'monospace', fontWeight: 600, letterSpacing: '0.15em', textTransform: 'uppercase' }}>
+            Advanced Quantitative Intelligence
+          </span>
         </div>
       </nav>
 
