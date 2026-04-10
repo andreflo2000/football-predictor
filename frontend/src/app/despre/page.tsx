@@ -42,15 +42,10 @@ export default function DesprePage() {
 
       {/* Nav */}
       <nav style={{ borderBottom: '1px solid #1f2937', padding: '14px 24px' }}>
-        <div style={{ maxWidth: 1000, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <a href="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
-            <img src="/logo.png" alt="Oxiano" style={{ width: 56, height: 56, objectFit: 'contain' }} />
-            <span style={{ color: '#fff', fontWeight: 700, fontSize: 17, letterSpacing: '0.08em' }}>OXIANO</span>
+        <div style={{ maxWidth: 1000, margin: '0 auto' }}>
+          <a href="/" style={{ display: 'inline-flex', textDecoration: 'none' }}>
+            <img src="/logo.png" alt="Oxiano" style={{ height: 56, width: 'auto', objectFit: 'contain' }} />
           </a>
-          <div style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
-            <a href="/track-record" style={{ color: '#9ca3af', textDecoration: 'none', fontSize: 14 }}>Track Record</a>
-            <a href="/daily" style={{ background: '#22d3ee', color: '#000', padding: '8px 16px', borderRadius: 6, textDecoration: 'none', fontSize: 14, fontWeight: 600 }}>Picks azi →</a>
-          </div>
         </div>
       </nav>
 

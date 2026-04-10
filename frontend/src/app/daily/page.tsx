@@ -859,8 +859,8 @@ export default function DailyPage() {
             </div>
             <div style={{ color: '#6b7280', fontSize: 13 }}>
               {lang === 'en'
-                ? 'Auto-updated at 07:00 and 13:00 Bucharest time.'
-                : 'Actualizare automată la 07:00 și 13:00 ora Bucureștilor.'}
+                ? 'Auto-updated at 07:00 and 13:00 EET (Eastern European Time).'
+                : 'Actualizare automată la 07:00 și 13:00 ora României (EET).'}
             </div>
           </div>
         )}
