@@ -91,8 +91,11 @@ async def startup_event():
         import threading
         def _delayed_compute():
             import time
-            time.sleep(15)
-            compute_and_store_picks()
+            time.sleep(30)
+            try:
+                compute_and_store_picks()
+            except Exception as ex:
+                logger.warning("Startup compute failed (retried la urmatorul scheduler): %s", ex)
         threading.Thread(target=_delayed_compute, daemon=True).start()
     except Exception as e:
         logger.warning("Scheduler init failed: %s", e)
