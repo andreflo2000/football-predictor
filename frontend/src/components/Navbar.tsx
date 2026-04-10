@@ -242,7 +242,7 @@ export default function Navbar() {
           .navbar-logo { width: 48px; height: 48px; }
         }
         @media (min-width: 769px) {
-          .navbar-logo { width: 90px; height: 90px; }
+          .navbar-logo { height: 56px; width: auto; max-width: 180px; }
         }
       `}</style>
     </>
