@@ -50,7 +50,7 @@ export default function Navbar() {
         <div style={{
           maxWidth: 1200, margin: '0 auto',
           padding: '0 16px',
-          height: 56,
+          height: 68,
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}>
 
@@ -138,7 +138,7 @@ export default function Navbar() {
       {open && (
         <div
           style={{
-            position: 'fixed', top: 56, left: 0, right: 0, bottom: 0,
+            position: 'fixed', top: 68, left: 0, right: 0, bottom: 0,
             background: 'rgba(3, 10, 6, 0.98)',
             zIndex: 999,
             padding: '16px',
@@ -233,16 +233,16 @@ export default function Navbar() {
       )}
 
       {/* Spacer */}
-      <div style={{ height: 56 }} />
+      <div style={{ height: 68 }} />
 
       <style>{`
         @media (max-width: 768px) {
           .desktop-nav { display: none !important; }
           .mobile-menu-btn { display: block !important; }
-          .navbar-logo { width: 36px; height: 36px; }
+          .navbar-logo { width: 44px; height: 44px; }
         }
         @media (min-width: 769px) {
-          .navbar-logo { width: 52px; height: 52px; }
+          .navbar-logo { width: 68px; height: 68px; }
         }
       `}</style>
     </>

@@ -214,7 +214,7 @@ export default function ManualPage() {
         {/* Nav — no print */}
         <nav className="no-print" style={{ borderBottom: '1px solid #1f2937', padding: '14px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <a href="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
-            <img src="/logo.png" alt="Oxiano" style={{ width: 36, height: 36, objectFit: 'contain' }} />
+            <img src="/logo.png" alt="Oxiano" style={{ width: 52, height: 52, objectFit: 'contain' }} />
             <span style={{ color: '#fff', fontWeight: 700, fontSize: 16, letterSpacing: '0.08em' }}>OXIANO</span>
           </a>
           <button
