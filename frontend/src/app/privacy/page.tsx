@@ -74,7 +74,7 @@ export default function Privacy() {
                 <ul className="mt-2 space-y-2">
                   <Bullet><strong className="text-gray-300">Adresă de e-mail</strong> — utilizată pentru crearea și autentificarea contului opțional. Nu este folosită în scopuri de marketing fără consimțământ explicit.</Bullet>
                   <Bullet><strong className="text-gray-300">Parolă criptată</strong> — stocată exclusiv sub formă de hash bcrypt (algoritm de hashing unidirecțional). Nu avem acces la parola în format clar.</Bullet>
-                  <Bullet><strong className="text-gray-300">Preferințe de utilizare</strong> — selecții salvate în Bet Builder, stocate local în browser (localStorage), fără transmitere către server.</Bullet>
+                  <Bullet><strong className="text-gray-300">Preferințe de utilizare</strong> — selecții salvate în Combo Analyzer, stocate local în browser (localStorage), fără transmitere către server.</Bullet>
                   <Bullet><strong className="text-gray-300">Date tehnice anonime</strong> — adresă IP (anonimizată), tip browser, erori tehnice, colectate prin Sentry.io exclusiv pentru diagnosticare tehnică.</Bullet>
                 </ul>
                 <p className="mt-3 text-xs text-gray-500 p-3 rounded-lg" style={{ background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.15)' }}>
@@ -182,7 +182,7 @@ export default function Privacy() {
                 <ul className="mt-2 space-y-2">
                   <Bullet><strong className="text-gray-300">Email address</strong> — used for creating and authenticating an optional account. Not used for marketing purposes without explicit consent.</Bullet>
                   <Bullet><strong className="text-gray-300">Encrypted password</strong> — stored exclusively as a bcrypt hash (one-way hashing algorithm). We have no access to passwords in plain text.</Bullet>
-                  <Bullet><strong className="text-gray-300">Usage preferences</strong> — Bet Builder selections stored locally in the browser (localStorage), without transmission to our servers.</Bullet>
+                  <Bullet><strong className="text-gray-300">Usage preferences</strong> — Combo Analyzer selections stored locally in the browser (localStorage), without transmission to our servers.</Bullet>
                   <Bullet><strong className="text-gray-300">Anonymous technical data</strong> — anonymised IP address, browser type, technical errors, collected via Sentry.io exclusively for technical diagnostics.</Bullet>
                 </ul>
                 <p className="mt-3 text-xs text-gray-500 p-3 rounded-lg" style={{ background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.15)' }}>

@@ -27,7 +27,7 @@ Oxiano își rezervă dreptul de a modifica acești Termeni oricând, cu notific
 
 • Modele probabilistice bazate pe XGBoost, ratinguri Elo dinamice și distribuții Poisson, antrenate pe 225.000+ meciuri din ligile europene (2005–2026)
 • Indicatori statistici: confidence, edge față de piața bookmaker, valoare așteptată (EV), Criteriu Kelly
-• Instrumente de gestiune a portofoliului de predicții (Bet Builder, Track Record)
+• Instrumente de gestiune a portofoliului de predicții (Combo Analyzer, Track Record)
 • Clasamente live, date de meci și statistici sportive furnizate de terți (football-data.org, API-Football)
 • Notificări prin e-mail și Telegram cu picks zilnice recalculate automat
 • Rapoarte săptămânale și manual de interpretare parametri
@@ -170,7 +170,7 @@ Oxiano reserves the right to amend these Terms at any time, with prior notice by
 
 • Probabilistic models based on XGBoost, dynamic Elo ratings, and Poisson distributions, trained on 225,000+ matches from European leagues (2005–2026)
 • Statistical indicators: confidence, market edge vs. bookmakers, expected value (EV), Kelly Criterion
-• Portfolio management tools (Bet Builder, Track Record)
+• Portfolio management tools (Combo Analyzer, Track Record)
 • Live standings, match data, and sports statistics provided by third parties (football-data.org, API-Football)
 • Email and Telegram notifications with daily auto-recalculated picks
 • Weekly reports and parameter interpretation guide

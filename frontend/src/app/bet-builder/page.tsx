@@ -56,10 +56,10 @@ export default function BetBuilderPage() {
         {/* Header */}
         <div style={{ marginBottom: 24 }}>
           <div style={{ fontSize: 11, color: '#22d3ee', letterSpacing: '0.15em', textTransform: 'uppercase', fontFamily: 'monospace', marginBottom: 6 }}>
-            Oxiano · Bet Builder
+            Oxiano · Combo Analyzer
           </div>
           <h1 style={{ fontSize: 28, fontWeight: 800, color: '#fff', margin: 0 }}>
-            {lang === 'en' ? 'Your Bet Slip' : 'Biletul tău'}
+            {lang === 'en' ? 'Combo Analyzer' : 'Combo Analyzer'}
           </h1>
           <p style={{ color: '#6b7280', fontSize: 13, marginTop: 4 }}>
             {lang === 'en' ? <>Add picks from <a href="/daily" style={{ color: '#22d3ee' }}>Daily Picks</a> and we auto-calculate combined odds + Kelly.</> : <>Adaugă picks din <a href="/daily" style={{ color: '#22d3ee' }}>Selecțiile zilei</a> și calculăm automat cota combinată + Kelly.</>}
@@ -177,7 +177,7 @@ export default function BetBuilderPage() {
             </div>
 
             <button onClick={clear} style={{ width: '100%', padding: '10px', borderRadius: 8, background: 'transparent', border: '1px solid rgba(239,68,68,0.25)', color: '#f87171', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-              {lang === 'en' ? 'Clear bet slip' : 'Golește biletul'}
+              {lang === 'en' ? 'Clear selections' : 'Golește selecțiile'}
             </button>
           </>
         )}

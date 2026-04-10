@@ -8,7 +8,7 @@ const LINKS = {
   ro: [
     { href: '/',             label: 'Predicții AI',     icon: '🔮' },
     { href: '/daily',        label: 'Selecțiile zilei', icon: '🎯' },
-    { href: '/bet-builder',  label: 'Bet Builder',      icon: '🎰' },
+    { href: '/bet-builder',  label: 'Combo Analyzer',   icon: '🔢' },
     { href: '/track-record', label: 'Track Record',     icon: '📊' },
     { href: '/despre',       label: 'Despre',           icon: 'ℹ️'  },
     { href: '/upgrade',      label: 'Upgrade',          icon: '⚡', highlight: true },
@@ -16,7 +16,7 @@ const LINKS = {
   en: [
     { href: '/',             label: 'AI Predictions',   icon: '🔮' },
     { href: '/daily',        label: "Daily Picks",      icon: '🎯' },
-    { href: '/bet-builder',  label: 'Bet Builder',      icon: '🎰' },
+    { href: '/bet-builder',  label: 'Combo Analyzer',   icon: '🔢' },
     { href: '/track-record', label: 'Track Record',     icon: '📊' },
     { href: '/despre',       label: 'About',            icon: 'ℹ️'  },
     { href: '/upgrade',      label: 'Upgrade',          icon: '⚡', highlight: true },
