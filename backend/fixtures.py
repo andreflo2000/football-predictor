@@ -440,12 +440,18 @@ def _fetch_fixtures_per_competition(date_str: str, known_teams: list) -> list:
     """
     Fetch fixtures din football-data.org per competitie (TIER_ONE compatible).
     Endpoint: /competitions/{code}/matches?dateFrom=...&dateTo=...
+    Delay 7s intre request-uri pentru a respecta limita de 10 req/min.
     """
+    import time
     if not API_KEY:
         return []
     headers = {"X-Auth-Token": API_KEY}
     fixtures = []
-    for code in COMPETITIONS.keys():
+    # Limitat la competitiile disponibile pe TIER_ONE
+    TIER_ONE_CODES = ["PL", "BL1", "SA", "PD", "FL1", "DED", "PPL", "CL", "EL", "ELC", "BL2"]
+    for i, code in enumerate(TIER_ONE_CODES):
+        if i > 0:
+            time.sleep(7)  # 10 req/min = 1 req la 6s, 7s pentru siguranta
         try:
             resp = requests.get(
                 f"{BASE_URL}/competitions/{code}/matches",
@@ -454,7 +460,15 @@ def _fetch_fixtures_per_competition(date_str: str, known_teams: list) -> list:
                 timeout=15,
             )
             if resp.status_code == 403:
-                continue  # competitie indisponibila pe plan curent
+                continue
+            if resp.status_code == 429:
+                time.sleep(30)  # rate limit — asteapta si reincearca
+                resp = requests.get(
+                    f"{BASE_URL}/competitions/{code}/matches",
+                    headers=headers,
+                    params={"dateFrom": date_str, "dateTo": date_str, "status": "TIMED,SCHEDULED"},
+                    timeout=15,
+                )
             if resp.status_code != 200:
                 continue
             parsed = _parse_matches(resp.json(), known_teams, default_date=date_str)
