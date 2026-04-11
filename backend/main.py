@@ -17,7 +17,7 @@ from slowapi.errors import RateLimitExceeded
 import sentry_sdk
 
 from predictor import predict_match, load_model, get_known_teams
-from fixtures import get_today_fixtures, get_today_odds, _fetch_fixtures_for_range
+from fixtures import get_today_fixtures, get_today_odds, _fetch_fixtures_for_range, fetch_competition_fixtures
 from db import log_predictions_bulk, get_client
 import cache as redis_cache
 from auth import register_user, login_user, get_current_user, require_user
@@ -316,9 +316,7 @@ def get_fixtures(request: Request, competition_code: str, date: Optional[str] = 
     date_to = (base + datetime.timedelta(days=9)).isoformat()   # max 10 zile
 
     api_debug: dict = {}
-    all_fix  = _fetch_fixtures_for_range(base.isoformat(), date_to, known, _debug=api_debug)
-    filtered = [f for f in all_fix if f.get("competition_code") == code]
-    codes_found = sorted({f.get("competition_code") for f in all_fix})
+    filtered = fetch_competition_fixtures(code, base.isoformat(), date_to, known, _debug=api_debug)
 
     result = {
         "fixtures": [
@@ -340,8 +338,6 @@ def get_fixtures(request: Request, competition_code: str, date: Optional[str] = 
             "http_status": api_debug.get("http_status"),
             "error": api_debug.get("error"),
             "raw_match_count": api_debug.get("raw_match_count", 0),
-            "total_parsed": len(all_fix),
-            "competition_codes_found": codes_found,
             "filtered_count": len(filtered),
         }
     }

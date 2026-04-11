@@ -543,6 +543,44 @@ def _fetch_fixtures_api_football(date_str: str, known_teams: list) -> list:
     return fixtures
 
 
+def fetch_competition_fixtures(code: str, date_from: str, date_to: str,
+                               known_teams: list, _debug: dict = None) -> list:
+    """
+    Fetch meciuri pentru o singura competitie pe un interval de date.
+    Foloseste /competitions/{code}/matches — functioneaza pe TIER_ONE.
+    """
+    if not API_KEY:
+        if _debug is not None:
+            _debug["http_status"] = 0
+            _debug["error"] = "FOOTBALL_DATA_KEY not set"
+        return []
+    headers = {"X-Auth-Token": API_KEY}
+    params  = {"dateFrom": date_from, "dateTo": date_to, "status": "TIMED,SCHEDULED"}
+    try:
+        resp = requests.get(
+            f"{BASE_URL}/competitions/{code}/matches",
+            headers=headers, params=params, timeout=20
+        )
+        if _debug is not None:
+            _debug["http_status"] = resp.status_code
+            if resp.status_code != 200:
+                try:
+                    _debug["error"] = resp.json().get("message", resp.text[:200])
+                except Exception:
+                    _debug["error"] = resp.text[:200]
+        if resp.status_code != 200:
+            return []
+        data = resp.json()
+        if _debug is not None:
+            _debug["raw_match_count"] = len(data.get("matches", []))
+        return _parse_matches(data, known_teams, default_date=date_from)
+    except Exception as e:
+        if _debug is not None:
+            _debug["http_status"] = -1
+            _debug["error"] = str(e)
+        return []
+
+
 def _fetch_fixtures_for_range(date_from: str, date_to: str, known_teams: list,
                               _debug: dict = None) -> list:
     """
