@@ -1,15 +1,31 @@
 'use client'
-import { useState } from 'react'
-import { login, register, getToken, logout } from '@/lib/auth'
+import { useState, useEffect } from 'react'
+import { login, register, getToken, logout, getUser } from '@/lib/auth'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { useLang } from '@/lib/LangContext'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'https://football-predictor-api-n9sl.onrender.com'
+
+const TIER_LABELS: Record<string, { label: string; color: string; bg: string; border: string }> = {
+  free:    { label: 'Free',    color: '#9ca3af', bg: 'rgba(156,163,175,0.1)', border: 'rgba(156,163,175,0.2)' },
+  analyst: { label: 'Analyst', color: '#22d3ee', bg: 'rgba(34,211,238,0.1)', border: 'rgba(34,211,238,0.25)' },
+  pro:     { label: 'Pro',     color: '#f59e0b', bg: 'rgba(245,158,11,0.1)', border: 'rgba(245,158,11,0.25)' },
+  vip:     { label: 'VIP',     color: '#a78bfa', bg: 'rgba(167,139,250,0.1)', border: 'rgba(167,139,250,0.25)' },
+}
 
 export default function LoginPage() {
   const router = useRouter()
   const { lang } = useLang()
   const [mode, setMode]         = useState<'login' | 'register'>('login')
+  const [loggedIn, setLoggedIn] = useState(false)
+  const [user, setUser]         = useState<ReturnType<typeof getUser>>(null)
+
+  useEffect(() => {
+    const u = getUser()
+    setLoggedIn(!!getToken())
+    setUser(u)
+  }, [])
   const [email, setEmail]       = useState('')
   const [password, setPass]     = useState('')
   const [showPass, setShowPass] = useState(false)
@@ -61,6 +77,80 @@ export default function LoginPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  // Dacă e logat → afișăm panoul de cont
+  if (loggedIn && user) {
+    const tier = user.tier || 'free'
+    const tl = TIER_LABELS[tier] || TIER_LABELS.free
+    return (
+      <div style={{ minHeight: '100vh', background: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+        <div style={{ background: '#1e293b', borderRadius: '16px', padding: '32px', width: '100%', maxWidth: '400px', border: '1px solid #334155' }}>
+          <div style={{ textAlign: 'center', marginBottom: '28px' }}>
+            <div style={{ fontSize: '40px', marginBottom: '8px' }}>👤</div>
+            <div style={{ color: '#f1f5f9', fontSize: '18px', fontWeight: 700 }}>{user.email}</div>
+            <div style={{ marginTop: '10px', display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 16px', borderRadius: '99px', background: tl.bg, border: `1px solid ${tl.border}` }}>
+              <span style={{ fontSize: '11px', fontWeight: 700, color: tl.color, fontFamily: 'monospace', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                {lang === 'en' ? 'Plan' : 'Plan'}: {tl.label}
+              </span>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <Link href="/daily" style={{ display: 'block', textAlign: 'center', padding: '12px', borderRadius: '10px', background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.25)', color: '#4ade80', fontWeight: 700, fontSize: '14px', textDecoration: 'none' }}>
+              🎯 {lang === 'en' ? 'Daily Picks' : 'Selecțiile zilei'}
+            </Link>
+            {tier === 'free' && (
+              <Link href="/upgrade" style={{ display: 'block', textAlign: 'center', padding: '12px', borderRadius: '10px', background: 'linear-gradient(90deg, rgba(245,158,11,0.15), rgba(239,68,68,0.15))', border: '1px solid rgba(245,158,11,0.3)', color: '#f59e0b', fontWeight: 700, fontSize: '14px', textDecoration: 'none' }}>
+                ⚡ {lang === 'en' ? 'Upgrade to Pro' : 'Upgrade la Pro'}
+              </Link>
+            )}
+            <button
+              onClick={() => setShowCp(v => !v)}
+              style={{ padding: '12px', borderRadius: '10px', background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)', color: '#60a5fa', fontWeight: 600, fontSize: '14px', cursor: 'pointer' }}
+            >
+              🔑 {lang === 'en' ? 'Change password' : 'Schimbă parola'}
+            </button>
+            <button
+              onClick={() => { logout(); setLoggedIn(false); setUser(null); router.push('/') }}
+              style={{ padding: '12px', borderRadius: '10px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171', fontWeight: 700, fontSize: '14px', cursor: 'pointer' }}
+            >
+              🚪 {lang === 'en' ? 'Sign out' : 'Ieșire din cont'}
+            </button>
+            <button
+              onClick={async () => {
+                if (!confirm(lang === 'en' ? 'Are you sure? Your account and all data will be permanently deleted.' : 'Ești sigur? Contul și toate datele tale vor fi șterse permanent.')) return
+                try {
+                  await fetch(`${API}/api/auth/account`, { method: 'DELETE', headers: { Authorization: `Bearer ${getToken()}` } })
+                  logout(); router.push('/')
+                } catch { alert('Eroare. Contactează contact@oxiano.com') }
+              }}
+              style={{ color: '#475569', fontSize: '11px', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'monospace' }}
+            >
+              {lang === 'en' ? 'Delete account and all data' : 'Șterge contul și toate datele'}
+            </button>
+          </div>
+
+          {showCp && (
+            <form onSubmit={handleChangePassword} style={{ marginTop: '16px', background: '#0f172a', borderRadius: '10px', padding: '16px', border: '1px solid #1e3a5f' }}>
+              <div style={{ marginBottom: '10px' }}>
+                <label style={{ color: '#94a3b8', fontSize: '12px', display: 'block', marginBottom: '4px' }}>{lang === 'en' ? 'Current password' : 'Parola curentă'}</label>
+                <input type="password" value={cpCurrent} onChange={e => setCpCurrent(e.target.value)} required style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', background: '#1e293b', border: '1px solid #334155', color: '#f1f5f9', fontSize: '14px', boxSizing: 'border-box' }} />
+              </div>
+              <div style={{ marginBottom: '12px' }}>
+                <label style={{ color: '#94a3b8', fontSize: '12px', display: 'block', marginBottom: '4px' }}>{lang === 'en' ? 'New password' : 'Parola nouă'}</label>
+                <input type="password" value={cpNew} onChange={e => setCpNew(e.target.value)} required minLength={6} style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', background: '#1e293b', border: '1px solid #334155', color: '#f1f5f9', fontSize: '14px', boxSizing: 'border-box' }} />
+              </div>
+              {cpErr && <div style={{ color: '#fca5a5', fontSize: '12px', marginBottom: '8px' }}>{cpErr}</div>}
+              {cpMsg && <div style={{ color: '#4ade80', fontSize: '12px', marginBottom: '8px' }}>{cpMsg}</div>}
+              <button type="submit" disabled={cpLoading} style={{ width: '100%', padding: '8px', borderRadius: '6px', background: '#3b82f6', color: '#fff', fontWeight: 700, fontSize: '13px', border: 'none', cursor: 'pointer' }}>
+                {cpLoading ? '...' : (lang === 'en' ? 'Save' : 'Salvează')}
+              </button>
+            </form>
+          )}
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -165,63 +255,15 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <div style={{ textAlign: 'center', marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <a href="/daily" style={{ color: '#64748b', fontSize: '13px', textDecoration: 'none' }}>
+        <div style={{ textAlign: 'center', marginTop: '20px' }}>
+          <Link href="/daily" style={{ color: '#64748b', fontSize: '13px', textDecoration: 'none' }}>
             {lang === 'en' ? 'Continue without account →' : 'Continuă fără cont →'}
-          </a>
-          {getToken() && (
-            <>
-              <button
-                onClick={() => setShowCp(v => !v)}
-                style={{ color: '#3b82f6', fontSize: '13px', background: 'none', border: 'none', cursor: 'pointer' }}
-              >
-                🔑 {lang === 'en' ? 'Change password' : 'Schimbă parola'}
-              </button>
-
-              {showCp && (
-                <form onSubmit={handleChangePassword} style={{ textAlign: 'left', marginTop: 8, background: '#0f172a', borderRadius: 10, padding: '16px', border: '1px solid #1e3a5f' }}>
-                  <div style={{ marginBottom: 10 }}>
-                    <label style={{ color: '#94a3b8', fontSize: 12, display: 'block', marginBottom: 4 }}>{lang === 'en' ? 'Current password' : 'Parola curentă'}</label>
-                    <input type="password" value={cpCurrent} onChange={e => setCpCurrent(e.target.value)} required
-                      style={{ width: '100%', padding: '8px 10px', borderRadius: 6, background: '#1e293b', border: '1px solid #334155', color: '#f1f5f9', fontSize: 14, boxSizing: 'border-box' }} />
-                  </div>
-                  <div style={{ marginBottom: 12 }}>
-                    <label style={{ color: '#94a3b8', fontSize: 12, display: 'block', marginBottom: 4 }}>{lang === 'en' ? 'New password (min 6 characters)' : 'Parola nouă (minim 6 caractere)'}</label>
-                    <input type="password" value={cpNew} onChange={e => setCpNew(e.target.value)} required minLength={6}
-                      style={{ width: '100%', padding: '8px 10px', borderRadius: 6, background: '#1e293b', border: '1px solid #334155', color: '#f1f5f9', fontSize: 14, boxSizing: 'border-box' }} />
-                  </div>
-                  {cpErr && <div style={{ color: '#fca5a5', fontSize: 12, marginBottom: 8 }}>{cpErr}</div>}
-                  {cpMsg && <div style={{ color: '#4ade80', fontSize: 12, marginBottom: 8 }}>{cpMsg}</div>}
-                  <button type="submit" disabled={cpLoading} style={{ width: '100%', padding: '8px', borderRadius: 6, background: '#3b82f6', color: '#fff', fontWeight: 700, fontSize: 13, border: 'none', cursor: 'pointer' }}>
-                    {cpLoading ? (lang === 'en' ? 'Saving...' : 'Se salvează...') : (lang === 'en' ? 'Save new password' : 'Salvează parola nouă')}
-                  </button>
-                </form>
-              )}
-
-              <button
-                onClick={async () => {
-                  if (!confirm(lang === 'en' ? 'Are you sure? Your account and all data will be permanently deleted.' : 'Ești sigur? Contul și toate datele tale vor fi șterse permanent.')) return
-                  try {
-                    await fetch(`${API}/api/auth/account`, {
-                      method: 'DELETE',
-                      headers: { Authorization: `Bearer ${getToken()}` },
-                    })
-                    logout()
-                  } catch {
-                    alert('Eroare la ștergere. Contactează contact@oxiano.com')
-                  }
-                }}
-                style={{ color: '#ef4444', fontSize: '11px', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'monospace' }}
-              >
-                {lang === 'en' ? 'Delete my account and all data' : 'Șterge contul și toate datele mele'}
-              </button>
-            </>
-          )}
+          </Link>
         </div>
 
         <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #1e293b', textAlign: 'center' }}>
-          <a href="/terms" style={{ color: '#475569', fontSize: '10px', fontFamily: 'monospace', marginRight: '12px' }}>{lang === 'en' ? 'Terms' : 'Termeni'}</a>
-          <a href="/privacy" style={{ color: '#475569', fontSize: '10px', fontFamily: 'monospace' }}>{lang === 'en' ? 'Privacy' : 'Confidențialitate'}</a>
+          <Link href="/terms" style={{ color: '#475569', fontSize: '10px', fontFamily: 'monospace', marginRight: '12px' }}>{lang === 'en' ? 'Terms' : 'Termeni'}</Link>
+          <Link href="/privacy" style={{ color: '#475569', fontSize: '10px', fontFamily: 'monospace' }}>{lang === 'en' ? 'Privacy' : 'Confidențialitate'}</Link>
         </div>
       </div>
     </div>

@@ -223,7 +223,7 @@ def _mask_vip_picks(picks: list, user: Optional[dict]) -> list:
                 "home_win": None, "draw": None, "away_win": None,
                 "prediction": None, "prediction_label": "VIP",
                 "confidence": None, "confidence_level": "vip",
-                "high_confidence": False,
+                "high_confidence": True,
                 "home_elo": None, "away_elo": None,
                 "home_form": None, "away_form": None,
                 "edge": None, "value_bet": None,
