@@ -9,7 +9,8 @@ function predShort(p: Pick) {
   return { short: '2', full: p.away, prob: p.away_win }
 }
 
-function impliedOdds(confidence: number, edge?: number, hasOdds?: boolean): number {
+function impliedOdds(confidence: number | null | undefined, edge?: number, hasOdds?: boolean): number {
+  if (!confidence || confidence <= 0) return 0
   const p = confidence / 100
   if (hasOdds && edge && edge > 0) {
     const pMarket = Math.max(0.05, p - edge / 100)
@@ -34,9 +35,12 @@ export default function BetBuilderPage() {
     setPicks([]); saveBB([])
   }
 
+  // Filtrare picks invalide (VIP mascate cu confidence null din localStorage vechi)
+  const validPicks = picks.filter(p => p.confidence && p.confidence > 0 && p.home_win != null)
+
   // Calcule combinate
-  const combinedOdds     = picks.reduce((acc, p) => acc * impliedOdds(p.confidence, p.edge, p.has_odds), 1)
-  const combinedProb     = picks.reduce((acc, p) => acc * (p.confidence / 100), 1) * 100
+  const combinedOdds     = validPicks.reduce((acc, p) => acc * impliedOdds(p.confidence, p.edge, p.has_odds), 1)
+  const combinedProb     = validPicks.reduce((acc, p) => acc * ((p.confidence ?? 0) / 100), 1) * 100
   const combinedOddsRnd  = Math.round(combinedOdds * 100) / 100
   const combinedProbRnd  = Math.round(combinedProb * 10) / 10
 
@@ -47,7 +51,8 @@ export default function BetBuilderPage() {
   const kellyPct   = Math.round(kelly * 100 * 10) / 10
   const kellyStake = Math.round(bankroll * kelly * 100) / 100
 
-  const hasValueBets = picks.some(p => p.value_bet)
+  const hasValueBets = validPicks.some(p => p.value_bet)
+  const invalidCount = picks.length - validPicks.length
 
   return (
     <div className="app-bg grid-bg" style={{ minHeight: '100vh' }}>
@@ -81,8 +86,9 @@ export default function BetBuilderPage() {
               {picks.map((pick, i) => {
                 const pred = predShort(pick)
                 const odds = impliedOdds(pick.confidence, pick.edge, pick.has_odds)
+                const isInvalid = !pick.confidence || pick.confidence <= 0 || pick.home_win == null
                 return (
-                  <div key={i} style={{ background: 'rgba(10,40,18,0.95)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: 12, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div key={i} style={{ background: isInvalid ? 'rgba(40,10,10,0.95)' : 'rgba(10,40,18,0.95)', border: `1px solid ${isInvalid ? 'rgba(239,68,68,0.25)' : 'rgba(34,197,94,0.2)'}`, borderRadius: 12, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 11, color: '#4b5563', fontFamily: 'monospace', marginBottom: 3 }}>
                         {pick.flag} {pick.league}{pick.time ? ` · ${pick.time}` : ''}
@@ -90,20 +96,26 @@ export default function BetBuilderPage() {
                       <div style={{ fontSize: 14, fontWeight: 700, color: '#e5e7eb', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {pick.home} vs {pick.away}
                       </div>
-                      <div style={{ display: 'flex', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: 12, fontWeight: 700, color: '#4ade80', fontFamily: 'monospace' }}>
-                          {pred.short} — {pred.full}
-                        </span>
-                        <span style={{ fontSize: 11, color: '#6b7280', fontFamily: 'monospace' }}>
-                          {pick.confidence}% conf
-                        </span>
-                        <span style={{ fontSize: 11, color: '#22d3ee', fontFamily: 'monospace' }}>
-                          @{odds}
-                        </span>
-                        {pick.value_bet && (
-                          <span style={{ fontSize: 10, color: '#f59e0b', fontFamily: 'monospace' }}>💎 VALUE</span>
-                        )}
-                      </div>
+                      {isInvalid ? (
+                        <div style={{ fontSize: 11, color: '#f87171', fontFamily: 'monospace', marginTop: 4 }}>
+                          ⚠️ {lang === 'en' ? 'Outdated data — remove and re-add from Daily Picks' : 'Date expirate — șterge și re-adaugă din Selecții'}
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: '#4ade80', fontFamily: 'monospace' }}>
+                            {pred.short} — {pred.full}
+                          </span>
+                          <span style={{ fontSize: 11, color: '#6b7280', fontFamily: 'monospace' }}>
+                            {pick.confidence}% conf
+                          </span>
+                          <span style={{ fontSize: 11, color: '#22d3ee', fontFamily: 'monospace' }}>
+                            @{odds}
+                          </span>
+                          {pick.value_bet && (
+                            <span style={{ fontSize: 10, color: '#f59e0b', fontFamily: 'monospace' }}>💎 VALUE</span>
+                          )}
+                        </div>
+                      )}
                     </div>
                     <button onClick={() => remove(i)} style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171', borderRadius: 8, width: 32, height: 32, cursor: 'pointer', fontSize: 16, flexShrink: 0 }}>
                       ×
@@ -112,6 +124,13 @@ export default function BetBuilderPage() {
                 )
               })}
             </div>
+
+            {/* Warning: picks invalide excluse din calcul */}
+            {invalidCount > 0 && (
+              <div style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 10, padding: '10px 14px', marginBottom: 12, fontSize: 12, color: '#f87171', fontFamily: 'monospace' }}>
+                ⚠️ {invalidCount} {lang === 'en' ? 'pick(s) excluded from calculation (outdated data). Remove and re-add.' : 'pick(uri) excluse din calcul (date expirate). Șterge-le și re-adaugă.'}
+              </div>
+            )}
 
             {/* Summary card */}
             <div style={{ background: 'linear-gradient(135deg, rgba(15,55,25,0.95), rgba(7,26,12,0.98))', border: '1px solid rgba(34,197,94,0.35)', borderRadius: 16, padding: '24px', marginBottom: 20 }}>
