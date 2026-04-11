@@ -39,6 +39,10 @@ interface Pick {
   away_elo: number
   home_form: number
   away_form: number
+  home_venue_form?: number
+  away_venue_form?: number
+  btts_rate?: number
+  over25_rate?: number
   competition_code?: string
   has_odds?: boolean
   // BI signals
@@ -334,32 +338,80 @@ function StreakBadges({ pick }: { pick: Pick }) {
   const { lang } = useLang()
   const badges: { text: string; color: string }[] = []
 
-  if (pick.home_form >= 65)
-    badges.push({ text: `🔥 ${pick.home.split(' ')[0]} ${lang === 'en' ? 'in form' : 'în formă'}`, color: '#f97316' })
-  if (pick.away_form >= 65)
-    badges.push({ text: `🔥 ${pick.away.split(' ')[0]} ${lang === 'en' ? 'in form' : 'în formă'}`, color: '#f97316' })
+  // Forma acasa (pentru gazda) / forma deplasare (pentru oaspete) — evita contradictii vizuale
+  const hVenue = pick.home_venue_form ?? pick.home_form
+  const aVenue = pick.away_venue_form ?? pick.away_form
 
-  if (pick.home_form <= 30)
-    badges.push({ text: `📉 ${pick.home.split(' ')[0]} ${lang === 'en' ? 'poor form' : 'în criză'}`, color: '#ef4444' })
-  if (pick.away_form <= 30)
-    badges.push({ text: `📉 ${pick.away.split(' ')[0]} ${lang === 'en' ? 'poor form' : 'în criză'}`, color: '#ef4444' })
+  if (hVenue >= 65)
+    badges.push({ text: `🔥 ${pick.home.split(' ')[0]} ${lang === 'en' ? 'strong at home' : 'formă acasă'}`, color: '#f97316' })
+  if (aVenue >= 65)
+    badges.push({ text: `🔥 ${pick.away.split(' ')[0]} ${lang === 'en' ? 'strong away' : 'formă deplasare'}`, color: '#f97316' })
+  if (hVenue <= 30)
+    badges.push({ text: `📉 ${pick.home.split(' ')[0]} ${lang === 'en' ? 'weak at home' : 'slab acasă'}`, color: '#ef4444' })
+  if (aVenue <= 30)
+    badges.push({ text: `📉 ${pick.away.split(' ')[0]} ${lang === 'en' ? 'weak away' : 'slab în deplasare'}`, color: '#ef4444' })
 
   const eloDiff = Math.abs(pick.home_elo - pick.away_elo)
   if (eloDiff >= 150) {
     const fav = pick.home_elo > pick.away_elo ? pick.home : pick.away
-    badges.push({ text: `⚡ ${fav.split(' ')[0]} ${lang === 'en' ? `clear favourite (+${eloDiff} Elo)` : `favorit clar (+${eloDiff} Elo)`}`, color: '#a78bfa' })
+    badges.push({ text: `⚡ ${fav.split(' ')[0]} ${lang === 'en' ? `Elo favourite (+${eloDiff})` : `favorit Elo (+${eloDiff})`}`, color: '#a78bfa' })
   }
 
-  if (eloDiff < 30 && Math.abs(pick.home_form - pick.away_form) < 10)
+  // Model contrazice favoritul Elo — evidentiaza subtil
+  const eloFavIsHome = pick.home_elo > pick.away_elo
+  const modelUpset = eloDiff >= 100 && (
+    (pick.prediction === 'H' && !eloFavIsHome) ||
+    (pick.prediction === 'A' && eloFavIsHome)
+  )
+  if (modelUpset)
+    badges.push({ text: lang === 'en' ? '🔄 Model vs Elo favourite' : '🔄 Model contra favorit Elo', color: '#94a3b8' })
+
+  if (eloDiff < 30 && Math.abs(hVenue - aVenue) < 10)
     badges.push({ text: lang === 'en' ? '⚖️ Even match' : '⚖️ Meci echilibrat', color: '#6b7280' })
 
   if (badges.length === 0) return null
   return (
     <div className="flex flex-wrap gap-1 mt-2">
-      {badges.slice(0, 3).map((b, i) => (
+      {badges.slice(0, 4).map((b, i) => (
         <span key={i} className="text-[9px] font-mono px-2 py-0.5 rounded-full"
           style={{ backgroundColor: `${b.color}18`, color: b.color, border: `1px solid ${b.color}30` }}>
           {b.text}
+        </span>
+      ))}
+    </div>
+  )
+}
+
+// ── Goal Suggestions ─────────────────────────────────────────────────────────
+function GoalSuggestions({ pick, lang }: { pick: Pick; lang: 'ro' | 'en' }) {
+  const over25 = pick.over25_rate ?? 50
+  const btts   = pick.btts_rate   ?? 50
+  const chips: { label: string; prob: number; color: string }[] = []
+
+  if (over25 >= 62)
+    chips.push({ label: 'O 2.5', prob: over25, color: '#10b981' })
+  else if (over25 <= 38)
+    chips.push({ label: 'U 2.5', prob: 100 - over25, color: '#60a5fa' })
+
+  if (btts >= 60)
+    chips.push({ label: lang === 'en' ? 'BTTS Yes' : 'Ambele marchează', prob: btts, color: '#a78bfa' })
+  else if (btts <= 35)
+    chips.push({ label: lang === 'en' ? 'BTTS No' : 'Clean sheet posibil', prob: 100 - btts, color: '#f97316' })
+
+  if (chips.length === 0) return null
+  return (
+    <div style={{ marginTop: 8, display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+      <span style={{ fontSize: 9, color: '#475569', fontFamily: 'monospace', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+        {lang === 'en' ? 'Goals' : 'Goluri'}
+      </span>
+      {chips.map(ch => (
+        <span key={ch.label} style={{
+          padding: '2px 9px', borderRadius: 99,
+          background: `${ch.color}15`, border: `1px solid ${ch.color}35`,
+          fontSize: 10, color: ch.color, fontFamily: 'monospace', fontWeight: 700,
+          letterSpacing: '0.04em',
+        }}>
+          {ch.label} · {ch.prob}%
         </span>
       ))}
     </div>
@@ -492,14 +544,14 @@ function PickCard({ pick, rank, userTier }: { pick: Pick; rank: number; userTier
         <div className="flex-1 min-w-0">
           <div className="text-base font-bold text-white leading-tight truncate">{pick.home}</div>
           <div className="text-[10px] font-mono text-gray-500 mt-0.5">
-            Elo {pick.home_elo} · Formă {pick.home_form}%
+            Elo {pick.home_elo} · {lang === 'en' ? 'Home' : 'Acasă'} {pick.home_venue_form ?? pick.home_form}%
           </div>
         </div>
         <div className="text-gray-600 font-bold text-sm mx-3 shrink-0">VS</div>
         <div className="flex-1 min-w-0 text-right">
           <div className="text-base font-bold text-white leading-tight truncate">{pick.away}</div>
           <div className="text-[10px] font-mono text-gray-500 mt-0.5">
-            Elo {pick.away_elo} · Formă {pick.away_form}%
+            Elo {pick.away_elo} · {lang === 'en' ? 'Away' : 'Depl.'} {pick.away_venue_form ?? pick.away_form}%
           </div>
         </div>
       </div>
@@ -593,6 +645,9 @@ function PickCard({ pick, rank, userTier }: { pick: Pick; rank: number; userTier
           </div>
         )
       })()}
+
+      {/* Goal suggestions (O/U 2.5 · BTTS) */}
+      <GoalSuggestions pick={pick} lang={lang} />
 
       {/* Streak indicators + Share + Bet Builder */}
       <StreakBadges pick={pick} />

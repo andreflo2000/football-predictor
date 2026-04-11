@@ -4,10 +4,19 @@ Folosit de main.py pentru a prezice rezultatele meciurilor.
 Incarca model.pkl generat de train.py si construieste vectorul complet de features.
 """
 
+import math
 import numpy as np
 import pandas as pd
 import pickle
 import os
+
+
+def _poisson_over25(lam: float) -> float:
+    """P(total goals > 2.5) folosind distributia Poisson cu medie lam."""
+    if lam <= 0:
+        return 0.0
+    p_le2 = math.exp(-lam) * (1 + lam + lam ** 2 / 2)
+    return round(max(0.0, min(1.0, 1 - p_le2)), 3)
 
 MODEL_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "model.pkl")
 
@@ -419,8 +428,12 @@ def predict_match(
         "away_elo":         round(_team_elo(away_team), 0),
         "home_form":        round(h_stats.get("pts5", 0.40), 3),
         "away_form":        round(a_stats.get("pts5", 0.40), 3),
+        "home_venue_form":  round(h_stats.get("pts_venue5", 0.40), 3),
+        "away_venue_form":  round(a_stats.get("pts_venue5", 0.40), 3),
         "home_goals_avg":   round(h_stats.get("atk_all5", 1.3), 2),
         "away_goals_avg":   round(a_stats.get("atk_all5", 1.3), 2),
+        "btts_rate":        round((h_stats.get("btts5", 0.50) + a_stats.get("btts5", 0.50)) / 2, 3),
+        "over25_rate":      _poisson_over25(h_stats.get("atk_all5", 1.3) + a_stats.get("atk_all5", 1.3)),
         "has_odds":         odds is not None,
         # ── BI signals ─────────────────────────────────────────────────────
         "edge":             round(edge * 100, 1),    # % avantaj față de piață
