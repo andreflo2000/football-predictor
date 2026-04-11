@@ -90,8 +90,7 @@ function predLabel(p: Pick, lang: 'ro' | 'en' = 'ro') {
 // ── Format share Telegram ────────────────────────────────────────────────────
 function buildShareCard(p: Pick, dateStr: string): string {
   const pred  = predLabel(p)
-  const margin = 1.08
-  const odd   = (100 / Math.max(pred.prob, 1) * margin).toFixed(2)
+  const odd   = ((100 / Math.max(pred.prob, 1)) * 0.92).toFixed(2)
   const bar   = (pct: number) => '█'.repeat(Math.round(pct / 10)) + '░'.repeat(10 - Math.round(pct / 10))
   const conf  = p.confidence >= 65 ? '🟢 HIGH' : p.confidence >= 55 ? '🟡 MEDIUM' : '🔵 LOW'
 
@@ -130,8 +129,7 @@ function buildShareCard(p: Pick, dateStr: string): string {
 // ── Format share WhatsApp (markdown nativ WA) ────────────────────────────────
 function buildShareCardWA(p: Pick, dateStr: string): string {
   const pred = predLabel(p)
-  const margin = 1.08
-  const odd  = (100 / Math.max(pred.prob, 1) * margin).toFixed(2)
+  const odd  = ((100 / Math.max(pred.prob, 1)) * 0.92).toFixed(2)
   const conf = p.confidence >= 65 ? '🟢 *HIGH*' : p.confidence >= 55 ? '🟡 *MEDIUM*' : '🔵 *LOW*'
   const edge = p.edge && p.edge > 0 ? `📐 Edge: *+${p.edge.toFixed(1)}%*` : ''
 
@@ -160,16 +158,15 @@ function buildShareCardWA(p: Pick, dateStr: string): string {
 }
 
 function buildAccumulatorCard(picks: Pick[], dateStr: string): string {
-  const margin = 1.08
   const lines = picks.slice(0, 3).map((p, i) => {
     const pred = predLabel(p)
-    const odd  = (100 / Math.max(pred.prob, 1) * margin).toFixed(2)
+    const odd  = ((100 / Math.max(pred.prob, 1)) * 0.92).toFixed(2)
     const medals = ['🥇', '🥈', '🥉']
     return `${medals[i]} ${p.flag} ${p.home} vs ${p.away}\n   ➤ ${pred.short} — ${pred.full}  |  ~${odd}  |  ${p.confidence}% conf`
   })
   const combo = picks.slice(0, 3).reduce((acc, p) => {
     const pred = predLabel(p)
-    return acc * (100 / Math.max(pred.prob, 1) * margin)
+    return acc * ((100 / Math.max(pred.prob, 1)) * 0.92)
   }, 1)
 
   return [
@@ -211,8 +208,7 @@ function PersonalTracker({ picks }: { picks: Pick[] }) {
 
   const addBet = (p: Pick) => {
     const pred   = predLabel(p)
-    const margin = 1.08
-    const odd    = parseFloat((100 / Math.max(pred.prob, 1) * margin).toFixed(2))
+    const odd    = parseFloat(((100 / Math.max(pred.prob, 1)) * 0.92).toFixed(2))
     const id     = `${p.home}-${p.away}-${Date.now()}`
     const bet: TrackedBet = {
       id, odd,
@@ -647,9 +643,8 @@ function FreePicks({ picks }: { picks: Pick[] }) {
   }
   if (top3.length < 1) return null
 
-  // Cota combinata (acumulator)
-  const margin = 1.08
-  const oddSingle = (prob: number) => parseFloat((100 / Math.max(prob, 1) * margin).toFixed(2))
+  // Cota combinata (acumulator) — marja 8% reduce cota fata de valoarea corecta
+  const oddSingle = (prob: number) => parseFloat(((100 / Math.max(prob, 1)) * 0.92).toFixed(2))
   const comboOdd  = top3.reduce((acc, p) => {
     const prob = p.prediction === 'H' ? p.home_win : p.prediction === 'A' ? p.away_win : p.draw
     return acc * oddSingle(prob)
@@ -738,8 +733,7 @@ function BankerCard({ picks }: { picks: Pick[] }) {
   const banker = picks.find(p => p.confidence >= 65) ?? picks[0]
   if (!banker) return null
   const pred   = predLabel(banker, lang)
-  const margin = 1.08
-  const odd    = (100 / Math.max(pred.prob, 1) * margin).toFixed(2)
+  const odd    = ((100 / Math.max(pred.prob, 1)) * 0.92).toFixed(2)
 
   return (
     <div className="mb-4 fade-in">
