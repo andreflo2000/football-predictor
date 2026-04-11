@@ -1051,6 +1051,21 @@ def admin_test_telegram(
     return {"sent": ok}
 
 
+@app.post("/api/admin/refresh-picks")
+def admin_refresh_picks(
+    x_admin_key: Optional[str] = Header(None, alias="X-Admin-Key"),
+    date: Optional[str] = None,
+):
+    """Trigger manual compute_and_store_picks. Necesita X-Admin-Key header."""
+    if not ADMIN_SECRET or x_admin_key != ADMIN_SECRET:
+        raise HTTPException(status_code=403, detail="Forbidden")
+    try:
+        result = compute_and_store_picks(date)
+        return {"ok": True, "picks": result.get("total_picks", 0), "date": result.get("date")}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # ─────────────────────────────────────────────
 # ECHIPE CUNOSCUTE
 # ─────────────────────────────────────────────

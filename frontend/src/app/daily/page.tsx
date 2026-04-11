@@ -87,7 +87,7 @@ function predLabel(p: Pick, lang: 'ro' | 'en' = 'ro') {
   return                           { emoji: '▬', short: 'X',  full: lang === 'en' ? 'Draw' : 'Egal',  prob: p.draw }
 }
 
-// ── Format share profesional WhatsApp/Telegram ───────────────────────────────
+// ── Format share Telegram ────────────────────────────────────────────────────
 function buildShareCard(p: Pick, dateStr: string): string {
   const pred  = predLabel(p)
   const margin = 1.08
@@ -125,6 +125,38 @@ function buildShareCard(p: Pick, dateStr: string): string {
     ``,
     `🌐 oxiano.com`,
   ].join('\n')
+}
+
+// ── Format share WhatsApp (markdown nativ WA) ────────────────────────────────
+function buildShareCardWA(p: Pick, dateStr: string): string {
+  const pred = predLabel(p)
+  const margin = 1.08
+  const odd  = (100 / Math.max(pred.prob, 1) * margin).toFixed(2)
+  const conf = p.confidence >= 65 ? '🟢 *HIGH*' : p.confidence >= 55 ? '🟡 *MEDIUM*' : '🔵 *LOW*'
+  const edge = p.edge && p.edge > 0 ? `📐 Edge: *+${p.edge.toFixed(1)}%*` : ''
+
+  return [
+    `⚽ *OXIANO — PREDICȚIE AI*`,
+    ``,
+    `${p.flag} *${p.league}*  ·  📅 ${dateStr}${p.time ? `  ·  🕐 ${p.time}` : ''}`,
+    ``,
+    `🏠 *${p.home}*`,
+    `✈️ *${p.away}*`,
+    ``,
+    `📊 *Probabilități*`,
+    `  1️⃣  ${p.home_win}%   🤝  ${p.draw}%   2️⃣  ${p.away_win}%`,
+    ``,
+    `🎯 *Predicție: ${pred.short} — ${pred.full}*`,
+    `📈 Confidence: *${p.confidence}%* · ${conf}`,
+    p.value_bet ? `💎 *VALUE BET detectat*` : '',
+    edge,
+    `⚡ Elo: ${p.home_elo} vs ${p.away_elo}`,
+    ``,
+    `_🤖 Model: XGBoost + Elo + Poisson_`,
+    `_⚠️ Analiză statistică — nu constituie sfat de pariere._`,
+    ``,
+    `🌐 *oxiano.com*`,
+  ].filter(Boolean).join('\n')
 }
 
 function buildAccumulatorCard(picks: Pick[], dateStr: string): string {
@@ -574,7 +606,7 @@ function PickCard({ pick, rank, userTier }: { pick: Pick; rank: number; userTier
             const dateStr = pick.time
               ? `${new Date().toLocaleDateString('ro-RO')} · ${pick.time}`
               : new Date().toLocaleDateString('ro-RO')
-            const text = buildShareCard(pick, dateStr)
+            const text = buildShareCardWA(pick, dateStr)
             window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank')
           }}
           className="text-[9px] font-bold px-2.5 py-1 rounded-lg font-mono"

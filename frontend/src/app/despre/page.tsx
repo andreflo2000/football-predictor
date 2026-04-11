@@ -47,7 +47,7 @@ export default function DesprePage() {
             <img src="/logo-icon.jpg" alt="Oxiano" style={{ height: 48, width: 'auto', objectFit: 'contain' }} />
           </a>
           <span style={{ color: '#22d3ee', fontSize: 10, fontFamily: 'monospace', fontWeight: 600, letterSpacing: '0.18em', textTransform: 'uppercase' }}>
-            Advanced Quantitative Intelligence
+            {lang === 'en' ? 'Defining the Edge' : 'Definim avantajul'}
           </span>
         </div>
       </nav>
@@ -64,8 +64,8 @@ export default function DesprePage() {
           </h1>
           <p style={{ color: '#9ca3af', fontSize: 17, lineHeight: 1.75, maxWidth: 620, margin: '0 auto' }}>
             {lang === 'en'
-              ? 'Oxiano was built with a single purpose: to apply quantitative methodology — used by hedge funds and algorithmic traders — to the analysis of European football. We do not provide certainties. We provide probabilities calculated with mathematical rigour.'
-              : 'Oxiano a fost construit cu un singur scop: să aplice metodologia quantitativă — folosită de fondurile de hedging și traderii algoritmici — în analiza fotbalului european. Nu furnizăm certitudini. Furnizăm probabilități calculate cu rigoare matematică.'}
+              ? 'Most predictions are opinions. Oxiano is a system. We apply the same quantitative methodology used by hedge funds and algorithmic traders — gradient boosting, dynamic Elo ratings, market intelligence — to every match we analyse. The output is not a tip. It is a probability.'
+              : 'Majoritatea predicțiilor sunt opinii. Oxiano este un sistem. Aplicăm aceeași metodologie quantitativă folosită de fondurile de hedging și traderii algoritmici — gradient boosting, ratinguri Elo dinamice, inteligență de piață — pentru fiecare meci analizat. Rezultatul nu este un pont. Este o probabilitate.'}
           </p>
         </div>
 
@@ -84,13 +84,13 @@ export default function DesprePage() {
           <h2 style={{ color: '#fff', fontSize: 22, fontWeight: 700, margin: '0 0 18px' }}>{lang === 'en' ? 'Why Oxiano exists' : 'De ce există Oxiano'}</h2>
           <p style={{ color: '#9ca3af', fontSize: 15, lineHeight: 1.8, margin: '0 0 14px' }}>
             {lang === 'en'
-              ? 'Oxiano was born from a simple conviction: football can be analysed with the same tools quant funds use to analyse financial markets. Gradient boosting, dynamic Elo ratings, market data integration — applied systematically, at scale, without subjectivity.'
-              : 'Oxiano s-a născut dintr-o convingere simplă: fotbalul poate fi analizat cu aceleași instrumente cu care fondurile quant analizează piețele financiare. Gradient boosting, ratinguri Elo dinamice, integrare de date de piață — aplicate sistematic, pe volum mare, fără subiectivitate.'}
+              ? 'The football industry is full of noise — vague predictions, undocumented methods, selectively reported results. Oxiano was built as the opposite: a platform where every number has a formula, every formula has a source, and every result — win or loss — is recorded permanently in the Track Record.'
+              : 'Industria predicțiilor fotbalistice e plină de zgomot — pronosticuri vagi, metode nedocumentate, rezultate raportate selectiv. Oxiano a fost construit ca antiteză: o platformă unde fiecare cifră are o formulă, fiecare formulă are o sursă, iar fiecare rezultat — câștig sau pierdere — rămâne permanent în Track Record.'}
           </p>
           <p style={{ color: '#9ca3af', fontSize: 15, lineHeight: 1.8, margin: 0 }}>
             {lang === 'en'
-              ? 'Every figure on the platform — accuracy, confidence, edge, Kelly — has a documented mathematical formula and is computed on real, verifiable data from public sources. We do not sell certainties. We sell analytical structure applied to a complex sport.'
-              : 'Fiecare cifră din platformă — acuratețe, confidence, edge, Kelly — are o formulă matematică documentată și este calculată pe date reale, verificabile, din surse publice. Nu vindem certitudini. Vindem structură analitică aplicată unui sport complex.'}
+              ? 'Confidence, edge, Kelly percentage — these are not decorative labels. They are actionable outputs of a model trained on 225,000 matches, validated exclusively on data the model has never seen. That is the standard we hold ourselves to.'
+              : 'Confidence, edge, procentul Kelly — nu sunt etichete decorative. Sunt rezultate acționabile ale unui model antrenat pe 225.000 de meciuri, validat exclusiv pe date pe care modelul nu le-a văzut niciodată. Acesta este standardul la care ne raportăm.'}
           </p>
         </div>
 
@@ -157,7 +157,7 @@ export default function DesprePage() {
       </main>
 
       <footer style={{ borderTop: '1px solid #1f2937', padding: '24px', textAlign: 'center', color: '#4b5563', fontSize: 12 }}>
-        © 2026 Oxiano · Advanced Quantitative Intelligence ·{' '}
+        © 2026 Oxiano · {lang === 'en' ? 'Defining the Edge' : 'Definim avantajul'} ·{' '}
         <a href="/terms" style={{ color: '#4b5563' }}>Termeni</a> ·{' '}
         <a href="/privacy" style={{ color: '#4b5563' }}>Confidențialitate</a> ·{' '}
         <a href="/despre" style={{ color: '#6b7280' }}>Despre</a>

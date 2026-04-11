@@ -1004,7 +1004,7 @@ export default function Home() {
                 style={{ width: 220, height: 220, objectFit: 'contain' }} />
             </div>
           </div>
-          <div className="text-blue-400 text-sm font-mono uppercase tracking-widest mb-3">Advanced Quantitative Intelligence</div>
+          <div className="text-blue-400 text-sm font-mono uppercase tracking-widest mb-3">{lang === 'en' ? 'Defining the Edge' : 'Definim avantajul'}</div>
           <p className="text-gray-500 text-xs font-mono uppercase tracking-widest">{tr.hero_sub}</p>
         </div>
 
