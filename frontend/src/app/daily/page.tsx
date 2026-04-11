@@ -633,10 +633,12 @@ function FreePicks({ picks }: { picks: Pick[] }) {
   const { lang } = useLang()
   if (picks.length === 0) return null
 
-  // Top 3 cele mai bune picks din 3 meciuri diferite
+  // Top 3 picks valide (non-VIP, cu probabilitati reale)
   const seen = new Set<string>()
   const top3: Pick[] = []
   for (const p of picks) {
+    if (p.home_win === null || p.home_win === undefined) continue
+    if ((p as any).vip_only) continue
     const key = `${p.home}-${p.away}`
     if (!seen.has(key)) { seen.add(key); top3.push(p) }
     if (top3.length === 3) break
@@ -730,7 +732,8 @@ function FreePicks({ picks }: { picks: Pick[] }) {
 // ── Banker of the Week ───────────────────────────────────────────────────────
 function BankerCard({ picks }: { picks: Pick[] }) {
   const { lang } = useLang()
-  const banker = picks.find(p => p.confidence >= 65) ?? picks[0]
+  const validPicks = picks.filter(p => p.home_win !== null && p.home_win !== undefined && !(p as any).vip_only)
+  const banker = validPicks.find(p => p.confidence >= 65) ?? validPicks[0]
   if (!banker) return null
   const pred   = predLabel(banker, lang)
   const odd    = ((100 / Math.max(pred.prob, 1)) * 0.92).toFixed(2)
