@@ -522,16 +522,18 @@ def predict_get(
 def api_standings(league: str):
     """Returneaza clasamentul curent pentru o liga (football-data.org)."""
     from fixtures import API_KEY, BASE_URL
+    code = LEGACY_MAP.get(str(league), league.upper())
     if not API_KEY:
-        return {"standings": [], "league": league}
+        return {"standings": [], "league": code}
     try:
         r = requests.get(
-            f"{BASE_URL}/competitions/{league}/standings",
+            f"{BASE_URL}/competitions/{code}/standings",
             headers={"X-Auth-Token": API_KEY},
             timeout=10,
         )
         if r.status_code != 200:
-            return {"standings": [], "league": league}
+            logger.warning("[standings] %s → HTTP %s", code, r.status_code)
+            return {"standings": [], "league": code}
         data = r.json()
         table = data.get("standings", [{}])[0].get("table", [])
         standings = []
@@ -551,10 +553,10 @@ def api_standings(league: str):
                 "points":        row.get("points", 0),
                 "form":          row.get("form") or "",
             })
-        return {"standings": standings, "league": league}
+        return {"standings": standings, "league": code}
     except Exception as e:
-        logger.warning("[standings] %s: %s", league, e)
-        return {"standings": [], "league": league}
+        logger.warning("[standings] %s: %s", code, e)
+        return {"standings": [], "league": code}
 
 
 # ─────────────────────────────────────────────
