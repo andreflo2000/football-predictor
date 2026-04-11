@@ -532,7 +532,7 @@ def api_standings(league: str):
             timeout=10,
         )
         if r.status_code != 200:
-            logger.warning("[standings] %s → HTTP %s", code, r.status_code)
+            logger.warning("[standings] %s HTTP %s", code, r.status_code)
             return {"standings": [], "league": code}
         data = r.json()
         table = data.get("standings", [{}])[0].get("table", [])
