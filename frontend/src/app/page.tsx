@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { detectLang, t } from './i18n'
+import { t } from './i18n'
 import axios from 'axios'
+import { useLang } from '@/lib/LangContext'
 import { getUser, logout, type AuthUser } from '@/lib/auth'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -924,9 +925,8 @@ function PredictionDisplay({ prediction, fixture, standings }: { prediction: Pre
 }
 
 export default function Home() {
-  const [lang, setLang] = useState<'ro'|'en'>('ro')
+  const { lang } = useLang()
   const tr = t[lang]
-  useEffect(() => { setLang(detectLang()) }, [])
   const [user, setUser] = useState<AuthUser | null>(null)
   useEffect(() => { setUser(getUser()) }, [])
   const [leagues, setLeagues] = useState<League[]>([])
@@ -1011,9 +1011,9 @@ export default function Home() {
         <div className="card p-6 mb-6 fade-in">
           <div className="grid grid-cols-1 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2">Ligă / Competiție</label>
+              <label className="block text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2">{tr.select_league}</label>
               <select className="select-styled" value={selectedLeague || ''} onChange={e => setSelectedLeague(Number(e.target.value))}>
-                <option value="">Selectează liga...</option>
+                <option value="">{tr.select_league_placeholder}</option>
                 {confGroups.map(conf => (
                   grouped[conf]?.length > 0 && (
                     <optgroup key={conf} label={`── ${conf} ──`}>
@@ -1076,7 +1076,7 @@ export default function Home() {
             </div>
             <div>
               <button className="btn-accent w-full" onClick={predict} disabled={!selectedFixture || loading}>
-                {loading ? '⏳ Se calculează...' : '🔮 Predicție AI'}
+                {loading ? '⏳ ...' : tr.predict_btn}
               </button>
               {selectedFixture && (
                 <p className="text-[11px] font-mono text-gray-500 mt-2 text-center">
