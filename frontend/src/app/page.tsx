@@ -34,7 +34,7 @@ function getDayLabel(isoDate: string): string {
   return formatDateRO(isoDate)
 }
 
-interface League { id: number; name: string; country: string; flag: string; confederation: string; rating: number }
+interface League { id: number; code: string; name: string; country: string; flag: string; confederation: string; rating: number }
 interface Fixture { id: number; home: string; away: string; home_id: number; away_id: number; date: string; time?: string }
 interface StandingRow {
   position: number; team: string; team_id: number; played: number
@@ -948,9 +948,10 @@ export default function Home() {
     if (!selectedLeague) return
     setFixtures([]); setSelectedFixture(null); setPrediction(null); setStandings([])
     setLoadingFixtures(true)
+    const leagueCode = leagues.find(l => l.id === selectedLeague)?.code || String(selectedLeague)
     Promise.all([
       axios.get(`${API_BASE}/api/fixtures/${selectedLeague}`).catch(() => ({ data: { fixtures: [] } })),
-      axios.get(`${API_BASE}/api/standings/${selectedLeague}`).catch(() => ({ data: { standings: [] } })),
+      axios.get(`${API_BASE}/api/standings/${leagueCode}`).catch(() => ({ data: { standings: [] } })),
     ]).then(([fixtRes, standRes]) => {
       const all: Fixture[] = fixtRes.data.fixtures || []
       const todayStr = new Date().toISOString().split('T')[0]
