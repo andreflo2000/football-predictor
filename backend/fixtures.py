@@ -13,10 +13,30 @@ from zoneinfo import ZoneInfo
 
 BUCHAREST_TZ = ZoneInfo("Europe/Bucharest")
 
-API_KEY      = os.getenv("FOOTBALL_DATA_KEY", "")
-ODDS_API_KEY = os.getenv("ODDS_API_KEY", "")
-BASE_URL     = "https://api.football-data.org/v4"
-ODDS_API_URL = "https://api.the-odds-api.com/v4"
+API_KEY          = os.getenv("FOOTBALL_DATA_KEY", "")       # football-data.org (rezultate)
+AF_KEY           = os.getenv("API_FOOTBALL_KEY", "")        # api-football.com (fixtures)
+ODDS_API_KEY     = os.getenv("ODDS_API_KEY", "")
+BASE_URL         = "https://api.football-data.org/v4"
+AF_BASE_URL      = "https://v3.football.api-sports.io"
+ODDS_API_URL     = "https://api.the-odds-api.com/v4"
+
+# api-football.com league IDs → competition codes
+AF_LEAGUE_MAP = {
+    39:  "PL",   # Premier League
+    78:  "BL1",  # Bundesliga
+    135: "SA",   # Serie A
+    140: "PD",   # La Liga
+    61:  "FL1",  # Ligue 1
+    94:  "PPL",  # Primeira Liga
+    88:  "DED",  # Eredivisie
+    2:   "CL",   # Champions League
+    3:   "EL",   # Europa League
+    40:  "ELC",  # Championship
+    79:  "BL2",  # 2. Bundesliga
+    136: "SB",   # Serie B
+    62:  "FL2",  # Ligue 2
+    141: "SD",   # La Liga 2
+}
 
 # The-Odds-API sport keys → competition codes
 ODDS_SPORT_MAP = {
@@ -416,6 +436,71 @@ def _parse_matches(data: dict, known_teams: list, default_date: str = "") -> lis
     return fixtures
 
 
+def _fetch_fixtures_api_football(date_str: str, known_teams: list) -> list:
+    """
+    Fetch fixture-uri din api-football.com pentru o data data.
+    Returneaza lista normalizata de meciuri TIMED/SCHEDULED.
+    """
+    if not AF_KEY:
+        return []
+    headers = {"x-apisports-key": AF_KEY}
+    season = datetime.date.fromisoformat(date_str).year
+    # Daca suntem in prima jumatate a anului, sezonul e cel anterior
+    if datetime.date.fromisoformat(date_str).month < 7:
+        season -= 1
+
+    fixtures = []
+    for league_id, comp_code in AF_LEAGUE_MAP.items():
+        try:
+            resp = requests.get(
+                f"{AF_BASE_URL}/fixtures",
+                headers=headers,
+                params={"date": date_str, "league": league_id, "season": season},
+                timeout=15,
+            )
+            if resp.status_code != 200:
+                continue
+            data = resp.json()
+            comp = COMPETITIONS.get(comp_code, {})
+            for fx in data.get("response", []):
+                status = fx.get("fixture", {}).get("status", {}).get("short", "")
+                if status not in ("NS", "TBD"):  # NS = Not Started, TBD = To Be Defined
+                    continue
+                home_raw = fx.get("teams", {}).get("home", {}).get("name", "")
+                away_raw = fx.get("teams", {}).get("away", {}).get("name", "")
+                if not home_raw or not away_raw:
+                    continue
+                utc_str = fx.get("fixture", {}).get("date", "")
+                time_str = ""
+                match_date = date_str
+                if utc_str:
+                    try:
+                        dt = datetime.datetime.fromisoformat(utc_str.replace("Z", "+00:00"))
+                        match_date = dt.strftime("%Y-%m-%d")
+                        dt_local = dt.astimezone(BUCHAREST_TZ)
+                        time_str = dt_local.strftime("%H:%M")
+                    except Exception:
+                        pass
+                home = _normalize_name(home_raw, known_teams or [])
+                away = _normalize_name(away_raw, known_teams or [])
+                fixtures.append({
+                    "home":             home,
+                    "away":             away,
+                    "home_raw":         home_raw,
+                    "away_raw":         away_raw,
+                    "league":           comp.get("name", comp_code),
+                    "flag":             comp.get("flag", "🏆"),
+                    "div":              comp.get("div", ""),
+                    "time":             time_str,
+                    "date":             match_date,
+                    "competition_code": comp_code,
+                    "status":           "TIMED",
+                })
+        except Exception:
+            continue
+    return fixtures
+
+
 def _fetch_fixtures_for_range(date_from: str, date_to: str, known_teams: list,
                               _debug: dict = None) -> list:
     """
@@ -459,31 +544,37 @@ def _fetch_fixtures_for_date(target: str, known_teams: list) -> list:
 def get_today_fixtures(date: Optional[str] = None, known_teams: list = None) -> list:
     """
     Returneaza meciurile pentru data ceruta (default: azi).
+    Prioritate: api-football.com → football-data.org fallback.
     - Daca 'date' e specificat explicit, returneaza doar pentru acea zi (fara look-ahead).
     - Daca nu e specificat (default azi), cauta maxim 4 zile inainte daca azi nu are meciuri.
-    Returneaza [] daca nu gaseste nimic — NU mai returneaza meciuri demo.
     """
-    if not API_KEY:
-        return []
-
     base = datetime.date.fromisoformat(date) if date else datetime.date.today()
     date_requested_explicitly = date is not None
 
     if date_requested_explicitly:
-        # Data specificata → fetch exact, fara look-ahead
-        fixtures = _fetch_fixtures_for_date(base.isoformat(), known_teams or [])
-        # Daca nu s-a gasit nimic, incearca si EL/CL separat (uneori lipsesc din /matches general)
-        if not fixtures:
-            fixtures = _fetch_european_cups(base.isoformat(), known_teams or [])
-        return fixtures
+        # Incearca api-football.com mai intai
+        if AF_KEY:
+            fixtures = _fetch_fixtures_api_football(base.isoformat(), known_teams or [])
+            if fixtures:
+                return fixtures
+        # Fallback football-data.org
+        if API_KEY:
+            fixtures = _fetch_fixtures_for_date(base.isoformat(), known_teams or [])
+            if not fixtures:
+                fixtures = _fetch_european_cups(base.isoformat(), known_teams or [])
+            return fixtures
+        return []
 
     # Default (azi) → look-ahead maxim 4 zile
     for offset in range(5):
-        target   = (base + datetime.timedelta(days=offset)).isoformat()
-        fixtures = _fetch_fixtures_for_date(target, known_teams or [])
-        if not fixtures:
-            # Incearca si cupele europene separat
-            fixtures = _fetch_european_cups(target, known_teams or [])
+        target = (base + datetime.timedelta(days=offset)).isoformat()
+        fixtures = []
+        if AF_KEY:
+            fixtures = _fetch_fixtures_api_football(target, known_teams or [])
+        if not fixtures and API_KEY:
+            fixtures = _fetch_fixtures_for_date(target, known_teams or [])
+            if not fixtures:
+                fixtures = _fetch_european_cups(target, known_teams or [])
         if fixtures:
             if offset > 0:
                 print(f"    Azi nu sunt meciuri — am gasit {len(fixtures)} in {target}")
