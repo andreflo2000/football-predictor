@@ -37,7 +37,7 @@ function getDayLabel(isoDate: string): string {
 interface League { id: number; code: string; name: string; country: string; flag: string; confederation: string; rating: number }
 interface Fixture { id: number; home: string; away: string; home_id: number; away_id: number; date: string; time?: string }
 interface StandingRow {
-  position: number; team: string; team_id: number; played: number
+  position: number; team: string; team_full?: string; team_tla?: string; team_id: number; played: number
   won: number; draw: number; lost: number
   goals_for: number; goals_against: number; goal_diff: number; points: number; form: string
 }
@@ -376,10 +376,19 @@ function StandingsTable({ standings, highlightTeams }: { standings: StandingRow[
         </thead>
         <tbody>
           {standings.map((row) => {
-            const isHighlighted = highlightTeams.some(t =>
-              row.team.toLowerCase().includes(t.toLowerCase().slice(0, 5)) ||
-              t.toLowerCase().includes(row.team.toLowerCase().slice(0, 5))
-            )
+            const norm = (s: string) => s.toLowerCase()
+              .replace(/ö/g,'o').replace(/ü/g,'u').replace(/ä/g,'a').replace(/ß/g,'ss')
+              .replace(/[^a-z0-9]/g,' ').replace(/\s+/g,' ').trim()
+            const rowNames = [row.team, row.team_full, row.team_tla].filter(Boolean).map(n => norm(n!))
+            const isHighlighted = highlightTeams.some(t => {
+              const pt = norm(t)
+              const ptWords = pt.split(' ').filter(w => w.length > 3)
+              return rowNames.some(rn => {
+                if (rn === pt || rn.includes(pt) || pt.includes(rn)) return true
+                const rnWords = rn.split(' ').filter(w => w.length > 3)
+                return ptWords.some(pw => rnWords.some(rw => rw.includes(pw) || pw.includes(rw)))
+              })
+            })
             return (
               <tr key={row.position}
                 className={`border-b border-gray-800/30 transition-colors ${isHighlighted ? 'bg-blue-900/20 text-white' : 'text-gray-400 hover:bg-gray-800/20'}`}>

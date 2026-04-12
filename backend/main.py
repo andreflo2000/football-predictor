@@ -542,6 +542,8 @@ def api_standings(league: str):
             standings.append({
                 "position":      row.get("position", 0),
                 "team":          team.get("shortName") or team.get("name", ""),
+                "team_full":     team.get("name", ""),
+                "team_tla":      team.get("tla", ""),
                 "team_id":       team.get("id", 0),
                 "played":        row.get("playedGames", 0),
                 "won":           row.get("won", 0),
