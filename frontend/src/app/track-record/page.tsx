@@ -347,11 +347,14 @@ export default function TrackRecord() {
         <div className="card p-5 fade-in">
           <div className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-3">{lang === 'en' ? 'Methodology' : 'Metodologie'}</div>
           <div className="space-y-2 text-xs text-gray-400 leading-relaxed">
-            <p>· <strong className="text-gray-300">Model:</strong> {lang === 'en' ? 'XGBoost with 84 features (Elo, form, xG, H2H, odds)' : 'XGBoost cu 84 de variabile (Elo, formă, xG, H2H, cote)'}</p>
-            <p>· <strong className="text-gray-300">{lang === 'en' ? 'Training:' : 'Antrenament:'}</strong> {lang === 'en' ? '225,000 matches from major European leagues (2010–2025)' : '225.000 meciuri din ligile majore europene (2010–2025)'}</p>
-            <p>· <strong className="text-gray-300">{lang === 'en' ? 'Market:' : 'Piață evaluată:'}</strong> 1X2 {lang === 'en' ? '(full-time result)' : '(rezultat final)'}</p>
-            <p>· <strong className="text-gray-300">Equity curve:</strong> {lang === 'en' ? 'fixed 1-unit stake, avg odds 2.0 (even money)' : 'stake fix 1 unitate, odds medii 2.0 (even money)'}</p>
-            <p>· <strong className="text-gray-300">Auto-update:</strong> {lang === 'en' ? 'results auto-marked daily at 23:30 from API-Football' : 'rezultatele se marchează automat zilnic la 23:30 din API-Football'}</p>
+            <p>· <strong className="text-gray-300">Model:</strong> {lang === 'en' ? 'XGBoost gradient boosting — ensemble of decision trees trained on structured football data' : 'XGBoost gradient boosting — ansamblu de arbori de decizie antrenați pe date structurate de fotbal'}</p>
+            <p>· <strong className="text-gray-300">{lang === 'en' ? 'Training:' : 'Antrenament:'}</strong> {lang === 'en' ? '225,000 matches · major European leagues · 2010–2025 · out-of-sample validation' : '225.000 meciuri · ligi majore europene · 2010–2025 · validare out-of-sample'}</p>
+            <p>· <strong className="text-gray-300">{lang === 'en' ? 'Features:' : 'Variabile:'}</strong> {lang === 'en' ? 'Elo ratings · home/away venue form · rolling windows (short/medium/long term) · H2H history · xG proxies · market odds signals' : 'Rating Elo · formă acasă/deplasare separată · ferestre temporale multiple · istoric H2H · proxy xG · semnale din cotele de piață'}</p>
+            <p>· <strong className="text-gray-300">{lang === 'en' ? 'Market:' : 'Piață evaluată:'}</strong> {lang === 'en' ? '1X2 full-time result · O/U 2.5 goals · BTTS' : '1X2 rezultat final · Peste/Sub 2.5 goluri · Ambele marchează'}</p>
+            <p>· <strong className="text-gray-300">Value bet:</strong> {lang === 'en' ? 'Detected when model probability exceeds implied market probability — edge measured against sharp bookmaker lines' : 'Detectat când probabilitatea modelului depășește probabilitatea implicită a pieței — edge măsurat față de cotele sharp'}</p>
+            <p>· <strong className="text-gray-300">{lang === 'en' ? 'Published picks:' : 'Picks publicate:'}</strong> {lang === 'en' ? 'Only matches where model has sufficient confidence · higher-confidence picks reserved for VIP tier' : 'Doar meciurile unde modelul are suficientă certitudine · picks cu certitudine ridicată rezervate abonamentului VIP'}</p>
+            <p>· <strong className="text-gray-300">Equity curve:</strong> {lang === 'en' ? 'Fixed 1-unit stake per pick · avg odds ~2.0 · tracks live performance from April 2026' : 'Stake fix 1 unitate per pick · odds medii ~2.0 · urmărește performanța live din Aprilie 2026'}</p>
+            <p>· <strong className="text-gray-300">Auto-update:</strong> {lang === 'en' ? 'Results fetched and auto-marked daily at 23:30 from official football data sources' : 'Rezultatele sunt preluate și marcate automat zilnic la 23:30 din surse oficiale de date fotbal'}</p>
           </div>
         </div>
 
