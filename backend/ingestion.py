@@ -177,7 +177,7 @@ def auto_mark_results(date: str = None) -> dict:
                 timeout=15,
             )
             if resp.status_code == 429:
-                logger.warning("[results] Rate limit hit la %s — sleep 12s", code)
+                logger.warning("[results] Rate limit hit la %s - sleep 12s", code)
                 time.sleep(12)
                 resp = req.get(
                     f"https://api.football-data.org/v4/competitions/{code}/matches",
@@ -292,7 +292,7 @@ def load_picks_from_db(date: str) -> dict | None:
 
         # Daca versiunea difera, sterge si forteaza recompute
         if row.get("model_version") != MODEL_VERSION:
-            logger.info("[ingestion] Versiune veche (%s) — sterg si recomputez", row.get("model_version"))
+            logger.info("[ingestion] Versiune veche (%s) - sterg si recomputez", row.get("model_version"))
             client.table("daily_picks").delete().eq("pick_date", date).execute()
             redis_cache.delete("daily", f"{date}:0.5")
             redis_cache.delete("daily", f"{date}:0.45")

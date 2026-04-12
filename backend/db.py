@@ -21,7 +21,7 @@ def get_client():
     key = os.getenv("SUPABASE_SERVICE_KEY", "")
 
     if not url or not key:
-        logger.warning("SUPABASE_URL / SUPABASE_SERVICE_KEY lipsesc — DB logging dezactivat")
+        logger.warning("SUPABASE_URL / SUPABASE_SERVICE_KEY lipsesc - DB logging dezactivat")
         return None
 
     try:

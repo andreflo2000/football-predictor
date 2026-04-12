@@ -23,7 +23,7 @@ def _init():
     if _REDIS_URL and _REDIS_TOKEN:
         logger.info("Redis cache activ: %s", _REDIS_URL)
     else:
-        logger.warning("Redis neconfigurat — folosesc cache in memorie")
+        logger.warning("Redis neconfigurat - folosesc cache in memorie")
 
 
 def _redis(command: list):
