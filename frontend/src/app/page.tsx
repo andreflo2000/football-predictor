@@ -380,12 +380,14 @@ function StandingsTable({ standings, highlightTeams }: { standings: StandingRow[
               .replace(/ö/g,'o').replace(/ü/g,'u').replace(/ä/g,'a').replace(/ß/g,'ss')
               .replace(/[^a-z0-9]/g,' ').replace(/\s+/g,' ').trim()
             const rowNames = [row.team, row.team_full, row.team_tla].filter(Boolean).map(n => norm(n!))
+            const GENERIC = new Set(['united', 'fc', 'club', 'sport', 'sporting'])
             const isHighlighted = highlightTeams.some(t => {
               const pt = norm(t)
-              const ptWords = pt.split(' ').filter(w => w.length > 3)
+              const ptWords = pt.split(' ').filter(w => w.length > 3 && !GENERIC.has(w))
               return rowNames.some(rn => {
                 if (rn === pt || rn.includes(pt) || pt.includes(rn)) return true
-                const rnWords = rn.split(' ').filter(w => w.length > 3)
+                if (!ptWords.length) return false
+                const rnWords = rn.split(' ').filter(w => w.length > 3 && !GENERIC.has(w))
                 return ptWords.some(pw => rnWords.some(rw => rw.includes(pw) || pw.includes(rw)))
               })
             })
