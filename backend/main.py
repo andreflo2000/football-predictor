@@ -78,14 +78,22 @@ async def startup_event():
 
         scheduler = BackgroundScheduler(timezone="Europe/Bucharest")
 
-        # Calculeaza la 07:00 si 13:00 in fiecare zi
+        def picks_for(offset: int):
+            d = (datetime.date.today() + datetime.timedelta(days=offset)).isoformat()
+            return lambda: compute_and_store_picks(d)
+
+        # Azi: 07:00 si 13:00
         scheduler.add_job(compute_and_store_picks, CronTrigger(hour=7,  minute=0))
         scheduler.add_job(compute_and_store_picks, CronTrigger(hour=13, minute=0))
+        # Maine: 07:30 (fara cote, dar cu predictii model)
+        scheduler.add_job(picks_for(1), CronTrigger(hour=7, minute=30))
+        # Poimaine: 08:00
+        scheduler.add_job(picks_for(2), CronTrigger(hour=8, minute=0))
         # Auto-marcare WIN/LOSS la 23:30 dupa terminarea majoritatii meciurilor
         scheduler.add_job(auto_mark_results, CronTrigger(hour=23, minute=30))
 
         scheduler.start()
-        logger.info("Scheduler pornit: pre-calcul picks la 07:00 si 13:00")
+        logger.info("Scheduler pornit: azi 07:00/13:00, maine 07:30, poimaine 08:00")
 
     except Exception as e:
         logger.warning("Scheduler init failed: %s", e)
@@ -275,7 +283,24 @@ def daily_picks(
         redis_cache.set("daily", cache_key, db_data, ttl=CACHE_TTL_DAILY)
         return {**db_data, "picks": _mask_vip_picks(db_data["picks"], user)}
 
-    # 3. Nu exista date — picks in curs de calcul (scheduler 07:00/13:00)
+    # 3. Data viitoare (maine/poimaine) — calcul live, fara stocare in DB
+    today_str = datetime.date.today().isoformat()
+    if target > today_str:
+        try:
+            live_data = compute_and_store_picks(target)
+            if live_data and live_data.get("total_picks", 0) > 0:
+                all_picks = live_data.get("picks", [])
+                filtered  = [p for p in all_picks if p.get("confidence", 0) >= min_confidence * 100]
+                live_data["picks"]       = filtered
+                live_data["total_picks"] = len(filtered)
+                live_data["high_conf"]   = len([p for p in filtered if p.get("confidence", 0) >= 65])
+                live_data["med_conf"]    = len([p for p in filtered if 55 <= p.get("confidence", 0) < 65])
+                redis_cache.set("daily", cache_key, live_data, ttl=CACHE_TTL_DAILY)
+                return {**live_data, "picks": _mask_vip_picks(filtered, user)}
+        except Exception as e:
+            logger.warning("[daily] live compute pentru %s esuat: %s", target, e)
+
+    # 4. Nu exista date — picks in curs de calcul (scheduler 07:00/13:00)
     return {
         "date":           target,
         "requested_date": target,
