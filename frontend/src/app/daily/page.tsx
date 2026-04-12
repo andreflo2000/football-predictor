@@ -476,42 +476,56 @@ function PickCard({ pick, rank, userTier }: { pick: Pick; rank: number; userTier
 
   if (isLocked) {
     return (
-      <div className="card p-4 mb-3" style={{ borderColor: 'rgba(234,179,8,0.4)', position: 'relative', overflow: 'hidden' }}>
+      <div className="card p-4 mb-3" style={{ borderColor: 'rgba(234,179,8,0.4)', position: 'relative' }}>
+        {/* Vizibil: liga, echipe, confidence */}
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-1.5">
+            <span className="text-base">{pick.flag}</span>
+            <span className="text-[10px] font-mono text-gray-500 uppercase tracking-widest">{pick.league}</span>
+            {pick.time && <span className="text-[10px] font-mono text-gray-600 ml-1">· {pick.time}</span>}
+          </div>
+          <span className="text-[9px] font-bold px-2 py-0.5 rounded-full font-mono"
+            style={{ backgroundColor: 'rgba(234,179,8,0.15)', color: '#eab308', border: '1px solid rgba(234,179,8,0.3)' }}>
+            👑 VIP
+          </span>
+        </div>
+        <div className="flex items-center justify-between mb-3">
+          <div className="text-base font-bold text-white">{pick.home}</div>
+          <div className="text-gray-600 font-bold text-sm mx-3">VS</div>
+          <div className="text-base font-bold text-white text-right">{pick.away}</div>
+        </div>
+        <div className="flex items-center gap-2 mb-3">
+          <span className="text-[11px] font-mono font-bold" style={{ color: '#eab308' }}>
+            {lang === 'en' ? 'Confidence' : 'Certitudine'}: {pick.confidence}%
+          </span>
+          {pick.value_bet && <span className="text-[10px] font-mono" style={{ color: '#f59e0b' }}>💎 VALUE</span>}
+        </div>
+
+        {/* Blur: predictie + probabilitati + Kelly */}
         <div style={{ filter: 'blur(6px)', pointerEvents: 'none', userSelect: 'none' }}>
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-[10px] font-mono text-gray-500 uppercase">Liga Confidentiala</span>
-            <span className="text-[10px] font-mono text-gray-700">#{rank}</span>
-          </div>
-          <div className="flex items-center justify-between mb-3">
-            <div className="text-base font-bold text-white">Echipa Acasa</div>
-            <div className="text-gray-600 font-bold text-sm mx-3">VS</div>
-            <div className="text-base font-bold text-white text-right">Echipa Deplasare</div>
-          </div>
           <div className="grid grid-cols-3 gap-1.5 mb-3">
             {['1', 'X', '2'].map((l) => (
               <div key={l} className="rounded-lg py-2 text-center" style={{ background: 'rgba(255,255,255,0.05)' }}>
                 <div className="text-[10px] font-mono text-gray-500">{l}</div>
-                <div className="text-lg font-bold font-mono text-gray-600">??%</div>
+                <div className="text-lg font-bold font-mono text-gray-400">??%</div>
               </div>
             ))}
           </div>
-        </div>
-        {/* Overlay */}
-        <div style={{
-          position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'center', gap: 8,
-          background: 'rgba(15,23,42,0.7)', backdropFilter: 'blur(2px)',
-        }}>
-          <div style={{ fontSize: 28 }}>👑</div>
-          <div style={{ fontWeight: 700, color: '#eab308', fontSize: 14 }}>{lang === 'en' ? 'Exclusive VIP Pick' : 'Pick VIP Exclusiv'}</div>
-          <div style={{ color: '#94a3b8', fontSize: 12, textAlign: 'center', maxWidth: 200, lineHeight: 1.4 }}>
-            {lang === 'en' ? 'Available for Pro subscribers' : 'Disponibil pentru abonamentii Pro'}
+          <div className="flex justify-between text-[11px] font-mono text-gray-600">
+            <span>Pred: ??</span><span>Kelly: ??%</span>
           </div>
+        </div>
+
+        {/* CTA */}
+        <div className="flex items-center justify-between mt-3 pt-3" style={{ borderTop: '1px solid rgba(234,179,8,0.15)' }}>
+          <span style={{ fontSize: 11, color: '#6b7280' }}>
+            {lang === 'en' ? 'Unlock prediction & probabilities' : 'Deblochează predicția și probabilitățile'}
+          </span>
           <a href="/upgrade" style={{
-            marginTop: 4, padding: '8px 20px', background: 'linear-gradient(90deg, #f59e0b, #ef4444)',
-            color: '#fff', borderRadius: 8, fontWeight: 700, fontSize: 13, textDecoration: 'none',
+            padding: '6px 14px', background: 'linear-gradient(90deg, #f59e0b, #ef4444)',
+            color: '#fff', borderRadius: 7, fontWeight: 700, fontSize: 12, textDecoration: 'none',
           }}>
-            Upgrade Pro
+            Pro →
           </a>
         </div>
       </div>
