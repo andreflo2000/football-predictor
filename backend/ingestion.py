@@ -222,7 +222,7 @@ def auto_mark_results(date: str = None) -> dict:
 
     picks = db_data["picks"]
 
-    # Construieste index rezultate: (home_lower, away_lower) → (home_goals, away_goals)
+    # Construieste index rezultate: (home_lower, away_lower) -> (home_goals, away_goals)
     results_index = {
         (r["home"].lower(), r["away"].lower()): (r["home_goals"], r["away_goals"])
         for r in finished
@@ -266,7 +266,7 @@ def auto_mark_results(date: str = None) -> dict:
                 "prediction":   pick.get("prediction"),
             }, on_conflict="pick_date,home,away").execute()
             marked += 1
-            logger.info("[results] %s vs %s: pred=%s actual=%s (%s-%s) → %s",
+            logger.info("[results] %s vs %s: pred=%s actual=%s (%s-%s) -> %s",
                         pick["home"], pick["away"], prediction, actual,
                         home_goals, away_goals, result)
         except Exception as e:

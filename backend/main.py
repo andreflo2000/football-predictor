@@ -1056,10 +1056,10 @@ async def gumroad_webhook(request: Request):
 
         if cancelled or refunded:
             client.table("users").update({"tier": "free"}).eq("id", user_id).execute()
-            logger.info("[gumroad] Downgraded user %s → free", user_id)
+            logger.info("[gumroad] Downgraded user %s -> free", user_id)
         else:
             client.table("users").update({"tier": tier}).eq("id", user_id).execute()
-            logger.info("[gumroad] Upgraded user %s → %s", user_id, tier)
+            logger.info("[gumroad] Upgraded user %s -> %s", user_id, tier)
 
     except Exception as e:
         logger.error("[gumroad] DB update failed: %s", e)
