@@ -83,6 +83,22 @@ export default function Navbar() {
               )
             })}
 
+            {/* Telegram */}
+            <a href="https://t.me/Oxianoo" target="_blank" rel="noopener noreferrer" style={{
+              marginLeft: 4,
+              padding: '6px 10px',
+              borderRadius: 7,
+              textDecoration: 'none',
+              fontSize: 13,
+              fontWeight: 600,
+              color: '#22d3ee',
+              background: 'rgba(34,211,238,0.08)',
+              border: '1px solid rgba(34,211,238,0.2)',
+              whiteSpace: 'nowrap',
+            }}>
+              ✈️ Telegram
+            </a>
+
             {/* Lang toggle */}
             <select
               value={lang}
@@ -214,6 +230,21 @@ export default function Navbar() {
               <option value="en" style={{ background: '#0a1628', color: '#e5e7eb' }}>EN</option>
             </select>
           </div>
+
+          <a href="https://t.me/Oxianoo" target="_blank" rel="noopener noreferrer" onClick={() => setOpen(false)} style={{
+            padding: '14px 18px',
+            borderRadius: 10,
+            textDecoration: 'none',
+            fontSize: 16,
+            fontWeight: 600,
+            color: '#22d3ee',
+            background: 'rgba(34,211,238,0.06)',
+            border: '1px solid rgba(34,211,238,0.2)',
+            display: 'flex', alignItems: 'center', gap: 12,
+          }}>
+            <span style={{ fontSize: 20 }}>✈️</span>
+            Telegram
+          </a>
 
           <Link href="/login" onClick={() => setOpen(false)} style={{
             marginTop: 4,
