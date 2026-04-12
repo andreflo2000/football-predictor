@@ -150,8 +150,9 @@ def auto_mark_results(date: str = None) -> dict:
     Fetches rezultatele meciurilor FINISHED pentru `date` din football-data.org,
     le compara cu pick-urile salvate si marcheaza automat WIN/LOSS in pick_results.
     Ruleaza zilnic la 23:30 Bucharest via scheduler.
+    Foloseste per-competition endpoint (TIER_ONE compatible).
     """
-    import os, requests as req
+    import os, time, requests as req
     from predictor import get_known_teams
     from fixtures import _normalize_name, COMPETITIONS
 
@@ -163,44 +164,51 @@ def auto_mark_results(date: str = None) -> dict:
         logger.warning("[results] FOOTBALL_DATA_KEY nu e setat")
         return {"marked": 0, "error": "no api key"}
 
-    # Fetch meciuri FINISHED de azi
-    try:
-        resp = req.get(
-            "https://api.football-data.org/v4/matches",
-            headers={"X-Auth-Token": api_key},
-            params={"dateFrom": target, "dateTo": target},
-            timeout=20,
-        )
-        if resp.status_code != 200:
-            logger.error("[results] API error %s", resp.status_code)
-            return {"marked": 0, "error": f"api {resp.status_code}"}
-        data = resp.json()
-    except Exception as e:
-        logger.error("[results] Fetch failed: %s", e)
-        return {"marked": 0, "error": str(e)}
-
-    # Filtreaza doar meciurile terminate
     known = get_known_teams()
     finished = []
-    for m in data.get("matches", []):
-        if m.get("status") != "FINISHED":
+
+    # Itereaza per competitie — /v4/matches general returneaza 0 pe TIER_ONE
+    for code in COMPETITIONS:
+        try:
+            resp = req.get(
+                f"https://api.football-data.org/v4/competitions/{code}/matches",
+                headers={"X-Auth-Token": api_key},
+                params={"dateFrom": target, "dateTo": target, "status": "FINISHED"},
+                timeout=15,
+            )
+            if resp.status_code == 429:
+                logger.warning("[results] Rate limit hit la %s — sleep 12s", code)
+                time.sleep(12)
+                resp = req.get(
+                    f"https://api.football-data.org/v4/competitions/{code}/matches",
+                    headers={"X-Auth-Token": api_key},
+                    params={"dateFrom": target, "dateTo": target, "status": "FINISHED"},
+                    timeout=15,
+                )
+            if resp.status_code != 200:
+                logger.debug("[results] %s: HTTP %s", code, resp.status_code)
+                time.sleep(0.3)
+                continue
+            for m in resp.json().get("matches", []):
+                score = m.get("score", {}).get("fullTime", {})
+                home_goals = score.get("home")
+                away_goals = score.get("away")
+                if home_goals is None or away_goals is None:
+                    continue
+                home_raw = m.get("homeTeam", {}).get("name", "")
+                away_raw = m.get("awayTeam", {}).get("name", "")
+                finished.append({
+                    "home":       _normalize_name(home_raw, known),
+                    "away":       _normalize_name(away_raw, known),
+                    "home_goals": home_goals,
+                    "away_goals": away_goals,
+                })
+            time.sleep(0.3)
+        except Exception as e:
+            logger.warning("[results] Fetch failed pentru %s: %s", code, e)
             continue
-        comp_code = m.get("competition", {}).get("code", "")
-        if comp_code not in COMPETITIONS:
-            continue
-        score = m.get("score", {}).get("fullTime", {})
-        home_goals = score.get("home")
-        away_goals = score.get("away")
-        if home_goals is None or away_goals is None:
-            continue
-        home_raw = m.get("homeTeam", {}).get("name", "")
-        away_raw = m.get("awayTeam", {}).get("name", "")
-        finished.append({
-            "home":       _normalize_name(home_raw, known),
-            "away":       _normalize_name(away_raw, known),
-            "home_goals": home_goals,
-            "away_goals": away_goals,
-        })
+
+    logger.info("[results] Total meciuri FINISHED gasite: %d pentru %s", len(finished), target)
 
     if not finished:
         logger.info("[results] Niciun meci FINISHED gasit pentru %s", target)
@@ -255,6 +263,7 @@ def auto_mark_results(date: str = None) -> dict:
                 "result":       result,
                 "confidence":   confidence,
                 "actual_score": f"{home_goals}-{away_goals}",
+                "prediction":   pick.get("prediction"),
             }, on_conflict="pick_date,home,away").execute()
             marked += 1
             logger.info("[results] %s vs %s: pred=%s actual=%s (%s-%s) → %s",

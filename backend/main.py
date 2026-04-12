@@ -817,6 +817,28 @@ def admin_auto_results(
     return result
 
 
+@app.post("/api/admin/picks/backfill")
+def admin_backfill_results(
+    date_from: str,
+    date_to: Optional[str] = None,
+    x_admin_key: Optional[str] = Header(None, alias="X-Admin-Key"),
+):
+    """Backfill WIN/LOSS pentru un interval de date. Ex: date_from=2026-04-01&date_to=2026-04-11"""
+    import datetime as _dt, time as _time
+    if not ADMIN_SECRET or x_admin_key != ADMIN_SECRET:
+        raise HTTPException(403, "Unauthorized")
+    end = date_to or date_from
+    current = _dt.date.fromisoformat(date_from)
+    stop    = _dt.date.fromisoformat(end)
+    results = []
+    while current <= stop:
+        r = auto_mark_results(current.isoformat())
+        results.append({"date": current.isoformat(), **r})
+        current += _dt.timedelta(days=1)
+        _time.sleep(1)
+    return {"backfill": results, "days": len(results)}
+
+
 @app.get("/api/admin/picks/results")
 def admin_get_pick_results(
     date: Optional[str] = None,
