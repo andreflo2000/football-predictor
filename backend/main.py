@@ -78,22 +78,14 @@ async def startup_event():
 
         scheduler = BackgroundScheduler(timezone="Europe/Bucharest")
 
-        def picks_for(offset: int):
-            d = (datetime.date.today() + datetime.timedelta(days=offset)).isoformat()
-            return lambda: compute_and_store_picks(d)
-
-        # Azi: 07:00 si 13:00
+        # Calculeaza la 07:00 si 13:00 in fiecare zi
         scheduler.add_job(compute_and_store_picks, CronTrigger(hour=7,  minute=0))
         scheduler.add_job(compute_and_store_picks, CronTrigger(hour=13, minute=0))
-        # Maine: 07:30 (fara cote, dar cu predictii model)
-        scheduler.add_job(picks_for(1), CronTrigger(hour=7, minute=30))
-        # Poimaine: 08:00
-        scheduler.add_job(picks_for(2), CronTrigger(hour=8, minute=0))
         # Auto-marcare WIN/LOSS la 23:30 dupa terminarea majoritatii meciurilor
         scheduler.add_job(auto_mark_results, CronTrigger(hour=23, minute=30))
 
         scheduler.start()
-        logger.info("Scheduler pornit: azi 07:00/13:00, maine 07:30, poimaine 08:00")
+        logger.info("Scheduler pornit: pre-calcul picks la 07:00 si 13:00")
 
     except Exception as e:
         logger.warning("Scheduler init failed: %s", e)

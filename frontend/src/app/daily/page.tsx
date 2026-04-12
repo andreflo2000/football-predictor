@@ -866,27 +866,19 @@ export default function DailyPage() {
   const [error, setError]         = useState('')
   const [notifPerm, setNotifPerm] = useState<string>('default')
   const [user, setUser]           = useState<AuthUser | null>(null)
-  const [selectedDate, setSelectedDate] = useState(today())
   const { lang }                  = useLang()
-
-  const t0 = today()
-  const dateTabs = [
-    { date: t0,           label: lang === 'en' ? 'Today' : 'Azi' },
-    { date: addDays(t0, 1), label: lang === 'en' ? 'Tomorrow' : 'Mâine' },
-    { date: addDays(t0, 2), label: lang === 'en' ? 'Day after' : 'Poimâine' },
-  ]
 
   useEffect(() => { setUser(getUser()) }, [])
 
   useEffect(() => {
     setLoading(true)
     setData(null)
-    fetch(`${API_BASE}/api/daily?min_confidence=0.45&date=${selectedDate}`)
+    fetch(`${API_BASE}/api/daily?min_confidence=0.45`)
       .then(r => r.json())
       .then(d => { setData(d); setLoading(false) })
       .catch(() => { setLoading(false) })
     if ('Notification' in window) setNotifPerm(Notification.permission)
-  }, [selectedDate])
+  }, [])
 
   const enableNotifications = async () => {
     if (!('Notification' in window)) return
@@ -945,25 +937,6 @@ export default function DailyPage() {
           )}
         </div>
 
-        {/* Date tabs */}
-        <div style={{ display: 'flex', gap: 8, marginBottom: 20, justifyContent: 'center' }}>
-          {dateTabs.map(tab => {
-            const active = tab.date === selectedDate
-            return (
-              <button key={tab.date} onClick={() => setSelectedDate(tab.date)} style={{
-                flex: 1, maxWidth: 140, padding: '10px 0', borderRadius: 10,
-                fontSize: 13, fontWeight: active ? 700 : 500, fontFamily: 'monospace',
-                cursor: 'pointer', transition: 'all 0.15s',
-                background: active ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.04)',
-                border: `1px solid ${active ? 'rgba(34,197,94,0.45)' : 'rgba(255,255,255,0.08)'}`,
-                color: active ? '#4ade80' : '#6b7280',
-              }}>
-                <div>{tab.label}</div>
-                <div style={{ fontSize: 10, opacity: 0.7, marginTop: 2 }}>{formatDate(tab.date)}</div>
-              </button>
-            )
-          })}
-        </div>
 
         {loading && (
           <div>
