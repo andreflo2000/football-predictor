@@ -42,6 +42,9 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 ALLOWED_ORIGINS = [
     "https://oxiano.com",
     "https://www.oxiano.com",
+    # Capacitor Android app
+    "https://localhost",
+    "capacitor://localhost",
     # development local
     "http://localhost:3000",
     "http://localhost:3001",
