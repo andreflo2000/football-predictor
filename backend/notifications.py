@@ -47,14 +47,53 @@ def send_telegram(picks: list, date_str: str) -> bool:
         logger.warning("[telegram] BOT_TOKEN sau CHANNEL_ID lipsesc")
         return False
 
+    # Daca nu sunt picks cu confidence suficient, trimite mesaj explicit
     high = [p for p in picks if p.get('confidence', 0) >= 65]
     med  = [p for p in picks if 55 <= p.get('confidence', 0) < 65]
-
     shown_high = high[:4]
     shown_med  = med[:2] if len(shown_high) < 3 else med[:1]
     shown = shown_high + shown_med
     if not shown:
-        shown = picks[:3]
+        if not picks:
+            shown = picks[:3]
+
+    if not shown:
+        no_picks_text = (
+            f"╔══════════════════════════╗\n"
+            f"║  🔬 <b>OXIANO DAILY ANALYSIS</b>   ║\n"
+            f"╚══════════════════════════╝\n"
+            f"\n"
+            f"📅 <b>{date_str}</b>\n"
+            f"<code>{'─' * 32}</code>\n"
+            f"\n"
+            f"⏸ <b>Fara selectii astazi</b>\n"
+            f"\n"
+            f"<i>Modelul nu a identificat niciun meci cu certitudine &gt;50% in ligile monitorizate."
+            f" Revenim maine.</i>\n"
+            f"\n"
+            f"<code>{'─' * 32}</code>\n"
+            f"<i>Statistical analysis only. Not betting advice.</i>\n"
+            f"🌐 <a href=\"https://oxiano.com/daily\">oxiano.com/daily</a>"
+        )
+        try:
+            r = requests.post(
+                f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage",
+                json={
+                    "chat_id":                  TELEGRAM_CHANNEL_ID,
+                    "text":                     no_picks_text,
+                    "parse_mode":               "HTML",
+                    "disable_web_page_preview": True,
+                },
+                timeout=10,
+            )
+            if r.status_code == 200:
+                logger.info("[telegram] Trimis mesaj 'fara selectii' pentru %s", date_str)
+                return True
+            logger.error("[telegram] Error %d: %s", r.status_code, r.text[:300])
+            return False
+        except Exception as e:
+            logger.error("[telegram] Exception: %s", e)
+            return False
 
     total_high = len(high)
     total_med  = len(med)
