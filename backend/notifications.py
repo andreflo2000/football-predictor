@@ -68,7 +68,7 @@ def send_telegram(picks: list, date_str: str) -> bool:
             f"\n"
             f"⏸ <b>Fara selectii astazi</b>\n"
             f"\n"
-            f"<i>Modelul nu a identificat niciun meci cu certitudine &gt;50% in ligile monitorizate."
+            f"<i>Modelul nu a identificat niciun meci cu certitudine &gt;50% in competitiile monitorizate."
             f" Revenim maine.</i>\n"
             f"\n"
             f"<code>{'─' * 32}</code>\n"
