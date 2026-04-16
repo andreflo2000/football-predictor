@@ -577,8 +577,8 @@ function TierComparisonTable() {
   ]
   const tiers = [
     { name: 'Free',    price: '0 RON',                    color: '#6b7280',  highlight: false, key: 'free'    as const },
-    { name: 'Analyst', price: ro ? '39 RON/lună' : '39 RON/mo', color: '#3b82f6', highlight: true,  key: 'analyst' as const },
-    { name: 'Pro',     price: ro ? '99 RON/lună' : '99 RON/mo', color: '#f59e0b', highlight: false, key: 'pro'     as const },
+    { name: 'Analyst', price: ro ? '39 RON/lună' : '8€/mo', color: '#3b82f6', highlight: true,  key: 'analyst' as const },
+    { name: 'Pro',     price: ro ? '99 RON/lună' : '19€/mo', color: '#f59e0b', highlight: false, key: 'pro'     as const },
   ]
   return (
     <div className="card p-5 mb-6 fade-in" style={{ overflow: 'hidden' }}>
@@ -696,7 +696,7 @@ function PredictionDisplay({ prediction, fixture, standings, user }: {
               <span className="text-white text-xs font-bold">🔒 {lang === 'en' ? 'Probabilities locked' : 'Probabilități blocate'}</span>
               <a href="/upgrade" className="px-4 py-1.5 rounded-full text-xs font-bold"
                 style={{ background: 'linear-gradient(135deg,#3b82f6,#8b5cf6)', color: 'white' }}>
-                ⚡ {lang === 'en' ? 'Unlock — 39 RON/mo' : 'Deblochează — 39 RON/lună'}
+                ⚡ {lang === 'en' ? 'Unlock — 8€/mo' : 'Deblochează — 39 RON/lună'}
               </a>
             </div>
           </div>
@@ -847,7 +847,7 @@ function PredictionDisplay({ prediction, fixture, standings, user }: {
                       <div className="text-gray-400 text-xs text-center px-4">Over/Under · BTTS · {lang === 'en' ? 'Double Chance' : 'Șansă dublă'} · Score Matrix</div>
                       <a href="/upgrade" className="px-5 py-2 rounded-full text-xs font-bold"
                         style={{ background: 'linear-gradient(135deg,#3b82f6,#8b5cf6)', color: 'white' }}>
-                        ⚡ Analyst — {lang === 'en' ? '39 RON/mo' : '39 RON/lună'}
+                        ⚡ Analyst — {lang === 'en' ? '8€/mo' : '39 RON/lună'}
                       </a>
                     </div>
                   </div>

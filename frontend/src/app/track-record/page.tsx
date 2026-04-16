@@ -217,7 +217,7 @@ export default function TrackRecord() {
             </div>
             <a href="/upgrade" className="px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest"
               style={{ background: 'linear-gradient(90deg,#f59e0b,#ef4444)', color: 'white' }}>
-              Pro 99 RON →
+              {lang === 'en' ? 'Pro 19€ →' : 'Pro 99 RON →'}
             </a>
           </div>
         </div>

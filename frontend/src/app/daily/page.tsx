@@ -960,7 +960,7 @@ export default function DailyPage() {
               </span>
               <a href="/upgrade" className="text-[10px] font-bold px-2 py-0.5 rounded-full ml-1"
                 style={{ background: 'rgba(234,179,8,0.2)', color: '#fbbf24' }}>
-                Pro 99 RON →
+                {lang === 'en' ? 'Pro 19€ →' : 'Pro 99 RON →'}
               </a>
             </div>
           </div>
@@ -1104,7 +1104,7 @@ export default function DailyPage() {
                             <a href="/upgrade"
                               className="inline-block px-6 py-2.5 rounded-xl font-bold text-sm"
                               style={{ background: 'linear-gradient(135deg, #22d3ee, #3b82f6)', color: '#000' }}>
-                              {lang === 'en' ? '⚡ Unlock all picks — 39 RON/mo' : '⚡ Deblochează toate — 39 RON/lună'}
+                              {lang === 'en' ? '⚡ Unlock all picks — 8€/mo' : '⚡ Deblochează toate — 39 RON/lună'}
                             </a>
                           </div>
                         </div>
