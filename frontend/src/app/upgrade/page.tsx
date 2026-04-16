@@ -9,7 +9,7 @@ const PLANS = (lang: 'ro' | 'en') => [
     id: 'analyst' as const,
     name: 'Analyst',
     price: 39,
-    priceEur: 8,
+    priceUsd: 8,
     badge: null,
     features: lang === 'en' ? [
       'All HIGH confidence predictions',
@@ -30,7 +30,7 @@ const PLANS = (lang: 'ro' | 'en') => [
     id: 'pro' as const,
     name: 'Pro',
     price: 99,
-    priceEur: 19,
+    priceUsd: 20,
     badge: lang === 'en' ? 'Recommended' : 'Recomandat',
     features: lang === 'en' ? [
       'Everything in Analyst',
@@ -160,8 +160,8 @@ export default function UpgradePage() {
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
                   {lang === 'en' ? (
                     <>
-                      <span style={{ fontSize: 42, fontWeight: 800, color: '#f1f5f9' }}>{plan.priceEur}</span>
-                      <span style={{ fontSize: 16, color: '#64748b' }}>€/month</span>
+                      <span style={{ fontSize: 42, fontWeight: 800, color: '#f1f5f9' }}>${plan.priceUsd}</span>
+                      <span style={{ fontSize: 16, color: '#64748b' }}>/month</span>
                     </>
                   ) : (
                     <>
