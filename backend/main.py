@@ -289,9 +289,9 @@ def daily_picks(
         redis_cache.set("daily", cache_key, db_data, ttl=CACHE_TTL_DAILY)
         return {**db_data, "picks": _mask_vip_picks(db_data["picks"], user)}
 
-    # 3. Data viitoare (maine/poimaine) — calcul live, fara stocare in DB
+    # 3. Calcul live pentru azi si date viitoare (daca scheduleru nu a rulat inca)
     today_str = datetime.date.today().isoformat()
-    if target > today_str:
+    if target >= today_str:
         try:
             live_data = compute_and_store_picks(target)
             if live_data and live_data.get("total_picks", 0) > 0:
