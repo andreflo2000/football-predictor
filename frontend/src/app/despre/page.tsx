@@ -162,9 +162,9 @@ export default function DesprePage() {
 
       <footer style={{ borderTop: '1px solid #1f2937', padding: '24px', textAlign: 'center', color: '#4b5563', fontSize: 12 }}>
         © 2026 Oxiano · {lang === 'en' ? 'Defining the Edge' : 'Definim avantajul'} ·{' '}
-        <a href="/terms" style={{ color: '#4b5563' }}>Termeni</a> ·{' '}
-        <a href="/privacy" style={{ color: '#4b5563' }}>Confidențialitate</a> ·{' '}
-        <a href="/despre" style={{ color: '#6b7280' }}>Despre</a>
+        <a href="/terms" style={{ color: '#4b5563' }}>{lang === 'en' ? 'Terms' : 'Termeni'}</a> ·{' '}
+        <a href="/privacy" style={{ color: '#4b5563' }}>{lang === 'en' ? 'Privacy' : 'Confidențialitate'}</a> ·{' '}
+        <a href="/despre" style={{ color: '#6b7280' }}>{lang === 'en' ? 'About' : 'Despre'}</a>
       </footer>
     </div>
   )

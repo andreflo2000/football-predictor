@@ -68,6 +68,7 @@ export default function TrackRecord() {
   const [vipStats, setVipStats] = useState<VipStats | null>(null)
   const [loading, setLoading]   = useState(true)
   const [filter, setFilter]     = useState<'all' | 'high' | 'med'>('all')
+  const [period, setPeriod]     = useState<'all' | 'week' | 'month' | 'year'>('all')
   const { lang }                = useLang()
 
   useEffect(() => {
@@ -83,11 +84,34 @@ export default function TrackRecord() {
     }).catch(() => setLoading(false))
   }, [])
 
-  const filtered = history?.results.filter(r => {
-    if (filter === 'high') return r.confidence >= 65
-    if (filter === 'med')  return r.confidence >= 55 && r.confidence < 65
+  const now = new Date()
+  const filtered = (history?.results ?? []).filter(r => {
+    // confidence filter
+    if (filter === 'high' && r.confidence < 65) return false
+    if (filter === 'med' && (r.confidence < 55 || r.confidence >= 65)) return false
+    // period filter
+    if (period !== 'all' && r.date) {
+      const d = new Date(r.date)
+      if (period === 'week') {
+        const weekAgo = new Date(now); weekAgo.setDate(now.getDate() - 7)
+        if (d < weekAgo) return false
+      } else if (period === 'month') {
+        const monthAgo = new Date(now); monthAgo.setMonth(now.getMonth() - 1)
+        if (d < monthAgo) return false
+      } else if (period === 'year') {
+        const yearAgo = new Date(now); yearAgo.setFullYear(now.getFullYear() - 1)
+        if (d < yearAgo) return false
+      }
+    }
     return true
-  }) ?? []
+  })
+
+  const filteredSummary = {
+    total: filtered.length,
+    wins: filtered.filter(r => r.result === 'win').length,
+    losses: filtered.filter(r => r.result === 'loss').length,
+    accuracy: filtered.length > 0 ? Math.round(filtered.filter(r => r.result === 'win').length / filtered.length * 100) : 0,
+  }
 
   const hasLiveData = (history?.summary.total ?? 0) > 0
 
@@ -105,12 +129,38 @@ export default function TrackRecord() {
           <div className="text-green-400 text-xs font-mono uppercase tracking-widest mb-1">
             {lang === 'en' ? 'Full transparency · Real data · Updated daily' : 'Transparență totală · Date reale · Actualizat zilnic'}
           </div>
+
           <p className="text-gray-600 text-xs font-mono">
             {lang === 'en'
               ? `Out-of-sample backtest 1,105 matches · Oct 2025–Mar 2026 · Live tracking since ${stats?.tracking_since || 'April 2026'}`
               : `Backtest out-of-sample 1.105 meciuri · Oct 2025–Mar 2026 · Tracking live din ${stats?.tracking_since || 'Aprilie 2026'}`}
           </p>
         </div>
+
+        {/* Period + confidence filters */}
+        {hasLiveData && (
+          <div className="flex flex-wrap gap-2 mb-5 fade-in">
+            <div className="flex gap-1 flex-1">
+              {([['all', lang === 'en' ? 'All time' : 'Toate'], ['week', lang === 'en' ? 'Week' : 'Săptămână'], ['month', lang === 'en' ? 'Month' : 'Lună'], ['year', lang === 'en' ? 'Year' : 'An']] as [typeof period, string][]).map(([key, label]) => (
+                <button key={key} onClick={() => setPeriod(key)}
+                  className="px-3 py-1.5 rounded-lg text-[11px] font-bold font-mono transition-all"
+                  style={{
+                    background: period === key ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.04)',
+                    border: `1px solid ${period === key ? 'rgba(34,197,94,0.4)' : 'rgba(255,255,255,0.08)'}`,
+                    color: period === key ? '#22c55e' : '#6b7280',
+                  }}>{label}</button>
+              ))}
+            </div>
+            {period !== 'all' && filteredSummary.total > 0 && (
+              <div className="flex items-center gap-3 px-3 py-1.5 rounded-lg text-[11px] font-mono"
+                style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <span className="text-emerald-400 font-bold">{filteredSummary.wins}W</span>
+                <span className="text-red-400 font-bold">{filteredSummary.losses}L</span>
+                <span className="text-white font-bold">{filteredSummary.accuracy}%</span>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* 👑 VIP Picks — secțiune prominentă */}
         <div className="card p-5 mb-6 fade-in" style={{ border: '1px solid rgba(234,179,8,0.35)', background: 'rgba(234,179,8,0.04)' }}>

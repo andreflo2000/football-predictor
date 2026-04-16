@@ -548,68 +548,38 @@ function OddsComparator({ prediction }: { prediction: Prediction }) {
 
 // ── Tier comparison table ─────────────────────────────────────────────────────
 function TierComparisonTable() {
+  const { lang } = useLang()
+  const ro = lang === 'ro'
+  const feats = (ok1: boolean, ok2: boolean, ok3: boolean, ro: string, en: string) => [
+    { label: ro ? ro : en, ok: ok1 }, { label: ro ? ro : en, ok: ok2 }, { label: ro ? ro : en, ok: ok3 }
+  ]
+  const labels = [
+    { ro: 'Acces Pagina Predicții',             en: 'Predictions page access',          free: true,  analyst: true,  pro: true  },
+    { ro: 'Direcție meci (1 / X / 2)',          en: 'Match direction (1 / X / 2)',       free: true,  analyst: true,  pro: true  },
+    { ro: 'Toate ligile disponibile',           en: 'All leagues available',             free: true,  analyst: true,  pro: true  },
+    { ro: 'Probabilități exacte (%)',           en: 'Exact probabilities (%)',           free: false, analyst: true,  pro: true  },
+    { ro: 'Scor de încredere AI',               en: 'AI confidence score',               free: false, analyst: true,  pro: true  },
+    { ro: 'Piețe complete (Over/Under, BTTS)',  en: 'Full markets (Over/Under, BTTS)',   free: false, analyst: true,  pro: true  },
+    { ro: 'Value Bet & Edge față de piață',     en: 'Value Bet & market edge',           free: false, analyst: true,  pro: true  },
+    { ro: 'Score Matrix & xG Stats',            en: 'Score Matrix & xG Stats',           free: false, analyst: true,  pro: true  },
+    { ro: 'Picks zilnice AI (07:00 & 13:00)',   en: 'Daily AI picks (07:00 & 13:00)',    free: false, analyst: true,  pro: true  },
+    { ro: 'Notificări Telegram (2x/zi)',        en: 'Telegram alerts (2x/day)',          free: false, analyst: true,  pro: true  },
+    { ro: 'VIP Picks — confidence ≥75%',        en: 'VIP Picks — confidence ≥75%',      free: false, analyst: false, pro: true  },
+  ]
   const tiers = [
-    {
-      name: 'Free',
-      price: '0 RON',
-      color: '#6b7280',
-      features: [
-        { label: 'Acces Pagina Predicții', ok: true },
-        { label: 'Direcție meci (1 / X / 2)', ok: true },
-        { label: 'Toate ligile disponibile', ok: true },
-        { label: 'Probabilități exacte (%)', ok: false },
-        { label: 'Scor de încredere AI', ok: false },
-        { label: 'Piețe complete (Over/Under, BTTS, DC)', ok: false },
-        { label: 'Value Bet & Edge față de piață', ok: false },
-        { label: 'Score Matrix & xG Stats', ok: false },
-        { label: 'Picks zilnice AI (07:00 & 13:00)', ok: false },
-        { label: 'Notificări Telegram (2x/zi)', ok: false },
-        { label: 'VIP Picks — confidence ≥75%', ok: false },
-      ],
-    },
-    {
-      name: 'Analyst',
-      price: '39 RON/lună',
-      color: '#3b82f6',
-      highlight: true,
-      features: [
-        { label: 'Acces Pagina Predicții', ok: true },
-        { label: 'Direcție meci (1 / X / 2)', ok: true },
-        { label: 'Toate ligile disponibile', ok: true },
-        { label: 'Probabilități exacte (%)', ok: true },
-        { label: 'Scor de încredere AI', ok: true },
-        { label: 'Piețe complete (Over/Under, BTTS, DC)', ok: true },
-        { label: 'Value Bet & Edge față de piață', ok: true },
-        { label: 'Score Matrix & xG Stats', ok: true },
-        { label: 'Picks zilnice AI (07:00 & 13:00)', ok: true },
-        { label: 'Notificări Telegram (2x/zi)', ok: true },
-        { label: 'VIP Picks — confidence ≥75%', ok: false },
-      ],
-    },
-    {
-      name: 'Pro',
-      price: '99 RON/lună',
-      color: '#f59e0b',
-      features: [
-        { label: 'Acces Pagina Predicții', ok: true },
-        { label: 'Direcție meci (1 / X / 2)', ok: true },
-        { label: 'Toate ligile disponibile', ok: true },
-        { label: 'Probabilități exacte (%)', ok: true },
-        { label: 'Scor de încredere AI', ok: true },
-        { label: 'Piețe complete (Over/Under, BTTS, DC)', ok: true },
-        { label: 'Value Bet & Edge față de piață', ok: true },
-        { label: 'Score Matrix & xG Stats', ok: true },
-        { label: 'Picks zilnice AI (07:00 & 13:00)', ok: true },
-        { label: 'Notificări Telegram (2x/zi)', ok: true },
-        { label: 'VIP Picks — confidence ≥75%', ok: true },
-      ],
-    },
+    { name: 'Free',    price: '0 RON',                    color: '#6b7280',  highlight: false, key: 'free'    as const },
+    { name: 'Analyst', price: ro ? '39 RON/lună' : '39 RON/mo', color: '#3b82f6', highlight: true,  key: 'analyst' as const },
+    { name: 'Pro',     price: ro ? '99 RON/lună' : '99 RON/mo', color: '#f59e0b', highlight: false, key: 'pro'     as const },
   ]
   return (
     <div className="card p-5 mb-6 fade-in" style={{ overflow: 'hidden' }}>
       <div className="text-center mb-5">
-        <div className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-1">Ce primești la fiecare plan</div>
-        <div className="text-xs text-gray-600 font-mono">Alege planul potrivit pentru stilul tău de analiză</div>
+        <div className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-1">
+          {ro ? 'Ce primești la fiecare plan' : 'What you get with each plan'}
+        </div>
+        <div className="text-xs text-gray-600 font-mono">
+          {ro ? 'Alege planul potrivit pentru stilul tău de analiză' : 'Choose the plan that fits your analysis style'}
+        </div>
       </div>
       <div className="grid grid-cols-3 gap-2">
         {tiers.map(tier => (
@@ -620,7 +590,9 @@ function TierComparisonTable() {
             }}>
             {tier.highlight && (
               <div className="text-center mb-1">
-                <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-blue-600/80 text-white uppercase tracking-widest">Popular</span>
+                <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-blue-600/80 text-white uppercase tracking-widest">
+                  {ro ? 'Popular' : 'Popular'}
+                </span>
               </div>
             )}
             <div className="text-center mb-3">
@@ -628,19 +600,24 @@ function TierComparisonTable() {
               <div className="text-[10px] font-mono text-gray-500 mt-0.5">{tier.price}</div>
             </div>
             <div className="space-y-1.5 flex-1">
-              {tier.features.map((f, i) => (
-                <div key={i} className="flex items-start gap-1.5">
-                  <span className="shrink-0 mt-0.5" style={{ color: f.ok ? '#10b981' : '#374151', fontSize: '10px' }}>
-                    {f.ok ? '✓' : '✗'}
-                  </span>
-                  <span className={`text-[10px] leading-tight ${f.ok ? 'text-gray-300' : 'text-gray-700'}`}>{f.label}</span>
-                </div>
-              ))}
+              {labels.map((f, i) => {
+                const ok = f[tier.key]
+                return (
+                  <div key={i} className="flex items-start gap-1.5">
+                    <span className="shrink-0 mt-0.5" style={{ color: ok ? '#10b981' : '#374151', fontSize: '10px' }}>
+                      {ok ? '✓' : '✗'}
+                    </span>
+                    <span className={`text-[10px] leading-tight ${ok ? 'text-gray-300' : 'text-gray-700'}`}>
+                      {ro ? f.ro : f.en}
+                    </span>
+                  </div>
+                )
+              })}
             </div>
             {tier.name !== 'Free' && (
               <a href="/upgrade" className="mt-3 block text-center py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all"
                 style={{ background: `${tier.color}20`, color: tier.color, border: `1px solid ${tier.color}40` }}>
-                Activează →
+                {ro ? 'Activează →' : 'Activate →'}
               </a>
             )}
           </div>
@@ -654,6 +631,7 @@ function PredictionDisplay({ prediction, fixture, standings, user }: {
   prediction: Prediction; fixture: Fixture; standings: StandingRow[]; user: AuthUser | null
 }) {
   const isFree = !user || user.tier === 'free'
+  const { lang } = useLang()
   const [activeTab, setActiveTab] = useState('markets')
   const pred = prediction.prediction || {}
   const home_w = pred.home_win ?? 0
@@ -706,10 +684,10 @@ function PredictionDisplay({ prediction, fixture, standings, user }: {
               <ProbBar label={prediction.away_team.split(' ')[0]} value={away_w} color="#f97316" />
             </div>
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
-              <span className="text-white text-xs font-bold">🔒 Probabilități blocate</span>
+              <span className="text-white text-xs font-bold">🔒 {lang === 'en' ? 'Probabilities locked' : 'Probabilități blocate'}</span>
               <a href="/upgrade" className="px-4 py-1.5 rounded-full text-xs font-bold"
                 style={{ background: 'linear-gradient(135deg,#3b82f6,#8b5cf6)', color: 'white' }}>
-                ⚡ Deblochează — 39 RON/lună
+                ⚡ {lang === 'en' ? 'Unlock — 39 RON/mo' : 'Deblochează — 39 RON/lună'}
               </a>
             </div>
           </div>
@@ -729,7 +707,7 @@ function PredictionDisplay({ prediction, fixture, standings, user }: {
             <div className="flex items-center gap-2 px-4 py-2 rounded-full border border-gray-700/40 bg-gray-800/30">
               <div className="w-2 h-2 rounded-full bg-gray-600" />
               <span className="text-xs font-bold font-mono text-gray-600" style={{ filter: 'blur(4px)' }}>
-                Încredere AI: {conf.score}%
+                {lang === 'en' ? 'AI Confidence' : 'Încredere AI'}: {conf.score}%
               </span>
               <span className="text-[10px] text-gray-600">🔒</span>
             </div>
@@ -738,7 +716,7 @@ function PredictionDisplay({ prediction, fixture, standings, user }: {
               style={{ borderColor: `${conf.color}40`, backgroundColor: `${conf.color}15` }}>
               <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: conf.color }} />
               <span className="text-xs font-bold font-mono" style={{ color: conf.color }}>
-                Încredere AI: {conf.score}%
+                {lang === 'en' ? 'AI Confidence' : 'Încredere AI'}: {conf.score}%
               </span>
               <span className="text-[10px] text-gray-500">({conf.label})</span>
             </div>
@@ -747,12 +725,14 @@ function PredictionDisplay({ prediction, fixture, standings, user }: {
 
         {/* Cote bookmakers */}
         <div className="mt-4 pt-4 border-t border-gray-800/60">
-          <div className="text-[10px] font-bold text-amber-500 uppercase tracking-widest mb-3 text-center">💰 Cote estimate bookmakers</div>
+          <div className="text-[10px] font-bold text-amber-500 uppercase tracking-widest mb-3 text-center">
+            💰 {isFree ? (lang === 'en' ? 'Estimated bookmaker odds' : 'Cote estimate bookmakers') : (lang === 'en' ? 'Estimated bookmaker odds' : 'Cote estimate bookmakers')}
+          </div>
           <div className="grid grid-cols-3 gap-2">
             {[
-              { label: '1 Gazdă', odd: (100/Math.max(home_w,1)*1.08).toFixed(2), color: '#3b82f6' },
-              { label: 'X Egal', odd: (100/Math.max(draw,1)*1.08).toFixed(2), color: '#6b7280' },
-              { label: '2 Oaspete', odd: (100/Math.max(away_w,1)*1.08).toFixed(2), color: '#f97316' },
+              { label: lang === 'en' ? '1 Home' : '1 Gazdă', odd: (100/Math.max(home_w,1)*1.08).toFixed(2), color: '#3b82f6' },
+              { label: lang === 'en' ? 'X Draw' : 'X Egal', odd: (100/Math.max(draw,1)*1.08).toFixed(2), color: '#6b7280' },
+              { label: lang === 'en' ? '2 Away' : '2 Oaspete', odd: (100/Math.max(away_w,1)*1.08).toFixed(2), color: '#f97316' },
             ].map(o => (
               <div key={o.label} className="bg-gray-800/50 rounded-xl p-3 text-center border border-gray-700/30">
                 <div className="text-[10px] text-gray-500 uppercase tracking-widest mb-1">{o.label}</div>
@@ -765,7 +745,7 @@ function PredictionDisplay({ prediction, fixture, standings, user }: {
 
         {/* Top 3 pariuri */}
         <div className="mt-4 pt-4 border-t border-gray-800/60">
-          <div className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest mb-3 text-center">🏆 Top 3 pariuri recomandate</div>
+          <div className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest mb-3 text-center">🏆 {lang === 'en' ? 'Top 3 recommended bets' : 'Top 3 pariuri recomandate'}</div>
           <div className="space-y-2">
             {top3.map((bet, i) => (
               <div key={i} className="flex items-center gap-3 bg-gray-800/40 rounded-xl px-3 py-2.5">
@@ -775,7 +755,7 @@ function PredictionDisplay({ prediction, fixture, standings, user }: {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-xs text-white font-semibold truncate">{bet.name}</div>
-                  <div className="text-[10px] text-gray-500 font-mono">{bet.confidence} · cotă ~{bet.odds}</div>
+                  <div className="text-[10px] text-gray-500 font-mono">{bet.confidence} · {lang === 'en' ? 'odds ~' : 'cotă ~'}{bet.odds}</div>
                 </div>
                 <div className="text-sm font-bold font-mono shrink-0" style={{ color: getProbColor(bet.probability) }}>
                   {bet.probability}%
@@ -854,11 +834,11 @@ function PredictionDisplay({ prediction, fixture, standings, user }: {
                     </div>
                     <div className="absolute inset-0 flex flex-col items-center justify-center gap-3"
                       style={{ background: 'rgba(0,0,0,0.5)' }}>
-                      <div className="text-white text-sm font-bold text-center">🔒 Piețe blocate</div>
-                      <div className="text-gray-400 text-xs text-center px-4">Over/Under · BTTS · Șansă dublă · Score Matrix</div>
+                      <div className="text-white text-sm font-bold text-center">🔒 {lang === 'en' ? 'Markets locked' : 'Piețe blocate'}</div>
+                      <div className="text-gray-400 text-xs text-center px-4">Over/Under · BTTS · {lang === 'en' ? 'Double Chance' : 'Șansă dublă'} · Score Matrix</div>
                       <a href="/upgrade" className="px-5 py-2 rounded-full text-xs font-bold"
                         style={{ background: 'linear-gradient(135deg,#3b82f6,#8b5cf6)', color: 'white' }}>
-                        ⚡ Analyst — 39 RON/lună
+                        ⚡ Analyst — {lang === 'en' ? '39 RON/mo' : '39 RON/lună'}
                       </a>
                     </div>
                   </div>
