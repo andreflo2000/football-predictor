@@ -873,6 +873,8 @@ function LoadingState() {
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
+interface VipStats { total: number; wins: number; accuracy: number; this_month_total: number; this_month_wins: number; this_month_accuracy: number }
+
 export default function DailyPage() {
   const [data, setData]           = useState<DailyResponse | null>(null)
   const [loading, setLoading]     = useState(true)
@@ -880,6 +882,7 @@ export default function DailyPage() {
   const [error, setError]         = useState('')
   const [notifPerm, setNotifPerm] = useState<string>('default')
   const [user, setUser]           = useState<AuthUser | null>(null)
+  const [vipStats, setVipStats]   = useState<VipStats | null>(null)
   const { lang }                  = useLang()
 
   useEffect(() => { setUser(getUser()) }, [])
@@ -887,10 +890,14 @@ export default function DailyPage() {
   useEffect(() => {
     setLoading(true)
     setData(null)
-    fetch(`${API_BASE}/api/daily?min_confidence=0.45`)
-      .then(r => r.json())
-      .then(d => { setData(d); setLoading(false) })
-      .catch(() => { setLoading(false) })
+    Promise.all([
+      fetch(`${API_BASE}/api/daily?min_confidence=0.45`).then(r => r.json()),
+      fetch(`${API_BASE}/api/track-record/vip`).then(r => r.json()).catch(() => null),
+    ]).then(([d, v]) => {
+      setData(d)
+      if (v) setVipStats(v)
+      setLoading(false)
+    }).catch(() => setLoading(false))
     if ('Notification' in window) setNotifPerm(Notification.permission)
   }, [])
 
@@ -939,6 +946,25 @@ export default function DailyPage() {
           <p className="text-gray-500 text-xs font-mono">
             XGBoost + Elo · 225K meciuri antrenament · Sorted by confidence
           </p>
+
+          {/* VIP accuracy pill */}
+          <div className="flex items-center justify-center gap-3 mt-3 flex-wrap">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full"
+              style={{ background: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.3)' }}>
+              <span className="text-sm">👑</span>
+              <span className="text-[11px] font-bold font-mono text-amber-400">VIP Picks</span>
+              <span className="text-[11px] font-mono text-gray-400">
+                {vipStats && vipStats.this_month_total > 0
+                  ? `${vipStats.this_month_wins}/${vipStats.this_month_total} · ${vipStats.this_month_accuracy}% luna aceasta`
+                  : `~78.5% acuratețe (backtest)`}
+              </span>
+              <a href="/upgrade" className="text-[10px] font-bold px-2 py-0.5 rounded-full ml-1"
+                style={{ background: 'rgba(234,179,8,0.2)', color: '#fbbf24' }}>
+                Pro 99 RON →
+              </a>
+            </div>
+          </div>
+
           {notifPerm !== 'granted' && notifPerm !== 'denied' && (
             <button onClick={enableNotifications}
               className="mt-3 px-4 py-2 rounded-full text-xs font-bold font-mono transition-all"

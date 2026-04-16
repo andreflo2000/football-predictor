@@ -588,7 +588,7 @@ function TierComparisonTable() {
     },
     {
       name: 'Pro',
-      price: '79 RON/lună',
+      price: '99 RON/lună',
       color: '#f59e0b',
       features: [
         { label: 'Acces Pagina Predicții', ok: true },

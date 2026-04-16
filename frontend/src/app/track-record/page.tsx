@@ -53,20 +53,32 @@ const leagueStats = [
   { league: 'Premier League 🏴󠁧󠁢󠁥󠁮󠁧󠁿', acc65: 70.0, acc70: 71.4, picks65: 40 },
 ]
 
+interface VipStats {
+  total: number
+  wins: number
+  accuracy: number
+  this_month_total: number
+  this_month_wins: number
+  this_month_accuracy: number
+}
+
 export default function TrackRecord() {
-  const [stats, setStats]     = useState<Stats | null>(null)
-  const [history, setHistory] = useState<History | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [filter, setFilter]   = useState<'all' | 'high' | 'med'>('all')
-  const { lang }              = useLang()
+  const [stats, setStats]       = useState<Stats | null>(null)
+  const [history, setHistory]   = useState<History | null>(null)
+  const [vipStats, setVipStats] = useState<VipStats | null>(null)
+  const [loading, setLoading]   = useState(true)
+  const [filter, setFilter]     = useState<'all' | 'high' | 'med'>('all')
+  const { lang }                = useLang()
 
   useEffect(() => {
     Promise.all([
       fetch(`${API}/api/track-record`).then(r => r.json()),
       fetch(`${API}/api/track-record/history?limit=200`).then(r => r.json()),
-    ]).then(([s, h]) => {
+      fetch(`${API}/api/track-record/vip`).then(r => r.json()).catch(() => null),
+    ]).then(([s, h, v]) => {
       setStats(s)
       setHistory(h)
+      if (v) setVipStats(v)
       setLoading(false)
     }).catch(() => setLoading(false))
   }, [])
@@ -98,6 +110,66 @@ export default function TrackRecord() {
               ? `Out-of-sample backtest 1,105 matches · Oct 2025–Mar 2026 · Live tracking since ${stats?.tracking_since || 'April 2026'}`
               : `Backtest out-of-sample 1.105 meciuri · Oct 2025–Mar 2026 · Tracking live din ${stats?.tracking_since || 'Aprilie 2026'}`}
           </p>
+        </div>
+
+        {/* 👑 VIP Picks — secțiune prominentă */}
+        <div className="card p-5 mb-6 fade-in" style={{ border: '1px solid rgba(234,179,8,0.35)', background: 'rgba(234,179,8,0.04)' }}>
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-xl">👑</span>
+            <div>
+              <div className="text-sm font-bold text-amber-400 uppercase tracking-widest">VIP Picks Performance</div>
+              <div className="text-[10px] text-gray-500 font-mono">
+                {lang === 'en' ? 'Confidence ≥75% · Top-tier selections · Pro plan exclusive' : 'Confidence ≥75% · Selecții de top · Exclusiv plan Pro'}
+              </div>
+            </div>
+          </div>
+
+          {/* Backtesting baseline */}
+          <div className="grid grid-cols-3 gap-3 mb-4">
+            <div className="rounded-xl p-3 text-center" style={{ background: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.2)' }}>
+              <div className="text-2xl font-bold font-mono text-amber-400">78.5%</div>
+              <div className="text-[10px] text-gray-500 font-mono mt-1">
+                {lang === 'en' ? 'Accuracy (conf >70%)' : 'Acuratețe (conf >70%)'}
+              </div>
+              <div className="text-[9px] text-gray-700 font-mono mt-0.5">backtest 1.105 meciuri</div>
+            </div>
+            <div className="rounded-xl p-3 text-center" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
+              <div className="text-2xl font-bold font-mono text-emerald-400">
+                {vipStats && vipStats.total > 0 ? `${vipStats.accuracy}%` : '—'}
+              </div>
+              <div className="text-[10px] text-gray-500 font-mono mt-1">
+                {lang === 'en' ? 'Live accuracy (all time)' : 'Acuratețe live (total)'}
+              </div>
+              <div className="text-[9px] text-gray-700 font-mono mt-0.5">
+                {vipStats && vipStats.total > 0 ? `${vipStats.wins}/${vipStats.total} picks` : lang === 'en' ? 'collecting data...' : 'se colectează date...'}
+              </div>
+            </div>
+            <div className="rounded-xl p-3 text-center" style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)' }}>
+              <div className="text-2xl font-bold font-mono text-blue-400">
+                {vipStats && vipStats.this_month_total > 0 ? `${vipStats.this_month_accuracy}%` : '—'}
+              </div>
+              <div className="text-[10px] text-gray-500 font-mono mt-1">
+                {lang === 'en' ? 'This month' : 'Luna aceasta'}
+              </div>
+              <div className="text-[9px] text-gray-700 font-mono mt-0.5">
+                {vipStats && vipStats.this_month_total > 0
+                  ? `${vipStats.this_month_wins}/${vipStats.this_month_total} picks`
+                  : lang === 'en' ? 'no results yet' : 'fără rezultate încă'}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="text-[10px] text-gray-600 font-mono">
+              {lang === 'en'
+                ? '~0.8 VIP picks/day · highest-confidence model output'
+                : '~0.8 picks VIP/zi · output model cu cea mai mare certitudine'}
+            </div>
+            <a href="/upgrade" className="px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest"
+              style={{ background: 'linear-gradient(90deg,#f59e0b,#ef4444)', color: 'white' }}>
+              Pro 99 RON →
+            </a>
+          </div>
         </div>
 
         {/* Live summary cards */}
