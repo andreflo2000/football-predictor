@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   description: 'AI-powered football predictions based on XGBoost, Elo ratings and market intelligence. La Liga 86% accuracy at high confidence.',
   keywords: ['quantitative football analysis', 'AI sports metrics', 'football predictions', 'xG model', 'La Liga predictions', 'Premier League predictions', 'sports intelligence SaaS'],
   authors: [{ name: 'Oxiano' }],
-  verification: { google: 'af8d04096af9c307' },
+  verification: { google: 'bWLu0G6MPrhWyKmqySBpJ0ci1krN6X_Mlg6V7MvMrbk' },
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
