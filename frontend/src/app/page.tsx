@@ -218,7 +218,7 @@ function calcBetValue(prediction: Prediction, lang = 'ro') {
       if (value_pct > 0 && p >= 0.45) {
         const rating = lang === 'en'
           ? (value_pct >= 8 ? '🔥 High Value' : value_pct >= 4 ? '✅ Good Value' : '⚡ Small Value')
-          : (value_pct >= 8 ? '🔥 Value înalt' : value_pct >= 4 ? '✅ Value bun' : '⚡ Value mic')
+          : (value_pct >= 8 ? '🔥 Valoare ridicată' : value_pct >= 4 ? '✅ Valoare bună' : '⚡ Valoare mică')
         const color  = value_pct >= 8 ? '#10b981' : value_pct >= 4 ? '#f59e0b' : '#6b7280'
         results.push({
           name: item.name,
@@ -500,7 +500,7 @@ function OddsComparator({ prediction }: { prediction: Prediction }) {
 
   return (
     <div className="mt-5 pt-5 border-t border-gray-800/50">
-      <div className="text-[10px] font-bold text-amber-400 uppercase tracking-widest mb-3 text-center">{lang === 'en' ? '🔍 Check your odds — Value or not?' : '🔍 Verifică cota ta — Value sau nu?'}</div>
+      <div className="text-[10px] font-bold text-amber-400 uppercase tracking-widest mb-3 text-center">{lang === 'en' ? '🔍 Check your odds — Value or not?' : '🔍 Verifică cota ta — Valoare sau nu?'}</div>
       <div className="flex gap-2 mb-3">
         {['1','X','2'].map(m => (
           <button key={m} onClick={() => setMarket(m)}
@@ -529,7 +529,7 @@ function OddsComparator({ prediction }: { prediction: Prediction }) {
         }}>
           <div className="text-center mb-3">
             <div className="text-2xl font-bold font-mono" style={{ color: isValue ? '#10b981' : '#ef4444' }}>
-              {isValue ? '✅ VALUE BET' : (lang === 'en' ? '❌ No value' : '❌ Fără value')}
+              {isValue ? (lang === 'en' ? '✅ VALUE BET' : '✅ PARIU CU VALOARE') : (lang === 'en' ? '❌ No value' : '❌ Fără valoare')}
             </div>
             <div className="text-[10px] text-gray-500 font-mono mt-1">
               {lang === 'en' ? 'Model probability' : 'Probabilitate model'}: {Math.round(prob*100)}% · {lang === 'en' ? 'Implied odds prob.' : 'Prob. implicită cotă'}: {Math.round(impliedP*100)}%
@@ -537,7 +537,7 @@ function OddsComparator({ prediction }: { prediction: Prediction }) {
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div className="bg-gray-900/50 rounded-lg p-2 text-center">
-              <div className="text-[10px] text-gray-600 uppercase tracking-widest">{lang === 'en' ? 'Edge vs odds' : 'Edge față de cotă'}</div>
+              <div className="text-[10px] text-gray-600 uppercase tracking-widest">{lang === 'en' ? 'Edge vs odds' : 'Avantaj față de cotă'}</div>
               <div className="text-base font-bold font-mono" style={{ color: isValue ? '#10b981' : '#ef4444' }}>
                 {edge > 0 ? '+' : ''}{edge}%
               </div>
@@ -871,10 +871,10 @@ function PredictionDisplay({ prediction, fixture, standings, user }: {
       {/* Tab: Bet Value */}
       {activeTab === 'value' && !isFree && (
         <div className="card p-5 fade-in" style={{ overflow: 'hidden' }}>
-          <div className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest mb-1 text-center">💎 Bet Value — {lang === 'en' ? 'Positive Expected Value Bets' : 'Pariuri cu Valoare Pozitivă'}</div>
+          <div className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest mb-1 text-center">💎 {lang === 'en' ? 'Bet Value — Positive Expected Value Bets' : 'Pariuri cu Valoare — Valoare Așteptată Pozitivă'}</div>
           <div className="text-[10px] text-gray-600 text-center mb-4 font-mono">{lang === 'en' ? 'AI model detects where probability exceeds bookmaker margin' : 'Modelul AI detectează unde probabilitatea depășește marja bookmaker-ului'}</div>
           {valueBets.length === 0 ? (
-            <div className="text-center py-8 text-gray-600 text-sm">{lang === 'en' ? 'No clear value bets for this match' : 'Nu există pariuri cu value clar pentru acest meci'}</div>
+            <div className="text-center py-8 text-gray-600 text-sm">{lang === 'en' ? 'No clear value bets for this match' : 'Nu există pariuri cu valoare clară pentru acest meci'}</div>
           ) : (
             <div className="space-y-3">
               {valueBets.map((bet, i) => (
@@ -886,7 +886,7 @@ function PredictionDisplay({ prediction, fixture, standings, user }: {
                     </div>
                     <div className="text-right shrink-0">
                       <div className="text-lg font-bold font-mono" style={{ color: bet.color }}>+{bet.value_pct}%</div>
-                      <div className="text-[10px] text-gray-600 font-mono">{lang === 'en' ? 'edge vs market' : 'edge față de piață'}</div>
+                      <div className="text-[10px] text-gray-600 font-mono">{lang === 'en' ? 'edge vs market' : 'avantaj față de piață'}</div>
                     </div>
                   </div>
                   <div className="grid grid-cols-3 gap-2 mt-3">
@@ -908,7 +908,7 @@ function PredictionDisplay({ prediction, fixture, standings, user }: {
                 </div>
               ))}
               <div className="text-[10px] text-gray-700 text-center mt-3 font-mono px-4">
-                {lang === 'en' ? '* Value calculated vs. avg. bookmaker margin 10%. Positive EV = statistically profitable long-term. Bet responsibly.' : '* Value calculat față de marja medie bookmaker 10%. EV pozitiv = profitabil pe termen lung statistic. Pariați responsabil.'}
+                {lang === 'en' ? '* Value calculated vs. avg. bookmaker margin 10%. Positive EV = statistically profitable long-term. Bet responsibly.' : '* Valoare calculată față de marja medie bookmaker 10%. EV pozitiv = profitabil pe termen lung statistic. Pariați responsabil.'}
               </div>
             </div>
           )}
