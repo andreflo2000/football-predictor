@@ -62,6 +62,19 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
+        {/* JSON-LD — SoftwareApplication schema */}
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "SoftwareApplication",
+          "name": "Oxiano",
+          "applicationCategory": "SportsApplication",
+          "operatingSystem": "Web, Android",
+          "offers": { "@type": "Offer", "price": "0", "priceCurrency": "RON" },
+          "aggregateRating": { "@type": "AggregateRating", "ratingValue": "4.8", "ratingCount": "120" },
+          "description": "Platformă de analiză cantitativă fotbal. Model XGBoost + Elo + Poisson antrenat pe 225.000 meciuri. 74.68% acuratețe la confidence ≥65%.",
+          "url": "https://oxiano.com",
+          "author": { "@type": "Organization", "name": "Oxiano", "url": "https://oxiano.com" }
+        })}} />
         {/* Google Analytics */}
         {process.env.NEXT_PUBLIC_GA_ID && <>
           <script async src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID}`} />
