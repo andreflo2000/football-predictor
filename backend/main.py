@@ -673,11 +673,11 @@ def debug_status():
 
     # Status Club-elo
     try:
-        from predictor import _clubelo_ratings
-        result["clubelo_loaded"] = len(_clubelo_ratings)
+        import predictor as _pred
+        result["clubelo_loaded"] = len(_pred._clubelo_ratings)
         result["clubelo_sample"] = {
-            k: round(v) for k, v in list(_clubelo_ratings.items())[:5]
-        } if _clubelo_ratings else {}
+            k: round(v) for k, v in list(_pred._clubelo_ratings.items())[:5]
+        } if _pred._clubelo_ratings else {}
     except Exception:
         result["clubelo_loaded"] = 0
 
