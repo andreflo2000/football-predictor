@@ -546,7 +546,114 @@ function OddsComparator({ prediction }: { prediction: Prediction }) {
   )
 }
 
-function PredictionDisplay({ prediction, fixture, standings }: { prediction: Prediction; fixture: Fixture; standings: StandingRow[] }) {
+// ── Tier comparison table ─────────────────────────────────────────────────────
+function TierComparisonTable() {
+  const tiers = [
+    {
+      name: 'Free',
+      price: '0 RON',
+      color: '#6b7280',
+      features: [
+        { label: 'Acces Pagina Predicții', ok: true },
+        { label: 'Direcție meci (1 / X / 2)', ok: true },
+        { label: 'Toate ligile disponibile', ok: true },
+        { label: 'Probabilități exacte (%)', ok: false },
+        { label: 'Scor de încredere AI', ok: false },
+        { label: 'Piețe complete (Over/Under, BTTS, DC)', ok: false },
+        { label: 'Value Bet & Edge față de piață', ok: false },
+        { label: 'Score Matrix & xG Stats', ok: false },
+        { label: 'Picks zilnice AI (07:00 & 13:00)', ok: false },
+        { label: 'Notificări Telegram (2x/zi)', ok: false },
+        { label: 'VIP Picks — confidence ≥75%', ok: false },
+      ],
+    },
+    {
+      name: 'Analyst',
+      price: '39 RON/lună',
+      color: '#3b82f6',
+      highlight: true,
+      features: [
+        { label: 'Acces Pagina Predicții', ok: true },
+        { label: 'Direcție meci (1 / X / 2)', ok: true },
+        { label: 'Toate ligile disponibile', ok: true },
+        { label: 'Probabilități exacte (%)', ok: true },
+        { label: 'Scor de încredere AI', ok: true },
+        { label: 'Piețe complete (Over/Under, BTTS, DC)', ok: true },
+        { label: 'Value Bet & Edge față de piață', ok: true },
+        { label: 'Score Matrix & xG Stats', ok: true },
+        { label: 'Picks zilnice AI (07:00 & 13:00)', ok: true },
+        { label: 'Notificări Telegram (2x/zi)', ok: true },
+        { label: 'VIP Picks — confidence ≥75%', ok: false },
+      ],
+    },
+    {
+      name: 'Pro',
+      price: '79 RON/lună',
+      color: '#f59e0b',
+      features: [
+        { label: 'Acces Pagina Predicții', ok: true },
+        { label: 'Direcție meci (1 / X / 2)', ok: true },
+        { label: 'Toate ligile disponibile', ok: true },
+        { label: 'Probabilități exacte (%)', ok: true },
+        { label: 'Scor de încredere AI', ok: true },
+        { label: 'Piețe complete (Over/Under, BTTS, DC)', ok: true },
+        { label: 'Value Bet & Edge față de piață', ok: true },
+        { label: 'Score Matrix & xG Stats', ok: true },
+        { label: 'Picks zilnice AI (07:00 & 13:00)', ok: true },
+        { label: 'Notificări Telegram (2x/zi)', ok: true },
+        { label: 'VIP Picks — confidence ≥75%', ok: true },
+      ],
+    },
+  ]
+  return (
+    <div className="card p-5 mb-6 fade-in" style={{ overflow: 'hidden' }}>
+      <div className="text-center mb-5">
+        <div className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-1">Ce primești la fiecare plan</div>
+        <div className="text-xs text-gray-600 font-mono">Alege planul potrivit pentru stilul tău de analiză</div>
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        {tiers.map(tier => (
+          <div key={tier.name} className="rounded-xl p-3 flex flex-col"
+            style={{
+              background: tier.highlight ? 'rgba(59,130,246,0.08)' : 'rgba(255,255,255,0.03)',
+              border: `1px solid ${tier.highlight ? 'rgba(59,130,246,0.4)' : 'rgba(255,255,255,0.06)'}`,
+            }}>
+            {tier.highlight && (
+              <div className="text-center mb-1">
+                <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-blue-600/80 text-white uppercase tracking-widest">Popular</span>
+              </div>
+            )}
+            <div className="text-center mb-3">
+              <div className="text-sm font-bold" style={{ color: tier.color }}>{tier.name}</div>
+              <div className="text-[10px] font-mono text-gray-500 mt-0.5">{tier.price}</div>
+            </div>
+            <div className="space-y-1.5 flex-1">
+              {tier.features.map((f, i) => (
+                <div key={i} className="flex items-start gap-1.5">
+                  <span className="shrink-0 mt-0.5" style={{ color: f.ok ? '#10b981' : '#374151', fontSize: '10px' }}>
+                    {f.ok ? '✓' : '✗'}
+                  </span>
+                  <span className={`text-[10px] leading-tight ${f.ok ? 'text-gray-300' : 'text-gray-700'}`}>{f.label}</span>
+                </div>
+              ))}
+            </div>
+            {tier.name !== 'Free' && (
+              <a href="/upgrade" className="mt-3 block text-center py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all"
+                style={{ background: `${tier.color}20`, color: tier.color, border: `1px solid ${tier.color}40` }}>
+                Activează →
+              </a>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function PredictionDisplay({ prediction, fixture, standings, user }: {
+  prediction: Prediction; fixture: Fixture; standings: StandingRow[]; user: AuthUser | null
+}) {
+  const isFree = !user || user.tier === 'free'
   const [activeTab, setActiveTab] = useState('markets')
   const pred = prediction.prediction || {}
   const home_w = pred.home_win ?? 0
@@ -561,8 +668,8 @@ function PredictionDisplay({ prediction, fixture, standings }: { prediction: Pre
 
   const tabs = [
     { key: 'markets',   label: '🎯 Pariuri' },
-    { key: 'value',     label: `💎 Value${valueBets.length > 0 ? ` (${valueBets.length})` : ''}` },
-    { key: 'scores',    label: '⚽ Scoruri' },
+    { key: 'value',     label: `💎 Value${!isFree && valueBets.length > 0 ? ` (${valueBets.length})` : ''}`, locked: isFree },
+    { key: 'scores',    label: '⚽ Scoruri', locked: isFree },
     { key: 'stats',     label: '📊 Stats' },
     { key: 'standings', label: '🏆 Clas.' },
     { key: 'models',    label: '🤖 Modele' },
@@ -591,24 +698,51 @@ function PredictionDisplay({ prediction, fixture, standings }: { prediction: Pre
           </div>
         </div>
 
-        <div className="flex justify-around items-end mt-4">
-          <ProbBar label={prediction.home_team.split(' ')[0]} value={home_w} color="#3b82f6" />
-          <ProbBar label="Egal" value={draw} color="#6b7280" />
-          <ProbBar label={prediction.away_team.split(' ')[0]} value={away_w} color="#f97316" />
-        </div>
+        {isFree ? (
+          <div className="relative mt-4">
+            <div style={{ filter: 'blur(6px)' }} className="pointer-events-none select-none flex justify-around items-end">
+              <ProbBar label={prediction.home_team.split(' ')[0]} value={home_w} color="#3b82f6" />
+              <ProbBar label="Egal" value={draw} color="#6b7280" />
+              <ProbBar label={prediction.away_team.split(' ')[0]} value={away_w} color="#f97316" />
+            </div>
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+              <span className="text-white text-xs font-bold">🔒 Probabilități blocate</span>
+              <a href="/upgrade" className="px-4 py-1.5 rounded-full text-xs font-bold"
+                style={{ background: 'linear-gradient(135deg,#3b82f6,#8b5cf6)', color: 'white' }}>
+                ⚡ Deblochează — 39 RON/lună
+              </a>
+            </div>
+          </div>
+        ) : (
+          <div className="flex justify-around items-end mt-4">
+            <ProbBar label={prediction.home_team.split(' ')[0]} value={home_w} color="#3b82f6" />
+            <ProbBar label="Egal" value={draw} color="#6b7280" />
+            <ProbBar label={prediction.away_team.split(' ')[0]} value={away_w} color="#f97316" />
+          </div>
+        )}
 
         <div className="mt-3 text-center text-xs font-mono text-gray-700">{pred.method || 'XGBoost + Poisson + Elo'}</div>
 
         {/* Scor de încredere AI */}
         <div className="flex justify-center mt-3">
-          <div className="flex items-center gap-2 px-4 py-2 rounded-full border"
-            style={{ borderColor: `${conf.color}40`, backgroundColor: `${conf.color}15` }}>
-            <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: conf.color }} />
-            <span className="text-xs font-bold font-mono" style={{ color: conf.color }}>
-              Încredere AI: {conf.score}%
-            </span>
-            <span className="text-[10px] text-gray-500">({conf.label})</span>
-          </div>
+          {isFree ? (
+            <div className="flex items-center gap-2 px-4 py-2 rounded-full border border-gray-700/40 bg-gray-800/30">
+              <div className="w-2 h-2 rounded-full bg-gray-600" />
+              <span className="text-xs font-bold font-mono text-gray-600" style={{ filter: 'blur(4px)' }}>
+                Încredere AI: {conf.score}%
+              </span>
+              <span className="text-[10px] text-gray-600">🔒</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 px-4 py-2 rounded-full border"
+              style={{ borderColor: `${conf.color}40`, backgroundColor: `${conf.color}15` }}>
+              <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: conf.color }} />
+              <span className="text-xs font-bold font-mono" style={{ color: conf.color }}>
+                Încredere AI: {conf.score}%
+              </span>
+              <span className="text-[10px] text-gray-500">({conf.label})</span>
+            </div>
+          )}
         </div>
 
         {/* Cote bookmakers */}
@@ -671,9 +805,10 @@ function PredictionDisplay({ prediction, fixture, standings }: { prediction: Pre
         {tabs.map(tab => (
           <button key={tab.key}
             className={`px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all
-              ${activeTab === tab.key ? 'bg-blue-600 text-white' : 'bg-gray-800/60 text-gray-500 hover:text-gray-300 border border-gray-700/50'}`}
-            onClick={() => setActiveTab(tab.key)}>
-            {tab.label}
+              ${activeTab === tab.key ? 'bg-blue-600 text-white' : 'bg-gray-800/60 text-gray-500 hover:text-gray-300 border border-gray-700/50'}
+              ${(tab as any).locked ? 'opacity-50 cursor-not-allowed' : ''}`}
+            onClick={() => { if (!(tab as any).locked) setActiveTab(tab.key) }}>
+            {(tab as any).locked ? `🔒 ${tab.label}` : tab.label}
           </button>
         ))}
       </div>
@@ -681,34 +816,71 @@ function PredictionDisplay({ prediction, fixture, standings }: { prediction: Pre
       {/* Tab: Pariuri — TOATE piețele */}
       {activeTab === 'markets' && (
         <div className="card p-5 fade-in" style={{ overflow: 'hidden' }}>
-          {(prediction.markets && prediction.markets.length > 0) ? (
-            prediction.markets.map((m: any, i: number) => (
-              <div key={i} className="mb-5">
-                <div className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-2 flex items-center gap-2">
-                  <div className="h-px flex-1 bg-blue-900/40" />
-                  <span>{m.icon || '📊'} {m.category || m.label}</span>
-                  <div className="h-px flex-1 bg-blue-900/40" />
-                </div>
-                {(m.items || m.markets || []).map((item: any, j: number) => <MarketRow key={j} market={item} />)}
-              </div>
-            ))
-          ) : (
-            allMarkets.map((group, gi) => (
+          {(() => {
+            const groups = (prediction.markets && prediction.markets.length > 0)
+              ? prediction.markets.map((m: any) => ({ category: m.category || m.label, items: m.items || m.markets || [] }))
+              : allMarkets
+            if (isFree) {
+              // Show 1X2 group, blur the rest
+              const first = groups[0]
+              return (
+                <>
+                  <div className="mb-5">
+                    <div className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-2 flex items-center gap-2">
+                      <div className="h-px flex-1 bg-blue-900/40" />
+                      <span>{first?.category}</span>
+                      <div className="h-px flex-1 bg-blue-900/40" />
+                    </div>
+                    {first?.items.map((item: any, ii: number) => (
+                      <div key={ii} className="flex items-center gap-3 py-2 border-b border-gray-800/50 last:border-0">
+                        <span className="text-xs text-gray-400 flex-1 truncate">{item.name}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-bold font-mono text-gray-600" style={{ filter: 'blur(4px)' }}>
+                            {item.probability}%
+                          </span>
+                          <span className="text-[10px] text-gray-700" style={{ filter: 'blur(3px)' }}>~{item.odds}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="relative rounded-xl overflow-hidden" style={{ minHeight: 180 }}>
+                    <div style={{ filter: 'blur(6px)', pointerEvents: 'none', userSelect: 'none' }}>
+                      {groups.slice(1, 4).map((group: any, gi: number) => (
+                        <div key={gi} className="mb-4">
+                          <div className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-2">{group.category}</div>
+                          {group.items.slice(0, 3).map((item: any, ii: number) => <MarketRow key={ii} market={item} />)}
+                        </div>
+                      ))}
+                    </div>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-3"
+                      style={{ background: 'rgba(0,0,0,0.5)' }}>
+                      <div className="text-white text-sm font-bold text-center">🔒 Piețe blocate</div>
+                      <div className="text-gray-400 text-xs text-center px-4">Over/Under · BTTS · Șansă dublă · Score Matrix</div>
+                      <a href="/upgrade" className="px-5 py-2 rounded-full text-xs font-bold"
+                        style={{ background: 'linear-gradient(135deg,#3b82f6,#8b5cf6)', color: 'white' }}>
+                        ⚡ Analyst — 39 RON/lună
+                      </a>
+                    </div>
+                  </div>
+                </>
+              )
+            }
+            return groups.map((group: any, gi: number) => (
               <div key={gi} className="mb-5">
                 <div className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-2 flex items-center gap-2">
                   <div className="h-px flex-1 bg-blue-900/40" />
                   <span>{group.category}</span>
                   <div className="h-px flex-1 bg-blue-900/40" />
                 </div>
-                {group.items.map((item, ii) => <MarketRow key={ii} market={item} />)}
+                {group.items.map((item: any, ii: number) => <MarketRow key={ii} market={item} />)}
               </div>
             ))
-          )}
+          })()}
         </div>
       )}
 
       {/* Tab: Bet Value */}
-      {activeTab === 'value' && (
+      {activeTab === 'value' && !isFree && (
         <div className="card p-5 fade-in" style={{ overflow: 'hidden' }}>
           <div className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest mb-1 text-center">💎 Bet Value — Pariuri cu Valoare Pozitivă</div>
           <div className="text-[10px] text-gray-600 text-center mb-4 font-mono">Modelul AI detectează unde probabilitatea depășește marja bookmaker-ului</div>
@@ -758,7 +930,7 @@ function PredictionDisplay({ prediction, fixture, standings }: { prediction: Pre
       )}
 
       {/* Tab: Scoruri + Score Matrix */}
-      {activeTab === 'scores' && (
+      {activeTab === 'scores' && !isFree && (
         <div className="card p-5 fade-in" style={{ overflow: 'hidden' }}>
           <div className="flex gap-4 mb-4 text-center">
             {[
@@ -1020,6 +1192,8 @@ export default function Home() {
           <p className="text-gray-500 text-xs font-mono uppercase tracking-widest">{tr.hero_sub}</p>
         </div>
 
+        <TierComparisonTable />
+
         <div className="card p-6 mb-6 fade-in">
           <div className="grid grid-cols-1 gap-4">
             <div>
@@ -1119,7 +1293,7 @@ export default function Home() {
 
         {prediction && !loading && selectedFixture && (
           <div style={{ width: '100%', maxWidth: '100%', overflow: 'hidden' }}>
-            <PredictionDisplay prediction={prediction} fixture={selectedFixture} standings={standings} />
+            <PredictionDisplay prediction={prediction} fixture={selectedFixture} standings={standings} user={user} />
           </div>
         )}
 
