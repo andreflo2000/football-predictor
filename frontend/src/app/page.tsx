@@ -153,16 +153,16 @@ function calcAllMarkets(prediction: Prediction, lang = 'ro') {
     },
     {
       category: en ? '📊 Total Goals (full match)' : '📊 Total goluri (meci întreg)', items: [
-        { name: en ? 'Over 0.5 goals' : 'Over 0.5 goluri', probability: over05, odds: odd(over05) },
-        { name: en ? 'Under 0.5 goals' : 'Under 0.5 goluri', probability: 100 - over05, odds: odd(100 - over05) },
-        { name: en ? 'Over 1.5 goals' : 'Over 1.5 goluri', probability: over15, odds: odd(over15) },
-        { name: en ? 'Under 1.5 goals' : 'Under 1.5 goluri', probability: 100 - over15, odds: odd(100 - over15) },
-        { name: en ? 'Over 2.5 goals' : 'Over 2.5 goluri', probability: over25, odds: odd(over25) },
-        { name: en ? 'Under 2.5 goals' : 'Under 2.5 goluri', probability: 100 - over25, odds: odd(100 - over25) },
-        { name: en ? 'Over 3.5 goals' : 'Over 3.5 goluri', probability: over35, odds: odd(over35) },
-        { name: en ? 'Under 3.5 goals' : 'Under 3.5 goluri', probability: 100 - over35, odds: odd(100 - over35) },
-        { name: en ? 'Over 4.5 goals' : 'Over 4.5 goluri', probability: over45, odds: odd(over45) },
-        { name: en ? 'Under 4.5 goals' : 'Under 4.5 goluri', probability: 100 - over45, odds: odd(100 - over45) },
+        { name: en ? 'Over 0.5 goals' : 'Peste 0.5 goluri în meci', probability: over05, odds: odd(over05) },
+        { name: en ? 'Under 0.5 goals' : 'Sub 0.5 goluri în meci', probability: 100 - over05, odds: odd(100 - over05) },
+        { name: en ? 'Over 1.5 goals' : 'Peste 1.5 goluri în meci', probability: over15, odds: odd(over15) },
+        { name: en ? 'Under 1.5 goals' : 'Sub 1.5 goluri în meci', probability: 100 - over15, odds: odd(100 - over15) },
+        { name: en ? 'Over 2.5 goals' : 'Peste 2.5 goluri în meci', probability: over25, odds: odd(over25) },
+        { name: en ? 'Under 2.5 goals' : 'Sub 2.5 goluri în meci', probability: 100 - over25, odds: odd(100 - over25) },
+        { name: en ? 'Over 3.5 goals' : 'Peste 3.5 goluri în meci', probability: over35, odds: odd(over35) },
+        { name: en ? 'Under 3.5 goals' : 'Sub 3.5 goluri în meci', probability: 100 - over35, odds: odd(100 - over35) },
+        { name: en ? 'Over 4.5 goals' : 'Peste 4.5 goluri în meci', probability: over45, odds: odd(over45) },
+        { name: en ? 'Under 4.5 goals' : 'Sub 4.5 goluri în meci', probability: 100 - over45, odds: odd(100 - over45) },
       ]
     },
     {
