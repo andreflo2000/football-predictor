@@ -448,7 +448,7 @@ def _fetch_fixtures_per_competition(date_str: str, known_teams: list) -> list:
     headers = {"X-Auth-Token": API_KEY}
     fixtures = []
     # Limitat la competitiile disponibile pe TIER_ONE
-    TIER_ONE_CODES = ["PL", "BL1", "SA", "PD", "FL1", "DED", "PPL", "CL", "EL", "ELC", "BL2"]
+    TIER_ONE_CODES = ["PL", "BL1", "SA", "PD", "FL1", "DED", "PPL", "CL", "ELC", "BL2"]
     for i, code in enumerate(TIER_ONE_CODES):
         if i > 0:
             time.sleep(7)  # 10 req/min = 1 req la 6s, 7s pentru siguranta
@@ -631,7 +631,7 @@ def _fetch_af_missing_leagues(date_str: str, known_teams: list, existing: list) 
         return []
 
     # Ligile care NU sunt in free tier football-data.org
-    MISSING_LEAGUES = {3: "EL"}  # Europa League
+    MISSING_LEAGUES: dict = {}  # EL scos — API-Football free nu acoperă EL
 
     # Elimina ligile care au deja meciuri din alte surse
     existing_codes = {f.get("competition_code") for f in existing}
@@ -732,7 +732,7 @@ def _fetch_european_cups(date_str: str, known_teams: list) -> list:
         return []
     headers = {"X-Auth-Token": API_KEY}
     results = []
-    for code in ("CL", "EL"):
+    for code in ("CL",):
         try:
             resp = requests.get(
                 f"{BASE_URL}/competitions/{code}/matches",
