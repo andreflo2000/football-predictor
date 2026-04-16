@@ -58,13 +58,15 @@ function getProbColor(p: number) {
 }
 
 // ── Calcul scor de încredere ──────────────────────────────────────────────────
-function calcConfidence(home_w: number, draw: number, away_w: number): { score: number; label: string; color: string } {
+function calcConfidence(home_w: number, draw: number, away_w: number, lang = 'ro'): { score: number; label: string; color: string } {
   const max = Math.max(home_w, draw, away_w)
   const second = [home_w, draw, away_w].sort((a, b) => b - a)[1]
   const gap = max - second
   let score = Math.round(40 + gap * 1.2 + (max - 33) * 0.5)
   score = Math.min(98, Math.max(42, score))
-  const label = score >= 80 ? 'Foarte ridicată' : score >= 65 ? 'Ridicată' : score >= 50 ? 'Medie' : 'Scăzută'
+  const label = lang === 'en'
+    ? (score >= 80 ? 'Very high' : score >= 65 ? 'High' : score >= 50 ? 'Medium' : 'Low')
+    : (score >= 80 ? 'Foarte ridicată' : score >= 65 ? 'Ridicată' : score >= 50 ? 'Medie' : 'Scăzută')
   const color = score >= 80 ? '#10b981' : score >= 65 ? '#f59e0b' : score >= 50 ? '#f97316' : '#ef4444'
   return { score, label, color }
 }
@@ -84,7 +86,8 @@ function pOver(lambda: number, k: number) { // P(X > k)
 }
 
 // ── Calcul toate piețele disponibile ─────────────────────────────────────────
-function calcAllMarkets(prediction: Prediction) {
+function calcAllMarkets(prediction: Prediction, lang = 'ro') {
+  const en = lang === 'en'
   const pred = prediction.prediction || {}
   const home_w = pred.home_win ?? 0
   const draw   = pred.draw ?? 0
@@ -135,41 +138,41 @@ function calcAllMarkets(prediction: Prediction) {
 
   return [
     {
-      category: '⚽ Rezultat meci (1X2)', items: [
-        { name: `1 — Victorie ${prediction.home_team}`, probability: home_w, odds: odd(home_w) },
-        { name: 'X — Egal', probability: draw, odds: odd(draw) },
-        { name: `2 — Victorie ${prediction.away_team}`, probability: away_w, odds: odd(away_w) },
+      category: en ? '⚽ Match Result (1X2)' : '⚽ Rezultat meci (1X2)', items: [
+        { name: en ? `1 — ${prediction.home_team} Win` : `1 — Victorie ${prediction.home_team}`, probability: home_w, odds: odd(home_w) },
+        { name: en ? 'X — Draw' : 'X — Egal', probability: draw, odds: odd(draw) },
+        { name: en ? `2 — ${prediction.away_team} Win` : `2 — Victorie ${prediction.away_team}`, probability: away_w, odds: odd(away_w) },
       ]
     },
     {
-      category: '🎯 Șansă dublă', items: [
-        { name: `1X — ${prediction.home_team} sau Egal`, probability: dc1x, odds: odd(dc1x) },
-        { name: `X2 — Egal sau ${prediction.away_team}`, probability: dcx2, odds: odd(dcx2) },
-        { name: `12 — Fără egal`, probability: dc12, odds: odd(dc12) },
+      category: en ? '🎯 Double Chance' : '🎯 Șansă dublă', items: [
+        { name: en ? `1X — ${prediction.home_team} or Draw` : `1X — ${prediction.home_team} sau Egal`, probability: dc1x, odds: odd(dc1x) },
+        { name: en ? `X2 — Draw or ${prediction.away_team}` : `X2 — Egal sau ${prediction.away_team}`, probability: dcx2, odds: odd(dcx2) },
+        { name: en ? '12 — No Draw' : '12 — Fără egal', probability: dc12, odds: odd(dc12) },
       ]
     },
     {
-      category: '📊 Total goluri (meci întreg)', items: [
-        { name: 'Over 0.5 goluri', probability: over05, odds: odd(over05) },
-        { name: 'Under 0.5 goluri', probability: 100 - over05, odds: odd(100 - over05) },
-        { name: 'Over 1.5 goluri', probability: over15, odds: odd(over15) },
-        { name: 'Under 1.5 goluri', probability: 100 - over15, odds: odd(100 - over15) },
-        { name: 'Over 2.5 goluri', probability: over25, odds: odd(over25) },
-        { name: 'Under 2.5 goluri', probability: 100 - over25, odds: odd(100 - over25) },
-        { name: 'Over 3.5 goluri', probability: over35, odds: odd(over35) },
-        { name: 'Under 3.5 goluri', probability: 100 - over35, odds: odd(100 - over35) },
-        { name: 'Over 4.5 goluri', probability: over45, odds: odd(over45) },
-        { name: 'Under 4.5 goluri', probability: 100 - over45, odds: odd(100 - over45) },
+      category: en ? '📊 Total Goals (full match)' : '📊 Total goluri (meci întreg)', items: [
+        { name: en ? 'Over 0.5 goals' : 'Over 0.5 goluri', probability: over05, odds: odd(over05) },
+        { name: en ? 'Under 0.5 goals' : 'Under 0.5 goluri', probability: 100 - over05, odds: odd(100 - over05) },
+        { name: en ? 'Over 1.5 goals' : 'Over 1.5 goluri', probability: over15, odds: odd(over15) },
+        { name: en ? 'Under 1.5 goals' : 'Under 1.5 goluri', probability: 100 - over15, odds: odd(100 - over15) },
+        { name: en ? 'Over 2.5 goals' : 'Over 2.5 goluri', probability: over25, odds: odd(over25) },
+        { name: en ? 'Under 2.5 goals' : 'Under 2.5 goluri', probability: 100 - over25, odds: odd(100 - over25) },
+        { name: en ? 'Over 3.5 goals' : 'Over 3.5 goluri', probability: over35, odds: odd(over35) },
+        { name: en ? 'Under 3.5 goals' : 'Under 3.5 goluri', probability: 100 - over35, odds: odd(100 - over35) },
+        { name: en ? 'Over 4.5 goals' : 'Over 4.5 goluri', probability: over45, odds: odd(over45) },
+        { name: en ? 'Under 4.5 goals' : 'Under 4.5 goluri', probability: 100 - over45, odds: odd(100 - over45) },
       ]
     },
     {
-      category: '🔄 Ambele înscriu (BTTS)', items: [
-        { name: 'BTTS — Da', probability: btts, odds: odd(btts) },
-        { name: 'BTTS — Nu', probability: bttsNo, odds: odd(bttsNo) },
+      category: en ? '🔄 Both Teams to Score (BTTS)' : '🔄 Ambele înscriu (BTTS)', items: [
+        { name: en ? 'BTTS — Yes' : 'BTTS — Da', probability: btts, odds: odd(btts) },
+        { name: en ? 'BTTS — No' : 'BTTS — Nu', probability: bttsNo, odds: odd(bttsNo) },
       ]
     },
     {
-      category: '⏸️ Pauză — Total goluri', items: [
+      category: en ? '⏸️ Half-Time — Total Goals' : '⏸️ Pauză — Total goluri', items: [
         { name: 'HT Over 0.5', probability: htOver05, odds: odd(htOver05) },
         { name: 'HT Under 0.5', probability: 100 - htOver05, odds: odd(100 - htOver05) },
         { name: 'HT Over 1.5', probability: htOver15, odds: odd(htOver15) },
@@ -179,18 +182,18 @@ function calcAllMarkets(prediction: Prediction) {
       ]
     },
     {
-      category: '🕐 Rezultat la pauză', items: [
-        { name: `HT 1 — ${prediction.home_team} conduce`, probability: htHome, odds: odd(htHome) },
-        { name: 'HT X — Egal la pauză', probability: htDraw, odds: odd(htDraw) },
-        { name: `HT 2 — ${prediction.away_team} conduce`, probability: Math.max(htAway, 1), odds: odd(Math.max(htAway, 1)) },
+      category: en ? '🕐 Half-Time Result' : '🕐 Rezultat la pauză', items: [
+        { name: en ? `HT 1 — ${prediction.home_team} leads` : `HT 1 — ${prediction.home_team} conduce`, probability: htHome, odds: odd(htHome) },
+        { name: en ? 'HT X — Draw at half-time' : 'HT X — Egal la pauză', probability: htDraw, odds: odd(htDraw) },
+        { name: en ? `HT 2 — ${prediction.away_team} leads` : `HT 2 — ${prediction.away_team} conduce`, probability: Math.max(htAway, 1), odds: odd(Math.max(htAway, 1)) },
       ]
     },
   ]
 }
 
 // ── Bet Value — identifică pariuri cu valoare față de piață ──────────────────
-function calcBetValue(prediction: Prediction) {
-  const markets = calcAllMarkets(prediction)
+function calcBetValue(prediction: Prediction, lang = 'ro') {
+  const markets = calcAllMarkets(prediction, lang)
   const margin  = 1.08
   const results: Array<{
     name: string; probability: number; our_odds: string
@@ -213,7 +216,9 @@ function calcBetValue(prediction: Prediction) {
       const value_pct  = Math.round((p - implied_mkt) * 100)
 
       if (value_pct > 0 && p >= 0.45) {
-        const rating = value_pct >= 8 ? '🔥 Value înalt' : value_pct >= 4 ? '✅ Value bun' : '⚡ Value mic'
+        const rating = lang === 'en'
+          ? (value_pct >= 8 ? '🔥 High Value' : value_pct >= 4 ? '✅ Good Value' : '⚡ Small Value')
+          : (value_pct >= 8 ? '🔥 Value înalt' : value_pct >= 4 ? '✅ Value bun' : '⚡ Value mic')
         const color  = value_pct >= 8 ? '#10b981' : value_pct >= 4 ? '#f59e0b' : '#6b7280'
         results.push({
           name: item.name,
@@ -233,8 +238,8 @@ function calcBetValue(prediction: Prediction) {
 }
 
 // ── Top 3 cele mai sigure pariuri ─────────────────────────────────────────────
-function getTop3Bets(prediction: Prediction) {
-  const markets = calcAllMarkets(prediction)
+function getTop3Bets(prediction: Prediction, lang = 'ro') {
+  const markets = calcAllMarkets(prediction, lang)
   const all: Array<{ name: string; probability: number; odds: string }> = []
   for (const group of markets) {
     for (const item of group.items) {
@@ -246,7 +251,9 @@ function getTop3Bets(prediction: Prediction) {
     .slice(0, 3)
     .map(b => ({
       ...b,
-      confidence: b.probability >= 70 ? '🟢 Sigur' : b.probability >= 55 ? '🟡 Moderat' : '🔴 Risc',
+      confidence: lang === 'en'
+        ? (b.probability >= 70 ? '🟢 Confident' : b.probability >= 55 ? '🟡 Moderate' : '🔴 Risk')
+        : (b.probability >= 70 ? '🟢 Sigur' : b.probability >= 55 ? '🟡 Moderat' : '🔴 Risc'),
     }))
 }
 
@@ -417,6 +424,7 @@ function StandingsTable({ standings, highlightTeams }: { standings: StandingRow[
 }
 
 function TeamStatsCard({ stats, teamName, color }: { stats: any; teamName: string; color: string }) {
+  const { lang } = useLang()
   if (!stats) return null
   const form = stats.form || []
   const xgFor = stats.xg_for_history || stats.xg_for || []
@@ -433,7 +441,7 @@ function TeamStatsCard({ stats, teamName, color }: { stats: any; teamName: strin
       </div>
       {form.length > 0 && (
         <div className="mb-4">
-          <div className="text-[10px] text-gray-600 uppercase tracking-widest mb-2">Ultimele meciuri</div>
+          <div className="text-[10px] text-gray-600 uppercase tracking-widest mb-2">{lang === 'en' ? 'Recent matches' : 'Ultimele meciuri'}</div>
           <div className="flex gap-1">{form.map((r: string, i: number) => <FormBadge key={i} result={r} />)}</div>
           <div className="text-xs text-gray-500 mt-2 font-mono">
             {wins}V · {draws}E · {form.length - wins - draws}Î
@@ -445,7 +453,7 @@ function TeamStatsCard({ stats, teamName, color }: { stats: any; teamName: strin
         {[
           { label: 'xG For', value: avgXgFor.toFixed(2), icon: '⚽' },
           { label: 'xG Against', value: avgXgAg.toFixed(2), icon: '🛡️' },
-          { label: 'Goluri/meci', value: stats.goals_avg?.toFixed(2) || avgXgFor.toFixed(2), icon: '📊' },
+          { label: lang === 'en' ? 'Goals/match' : 'Goluri/meci', value: stats.goals_avg?.toFixed(2) || avgXgFor.toFixed(2), icon: '📊' },
           { label: 'Elo Rating', value: stats.elo_rating || '—', icon: '📈' },
         ].map(s => (
           <div key={s.label} className="bg-gray-800/40 rounded-lg p-2.5">
@@ -456,7 +464,7 @@ function TeamStatsCard({ stats, teamName, color }: { stats: any; teamName: strin
       </div>
       {Array.isArray(xgFor) && xgFor.length > 0 && (
         <div>
-          <div className="text-[10px] text-gray-600 uppercase tracking-widest mb-2">xG ultimele meciuri</div>
+          <div className="text-[10px] text-gray-600 uppercase tracking-widest mb-2">{lang === 'en' ? 'xG recent matches' : 'xG ultimele meciuri'}</div>
           <div className="flex items-end gap-1 h-10">
             {xgFor.slice(-5).map((v: number, i: number) => (
               <div key={i} className="flex-1 flex flex-col items-center gap-0.5">
@@ -464,7 +472,7 @@ function TeamStatsCard({ stats, teamName, color }: { stats: any; teamName: strin
               </div>
             ))}
           </div>
-          <div className="text-[9px] text-gray-700 text-center mt-1 font-mono">meciuri recente →</div>
+          <div className="text-[9px] text-gray-700 text-center mt-1 font-mono">{lang === 'en' ? 'recent matches →' : 'meciuri recente →'}</div>
         </div>
       )}
     </div>
@@ -473,6 +481,7 @@ function TeamStatsCard({ stats, teamName, color }: { stats: any; teamName: strin
 
 // ── Comparator cotă reală introdusă de user ───────────────────────────────────
 function OddsComparator({ prediction }: { prediction: Prediction }) {
+  const { lang } = useLang()
   const [inputOdd, setInputOdd] = useState('')
   const [market, setMarket]     = useState('1')
   const pred = prediction.prediction || {}
@@ -491,7 +500,7 @@ function OddsComparator({ prediction }: { prediction: Prediction }) {
 
   return (
     <div className="mt-5 pt-5 border-t border-gray-800/50">
-      <div className="text-[10px] font-bold text-amber-400 uppercase tracking-widest mb-3 text-center">🔍 Verifică cota ta — Value sau nu?</div>
+      <div className="text-[10px] font-bold text-amber-400 uppercase tracking-widest mb-3 text-center">{lang === 'en' ? '🔍 Check your odds — Value or not?' : '🔍 Verifică cota ta — Value sau nu?'}</div>
       <div className="flex gap-2 mb-3">
         {['1','X','2'].map(m => (
           <button key={m} onClick={() => setMarket(m)}
@@ -501,13 +510,13 @@ function OddsComparator({ prediction }: { prediction: Prediction }) {
               border: `1px solid ${market === m ? 'rgba(59,130,246,0.5)' : 'rgba(255,255,255,0.08)'}`,
               color: market === m ? '#60a5fa' : '#6b7280',
             }}>
-            {m === '1' ? `1 ${prediction.home_team.split(' ')[0]}` : m === '2' ? `2 ${prediction.away_team.split(' ')[0]}` : 'X Egal'}
+            {m === '1' ? `1 ${prediction.home_team.split(' ')[0]}` : m === '2' ? `2 ${prediction.away_team.split(' ')[0]}` : (lang === 'en' ? 'X Draw' : 'X Egal')}
           </button>
         ))}
       </div>
       <div className="flex gap-2 items-center">
         <input
-          type="number" step="0.01" min="1.01" placeholder="Cota la bookmaker (ex: 2.15)"
+          type="number" step="0.01" min="1.01" placeholder={lang === 'en' ? 'Bookmaker odds (e.g. 2.15)' : 'Cota la bookmaker (ex: 2.15)'}
           value={inputOdd}
           onChange={e => setInputOdd(e.target.value)}
           className="flex-1 bg-gray-800/60 border border-gray-700 rounded-xl px-3 py-2.5 text-white text-sm font-mono focus:outline-none focus:border-blue-500"
@@ -520,15 +529,15 @@ function OddsComparator({ prediction }: { prediction: Prediction }) {
         }}>
           <div className="text-center mb-3">
             <div className="text-2xl font-bold font-mono" style={{ color: isValue ? '#10b981' : '#ef4444' }}>
-              {isValue ? '✅ VALUE BET' : '❌ Fără value'}
+              {isValue ? '✅ VALUE BET' : (lang === 'en' ? '❌ No value' : '❌ Fără value')}
             </div>
             <div className="text-[10px] text-gray-500 font-mono mt-1">
-              Probabilitate model: {Math.round(prob*100)}% · Prob. implicită cotă: {Math.round(impliedP*100)}%
+              {lang === 'en' ? 'Model probability' : 'Probabilitate model'}: {Math.round(prob*100)}% · {lang === 'en' ? 'Implied odds prob.' : 'Prob. implicită cotă'}: {Math.round(impliedP*100)}%
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div className="bg-gray-900/50 rounded-lg p-2 text-center">
-              <div className="text-[10px] text-gray-600 uppercase tracking-widest">Edge față de cotă</div>
+              <div className="text-[10px] text-gray-600 uppercase tracking-widest">{lang === 'en' ? 'Edge vs odds' : 'Edge față de cotă'}</div>
               <div className="text-base font-bold font-mono" style={{ color: isValue ? '#10b981' : '#ef4444' }}>
                 {edge > 0 ? '+' : ''}{edge}%
               </div>
@@ -638,19 +647,19 @@ function PredictionDisplay({ prediction, fixture, standings, user }: {
   const draw   = pred.draw ?? 0
   const away_w = pred.away_win ?? 0
   const breakdown = prediction.model_breakdown || {}
-  const conf = calcConfidence(home_w, draw, away_w)
-  const allMarkets = calcAllMarkets(prediction)
-  const top3 = getTop3Bets(prediction)
+  const conf = calcConfidence(home_w, draw, away_w, lang)
+  const allMarkets = calcAllMarkets(prediction, lang)
+  const top3 = getTop3Bets(prediction, lang)
 
-  const valueBets = calcBetValue(prediction)
+  const valueBets = calcBetValue(prediction, lang)
 
   const tabs = [
-    { key: 'markets',   label: '🎯 Pariuri' },
+    { key: 'markets',   label: lang === 'en' ? '🎯 Bets' : '🎯 Pariuri' },
     { key: 'value',     label: `💎 Value${!isFree && valueBets.length > 0 ? ` (${valueBets.length})` : ''}`, locked: isFree },
-    { key: 'scores',    label: '⚽ Scoruri', locked: isFree },
+    { key: 'scores',    label: lang === 'en' ? '⚽ Scores' : '⚽ Scoruri', locked: isFree },
     { key: 'stats',     label: '📊 Stats' },
-    { key: 'standings', label: '🏆 Clas.' },
-    { key: 'models',    label: '🤖 Modele' },
+    { key: 'standings', label: lang === 'en' ? '🏆 Stand.' : '🏆 Clas.' },
+    { key: 'models',    label: lang === 'en' ? '🤖 Models' : '🤖 Modele' },
   ]
 
   return (
@@ -664,14 +673,14 @@ function PredictionDisplay({ prediction, fixture, standings, user }: {
           <div className="flex items-center justify-center gap-2">
             <div className="text-right" style={{ flex: 1, minWidth: 0 }}>
               <div className="font-display text-base text-white tracking-wide truncate">{prediction.home_team}</div>
-              <div className="text-xs text-gray-600 font-mono mt-1">GAZDĂ</div>
+              <div className="text-xs text-gray-600 font-mono mt-1">{lang === 'en' ? 'HOME' : 'GAZDĂ'}</div>
             </div>
             <div className="shrink-0 px-2 py-1 rounded-lg bg-gray-800/60 border border-gray-700">
               <span className="font-mono text-gray-500 text-sm">VS</span>
             </div>
             <div className="text-left" style={{ flex: 1, minWidth: 0 }}>
               <div className="font-display text-base text-white tracking-wide truncate">{prediction.away_team}</div>
-              <div className="text-xs text-gray-600 font-mono mt-1">OASPETE</div>
+              <div className="text-xs text-gray-600 font-mono mt-1">{lang === 'en' ? 'AWAY' : 'OASPETE'}</div>
             </div>
           </div>
         </div>
@@ -680,7 +689,7 @@ function PredictionDisplay({ prediction, fixture, standings, user }: {
           <div className="relative mt-4">
             <div style={{ filter: 'blur(6px)' }} className="pointer-events-none select-none flex justify-around items-end">
               <ProbBar label={prediction.home_team.split(' ')[0]} value={home_w} color="#3b82f6" />
-              <ProbBar label="Egal" value={draw} color="#6b7280" />
+              <ProbBar label={lang === 'en' ? 'Draw' : 'Egal'} value={draw} color="#6b7280" />
               <ProbBar label={prediction.away_team.split(' ')[0]} value={away_w} color="#f97316" />
             </div>
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
@@ -740,7 +749,7 @@ function PredictionDisplay({ prediction, fixture, standings, user }: {
               </div>
             ))}
           </div>
-          <div className="text-[9px] text-gray-700 text-center mt-2 font-mono">* Cote estimate cu marjă 8% · Verifică la Betano/bet365</div>
+          <div className="text-[9px] text-gray-700 text-center mt-2 font-mono">{lang === 'en' ? '* Estimated odds with 8% margin · Verify at Betano/bet365' : '* Cote estimate cu marjă 8% · Verifică la Betano/bet365'}</div>
         </div>
 
         {/* Top 3 pariuri */}
@@ -862,10 +871,10 @@ function PredictionDisplay({ prediction, fixture, standings, user }: {
       {/* Tab: Bet Value */}
       {activeTab === 'value' && !isFree && (
         <div className="card p-5 fade-in" style={{ overflow: 'hidden' }}>
-          <div className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest mb-1 text-center">💎 Bet Value — Pariuri cu Valoare Pozitivă</div>
-          <div className="text-[10px] text-gray-600 text-center mb-4 font-mono">Modelul AI detectează unde probabilitatea depășește marja bookmaker-ului</div>
+          <div className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest mb-1 text-center">💎 Bet Value — {lang === 'en' ? 'Positive Expected Value Bets' : 'Pariuri cu Valoare Pozitivă'}</div>
+          <div className="text-[10px] text-gray-600 text-center mb-4 font-mono">{lang === 'en' ? 'AI model detects where probability exceeds bookmaker margin' : 'Modelul AI detectează unde probabilitatea depășește marja bookmaker-ului'}</div>
           {valueBets.length === 0 ? (
-            <div className="text-center py-8 text-gray-600 text-sm">Nu există pariuri cu value clar pentru acest meci</div>
+            <div className="text-center py-8 text-gray-600 text-sm">{lang === 'en' ? 'No clear value bets for this match' : 'Nu există pariuri cu value clar pentru acest meci'}</div>
           ) : (
             <div className="space-y-3">
               {valueBets.map((bet, i) => (
@@ -877,20 +886,20 @@ function PredictionDisplay({ prediction, fixture, standings, user }: {
                     </div>
                     <div className="text-right shrink-0">
                       <div className="text-lg font-bold font-mono" style={{ color: bet.color }}>+{bet.value_pct}%</div>
-                      <div className="text-[10px] text-gray-600 font-mono">edge față de piață</div>
+                      <div className="text-[10px] text-gray-600 font-mono">{lang === 'en' ? 'edge vs market' : 'edge față de piață'}</div>
                     </div>
                   </div>
                   <div className="grid grid-cols-3 gap-2 mt-3">
                     <div className="bg-gray-900/50 rounded-lg p-2 text-center">
-                      <div className="text-[10px] text-gray-600 uppercase tracking-widest">Prob. model</div>
+                      <div className="text-[10px] text-gray-600 uppercase tracking-widest">{lang === 'en' ? 'Model prob.' : 'Prob. model'}</div>
                       <div className="text-sm font-bold font-mono text-white">{bet.probability}%</div>
                     </div>
                     <div className="bg-gray-900/50 rounded-lg p-2 text-center">
-                      <div className="text-[10px] text-gray-600 uppercase tracking-widest">Cotă estimată</div>
+                      <div className="text-[10px] text-gray-600 uppercase tracking-widest">{lang === 'en' ? 'Est. odds' : 'Cotă estimată'}</div>
                       <div className="text-sm font-bold font-mono" style={{ color: bet.color }}>{bet.market_odds}</div>
                     </div>
                     <div className="bg-gray-900/50 rounded-lg p-2 text-center">
-                      <div className="text-[10px] text-gray-600 uppercase tracking-widest">EV / unitate</div>
+                      <div className="text-[10px] text-gray-600 uppercase tracking-widest">{lang === 'en' ? 'EV / unit' : 'EV / unitate'}</div>
                       <div className="text-sm font-bold font-mono" style={{ color: bet.ev > 0 ? '#10b981' : '#ef4444' }}>
                         {bet.ev > 0 ? '+' : ''}{bet.ev}
                       </div>
@@ -899,7 +908,7 @@ function PredictionDisplay({ prediction, fixture, standings, user }: {
                 </div>
               ))}
               <div className="text-[10px] text-gray-700 text-center mt-3 font-mono px-4">
-                * Value calculat față de marja medie bookmaker 10%. EV pozitiv = profitabil pe termen lung statistic. Pariați responsabil.
+                {lang === 'en' ? '* Value calculated vs. avg. bookmaker margin 10%. Positive EV = statistically profitable long-term. Bet responsibly.' : '* Value calculat față de marja medie bookmaker 10%. EV pozitiv = profitabil pe termen lung statistic. Pariați responsabil.'}
               </div>
             </div>
           )}
@@ -914,8 +923,8 @@ function PredictionDisplay({ prediction, fixture, standings, user }: {
         <div className="card p-5 fade-in" style={{ overflow: 'hidden' }}>
           <div className="flex gap-4 mb-4 text-center">
             {[
-              { label: 'xG Gazdă', value: prediction.expected_goals?.home?.toFixed(2) ?? '—', color: '#3b82f6' },
-              { label: 'xG Oaspete', value: prediction.expected_goals?.away?.toFixed(2) ?? '—', color: '#f97316' },
+              { label: lang === 'en' ? 'xG Home' : 'xG Gazdă', value: prediction.expected_goals?.home?.toFixed(2) ?? '—', color: '#3b82f6' },
+              { label: lang === 'en' ? 'xG Away' : 'xG Oaspete', value: prediction.expected_goals?.away?.toFixed(2) ?? '—', color: '#f97316' },
             ].map(s => (
               <div key={s.label} className="flex-1 bg-gray-800/40 rounded-xl p-4">
                 <div className="text-3xl font-bold font-mono" style={{ color: s.color }}>{s.value}</div>
@@ -969,15 +978,15 @@ function PredictionDisplay({ prediction, fixture, standings, user }: {
                   </table>
                 </div>
                 <div className="flex gap-3 justify-center mt-2 text-[9px] font-mono text-gray-600">
-                  <span><span className="text-blue-400">■</span> Victorie gazdă</span>
-                  <span><span className="text-gray-400">■</span> Egal</span>
-                  <span><span className="text-orange-400">■</span> Victorie oaspete</span>
+                  <span><span className="text-blue-400">■</span> {lang === 'en' ? 'Home win' : 'Victorie gazdă'}</span>
+                  <span><span className="text-gray-400">■</span> {lang === 'en' ? 'Draw' : 'Egal'}</span>
+                  <span><span className="text-orange-400">■</span> {lang === 'en' ? 'Away win' : 'Victorie oaspete'}</span>
                 </div>
               </div>
             )
           })()}
 
-          <div className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-3 text-center">Top scoruri probabile</div>
+          <div className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-3 text-center">{lang === 'en' ? 'Most likely scores' : 'Top scoruri probabile'}</div>
           <div className="grid grid-cols-2 gap-2">
             {(prediction.top_scores || []).slice(0, 8).map((s: any, i: number) => (
               <div key={i} className="flex justify-between items-center bg-gray-800/30 rounded-lg px-3 py-2">
@@ -998,22 +1007,22 @@ function PredictionDisplay({ prediction, fixture, standings, user }: {
               <div className="flex justify-between items-center mb-4">
                 <div className="text-center" style={{ flex: 1 }}>
                   <div className="text-sm font-bold text-blue-400 truncate">{prediction.home_team.split(' ').slice(-1)[0]}</div>
-                  <div className="text-[10px] text-gray-600">GAZDĂ</div>
+                  <div className="text-[10px] text-gray-600">{lang === 'en' ? 'HOME' : 'GAZDĂ'}</div>
                 </div>
                 <div className="text-gray-600 text-xs font-mono px-3">VS</div>
                 <div className="text-center" style={{ flex: 1 }}>
                   <div className="text-sm font-bold text-orange-400 truncate">{prediction.away_team.split(' ').slice(-1)[0]}</div>
-                  <div className="text-[10px] text-gray-600">OASPETE</div>
+                  <div className="text-[10px] text-gray-600">{lang === 'en' ? 'AWAY' : 'OASPETE'}</div>
                 </div>
               </div>
               {prediction.home_stats.h2h_home_wins !== undefined && (
                 <div className="mb-4 bg-gray-800/30 rounded-xl p-3">
-                  <div className="text-[10px] text-gray-600 uppercase tracking-widest mb-2 text-center">📚 Meciuri directe recente</div>
+                  <div className="text-[10px] text-gray-600 uppercase tracking-widest mb-2 text-center">📚 {lang === 'en' ? 'Recent head-to-head' : 'Meciuri directe recente'}</div>
                   <div className="flex justify-around">
                     {[
-                      { label: 'Victorii gazdă', value: prediction.home_stats.h2h_home_wins, color: '#3b82f6' },
-                      { label: 'Egaluri', value: prediction.home_stats.h2h_draws, color: '#6b7280' },
-                      { label: 'Victorii oaspete', value: prediction.home_stats.h2h_away_wins, color: '#f97316' },
+                      { label: lang === 'en' ? 'Home wins' : 'Victorii gazdă', value: prediction.home_stats.h2h_home_wins, color: '#3b82f6' },
+                      { label: lang === 'en' ? 'Draws' : 'Egaluri', value: prediction.home_stats.h2h_draws, color: '#6b7280' },
+                      { label: lang === 'en' ? 'Away wins' : 'Victorii oaspete', value: prediction.home_stats.h2h_away_wins, color: '#f97316' },
                     ].map(h => (
                       <div key={h.label} className="text-center">
                         <div className="text-2xl font-bold font-mono" style={{ color: h.color }}>{h.value}</div>
@@ -1025,7 +1034,7 @@ function PredictionDisplay({ prediction, fixture, standings, user }: {
               )}
               <StatBar label="xG For" homeVal={prediction.home_stats.xg_for ?? 1.5} awayVal={prediction.away_stats.xg_for ?? 1.2} />
               <StatBar label="xG Against" homeVal={prediction.home_stats.xg_against ?? 1.2} awayVal={prediction.away_stats.xg_against ?? 1.5} />
-              <StatBar label="Goluri/meci" homeVal={prediction.home_stats.goals_avg ?? 1.5} awayVal={prediction.away_stats.goals_avg ?? 1.2} />
+              <StatBar label={lang === 'en' ? 'Goals/match' : 'Goluri/meci'} homeVal={prediction.home_stats.goals_avg ?? 1.5} awayVal={prediction.away_stats.goals_avg ?? 1.2} />
               <StatBar label="Elo Rating" homeVal={prediction.home_stats.elo_rating ?? 1500} awayVal={prediction.away_stats.elo_rating ?? 1500} format={(v) => Math.round(v).toString()} />
             </div>
           )}
@@ -1039,10 +1048,10 @@ function PredictionDisplay({ prediction, fixture, standings, user }: {
       {/* Tab: Clasament */}
       {activeTab === 'standings' && (
         <div className="card p-5 fade-in" style={{ overflow: 'hidden' }}>
-          <div className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-4 text-center">Clasament · Sezon curent</div>
+          <div className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-4 text-center">{lang === 'en' ? 'Standings · Current season' : 'Clasament · Sezon curent'}</div>
           <StandingsTable standings={standings} highlightTeams={[prediction.home_team, prediction.away_team]} />
           {standings.length === 0 && (
-            <p className="text-center text-xs text-gray-600 mt-2">Clasamentul e disponibil pentru ligile majore</p>
+            <p className="text-center text-xs text-gray-600 mt-2">{lang === 'en' ? 'Standings available for major leagues' : 'Clasamentul e disponibil pentru ligile majore'}</p>
           )}
         </div>
       )}
@@ -1050,7 +1059,7 @@ function PredictionDisplay({ prediction, fixture, standings, user }: {
       {/* Tab: Modele */}
       {activeTab === 'models' && (
         <div className="card p-5 fade-in" style={{ overflow: 'hidden' }}>
-          <div className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-4 text-center">Detalii modele predicție</div>
+          <div className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-4 text-center">{lang === 'en' ? 'Prediction model details' : 'Detalii modele predicție'}</div>
           <div className="space-y-4">
             {[
               { key: 'elo',     label: '⚡ Elo Rating', color: '#a78bfa', weight: '15-20%' },
@@ -1063,7 +1072,7 @@ function PredictionDisplay({ prediction, fixture, standings, user }: {
                 <div key={key} className="bg-gray-800/30 rounded-xl p-4">
                   <div className="flex justify-between items-center mb-3">
                     <span className="text-sm font-bold" style={{ color }}>{label}</span>
-                    <span className="text-[10px] text-gray-600 font-mono">Pondere: {weight}</span>
+                    <span className="text-[10px] text-gray-600 font-mono">{lang === 'en' ? 'Weight' : 'Pondere'}: {weight}</span>
                   </div>
                   <div className="flex justify-around">
                     {[

@@ -154,7 +154,7 @@ export default function DesprePage() {
             </a>
           </div>
           <div style={{ marginTop: 16, fontSize: 11, color: '#4b5563' }}>
-            Analiză statistică în scop educațional · Nu constituie sfat de pariere
+            {lang === 'en' ? 'Statistical analysis for educational purposes · Not betting advice' : 'Analiză statistică în scop educațional · Nu constituie sfat de pariere'}
           </div>
         </div>
 
