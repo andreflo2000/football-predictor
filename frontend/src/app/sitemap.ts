@@ -6,6 +6,11 @@ const LEAGUES = [
   'serie-a',
   'bundesliga',
   'ligue-1',
+  'champions-league',
+  'europa-league',
+  'primeira-liga',
+  'eredivisie',
+  'championship',
 ]
 
 export default function sitemap(): MetadataRoute.Sitemap {
