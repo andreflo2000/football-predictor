@@ -9,6 +9,7 @@ const PLANS = (lang: 'ro' | 'en') => [
     id: 'analyst' as const,
     name: 'Analyst',
     price: 39,
+    priceEur: 8,
     badge: null,
     features: lang === 'en' ? [
       'All HIGH confidence predictions',
@@ -29,6 +30,7 @@ const PLANS = (lang: 'ro' | 'en') => [
     id: 'pro' as const,
     name: 'Pro',
     price: 99,
+    priceEur: 19,
     badge: lang === 'en' ? 'Recommended' : 'Recomandat',
     features: lang === 'en' ? [
       'Everything in Analyst',
@@ -156,14 +158,18 @@ export default function UpgradePage() {
                   {plan.name}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
-                  <span style={{ fontSize: 42, fontWeight: 800, color: '#f1f5f9' }}>{plan.price}</span>
-                  <span style={{ fontSize: 16, color: '#64748b' }}>RON/{lang === 'en' ? 'month' : 'lună'}</span>
+                  {lang === 'en' ? (
+                    <>
+                      <span style={{ fontSize: 42, fontWeight: 800, color: '#f1f5f9' }}>{plan.priceEur}</span>
+                      <span style={{ fontSize: 16, color: '#64748b' }}>€/month</span>
+                    </>
+                  ) : (
+                    <>
+                      <span style={{ fontSize: 42, fontWeight: 800, color: '#f1f5f9' }}>{plan.price}</span>
+                      <span style={{ fontSize: 16, color: '#64748b' }}>RON/lună</span>
+                    </>
+                  )}
                 </div>
-                {lang === 'en' && (
-                  <div style={{ fontSize: 13, color: '#475569', marginTop: 4, fontFamily: 'monospace' }}>
-                    ≈ {plan.price === 39 ? '8' : '20'}€/month
-                  </div>
-                )}
               </div>
 
               <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 24px 0', flexGrow: 1 }}>
