@@ -671,15 +671,26 @@ def debug_status():
         except Exception as e:
             result["football_data_error"] = str(e)
 
-    # Status Club-elo
+    # Status Club-elo — test fetch live
     try:
         import predictor as _pred
         result["clubelo_loaded"] = len(_pred._clubelo_ratings)
-        result["clubelo_sample"] = {
-            k: round(v) for k, v in list(_pred._clubelo_ratings.items())[:5]
-        } if _pred._clubelo_ratings else {}
-    except Exception:
+        if not _pred._clubelo_ratings:
+            # Incearca fetch live pt diagnostic
+            try:
+                import requests as _r
+                resp = _r.get("http://api.clubelo.com/2026-04-16", timeout=8)
+                result["clubelo_http_status"] = resp.status_code
+                result["clubelo_http_bytes"] = len(resp.content)
+            except Exception as _fe:
+                result["clubelo_fetch_error"] = str(_fe)
+        else:
+            result["clubelo_sample"] = {
+                k: round(v) for k, v in list(_pred._clubelo_ratings.items())[:5]
+            }
+    except Exception as _ce:
         result["clubelo_loaded"] = 0
+        result["clubelo_error"] = str(_ce)
 
     return result
 
