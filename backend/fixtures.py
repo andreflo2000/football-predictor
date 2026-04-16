@@ -621,6 +621,75 @@ def _fetch_fixtures_for_date(target: str, known_teams: list) -> list:
     return _fetch_fixtures_for_range(target, target, known_teams)
 
 
+def _fetch_af_missing_leagues(date_str: str, known_teams: list, existing: list) -> list:
+    """
+    Fetch ligi neacoperite de football-data.org free tier via api-football.com.
+    Folosit doar pentru EL (Europa League) si altele care returneaza 403.
+    Consum: 1 req/liga/zi — minim posibil.
+    """
+    if not AF_KEY:
+        return []
+
+    # Ligile care NU sunt in free tier football-data.org
+    MISSING_LEAGUES = {3: "EL"}  # Europa League
+
+    # Elimina ligile care au deja meciuri din alte surse
+    existing_codes = {f.get("competition_code") for f in existing}
+    to_fetch = {lid: code for lid, code in MISSING_LEAGUES.items() if code not in existing_codes}
+    if not to_fetch:
+        return []
+
+    season = datetime.date.fromisoformat(date_str).year
+    if datetime.date.fromisoformat(date_str).month < 7:
+        season -= 1
+
+    fixtures = []
+    headers = {"x-apisports-key": AF_KEY}
+    for league_id, comp_code in to_fetch.items():
+        try:
+            resp = requests.get(
+                f"{AF_BASE_URL}/fixtures",
+                headers=headers,
+                params={"date": date_str, "league": league_id, "season": season},
+                timeout=15,
+            )
+            if resp.status_code != 200:
+                continue
+            comp = COMPETITIONS.get(comp_code, {})
+            for fx in resp.json().get("response", []):
+                status = fx.get("fixture", {}).get("status", {}).get("short", "")
+                if status not in ("NS", "TBD"):
+                    continue
+                home_raw = fx.get("teams", {}).get("home", {}).get("name", "")
+                away_raw = fx.get("teams", {}).get("away", {}).get("name", "")
+                if not home_raw or not away_raw:
+                    continue
+                utc_str = fx.get("fixture", {}).get("date", "")
+                time_str = ""
+                if utc_str:
+                    try:
+                        dt = datetime.datetime.fromisoformat(utc_str.replace("Z", "+00:00"))
+                        time_str = dt.astimezone(BUCHAREST_TZ).strftime("%H:%M")
+                    except Exception:
+                        pass
+                fixtures.append({
+                    "home":             _normalize_name(home_raw, known_teams),
+                    "away":             _normalize_name(away_raw, known_teams),
+                    "home_raw":         home_raw,
+                    "away_raw":         away_raw,
+                    "league":           comp.get("name", comp_code),
+                    "flag":             comp.get("flag", "🌍"),
+                    "div":              comp.get("div", ""),
+                    "time":             time_str,
+                    "date":             date_str,
+                    "competition_code": comp_code,
+                    "status":           "TIMED",
+                })
+        except Exception as e:
+            print(f"[af_missing] Eroare {comp_code}: {e}")
+    return fixtures
+
+
 def get_today_fixtures(date: Optional[str] = None, known_teams: list = None) -> list:
     """
     Returneaza meciurile pentru data ceruta (default: azi).
@@ -632,11 +701,12 @@ def get_today_fixtures(date: Optional[str] = None, known_teams: list = None) -> 
     date_requested_explicitly = date is not None
 
     if date_requested_explicitly:
+        fixtures = []
         if API_KEY:
             fixtures = _fetch_fixtures_per_competition(base.isoformat(), known_teams or [])
-            if fixtures:
-                return fixtures
-        return []
+        # Adauga EL si alte ligi neacoperite de football-data.org free tier
+        fixtures += _fetch_af_missing_leagues(base.isoformat(), known_teams or [], fixtures)
+        return fixtures
 
     # Default (azi) → look-ahead maxim 4 zile
     for offset in range(5):
@@ -644,6 +714,7 @@ def get_today_fixtures(date: Optional[str] = None, known_teams: list = None) -> 
         fixtures = []
         if API_KEY:
             fixtures = _fetch_fixtures_per_competition(target, known_teams or [])
+        fixtures += _fetch_af_missing_leagues(target, known_teams or [], fixtures)
         if fixtures:
             if offset > 0:
                 print(f"    Azi nu sunt meciuri — am gasit {len(fixtures)} in {target}")
