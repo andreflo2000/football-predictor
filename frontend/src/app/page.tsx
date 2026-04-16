@@ -806,9 +806,7 @@ function PredictionDisplay({ prediction, fixture, standings, user }: {
       {activeTab === 'markets' && (
         <div className="card p-5 fade-in" style={{ overflow: 'hidden' }}>
           {(() => {
-            const groups = (prediction.markets && prediction.markets.length > 0)
-              ? prediction.markets.map((m: any) => ({ category: m.category || m.label, items: m.items || m.markets || [] }))
-              : allMarkets
+            const groups = allMarkets
             if (isFree) {
               // Show 1X2 group, blur the rest
               const first = groups[0]
