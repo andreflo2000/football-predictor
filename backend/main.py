@@ -801,6 +801,38 @@ def track_record_history(limit: int = Query(100, le=500)):
         return {"results": [], "error": str(e)}
 
 
+@app.get("/api/track-record/vip")
+def track_record_vip():
+    """Stats VIP picks (confidence >= 75%) — afisate pe pagina Pro."""
+    import datetime as _dt
+    client = get_client()
+    if client is None:
+        return {"total": 0, "wins": 0, "accuracy": 0, "this_month_total": 0, "this_month_wins": 0, "this_month_accuracy": 0}
+    try:
+        now = _dt.date.today()
+        month_start = now.replace(day=1).isoformat()
+
+        rows = client.table("pick_results").select("confidence, result, pick_date").execute()
+        data = rows.data or []
+
+        vip_all = [r for r in data if r.get("result") in ("win", "loss") and (r.get("confidence") or 0) >= 0.75]
+        this_month = [r for r in vip_all if (r.get("pick_date") or "") >= month_start]
+
+        wins_all = sum(1 for r in vip_all if r["result"] == "win")
+        wins_month = sum(1 for r in this_month if r["result"] == "win")
+
+        return {
+            "total":                len(vip_all),
+            "wins":                 wins_all,
+            "accuracy":             round(wins_all / len(vip_all) * 100, 1) if vip_all else 0,
+            "this_month_total":     len(this_month),
+            "this_month_wins":      wins_month,
+            "this_month_accuracy":  round(wins_month / len(this_month) * 100, 1) if this_month else 0,
+        }
+    except Exception as e:
+        return {"total": 0, "wins": 0, "accuracy": 0, "this_month_total": 0, "this_month_wins": 0, "this_month_accuracy": 0, "error": str(e)}
+
+
 # ─────────────────────────────────────────────
 # ADMIN — marcare rezultate WIN/LOSS
 # ─────────────────────────────────────────────
