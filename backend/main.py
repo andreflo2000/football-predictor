@@ -671,6 +671,16 @@ def debug_status():
         except Exception as e:
             result["football_data_error"] = str(e)
 
+    # Status Club-elo
+    try:
+        from predictor import _clubelo_ratings
+        result["clubelo_loaded"] = len(_clubelo_ratings)
+        result["clubelo_sample"] = {
+            k: round(v) for k, v in list(_clubelo_ratings.items())[:5]
+        } if _clubelo_ratings else {}
+    except Exception:
+        result["clubelo_loaded"] = 0
+
     return result
 
 
