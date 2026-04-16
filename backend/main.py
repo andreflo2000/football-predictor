@@ -63,6 +63,13 @@ app.add_middleware(
 @app.on_event("startup")
 async def startup_event():
     load_model()
+    # Incarca Elo-uri externe de la clubelo.com (mai precise decat cele din model)
+    try:
+        from predictor import refresh_clubelo
+        import cache as _cache_mod
+        refresh_clubelo(_cache_mod)
+    except Exception as _e:
+        logger.warning("Club-elo refresh esuat la startup: %s", _e)
     # Goleste cache la fiecare restart — evita date invechite
     try:
         import cache as _c
@@ -86,6 +93,10 @@ async def startup_event():
         scheduler.add_job(compute_and_store_picks, CronTrigger(hour=13, minute=0))
         # Auto-marcare WIN/LOSS la 23:30 dupa terminarea majoritatii meciurilor
         scheduler.add_job(auto_mark_results, CronTrigger(hour=23, minute=30))
+        # Refresh Elo externe zilnic la 06:00 (inainte de picks)
+        from predictor import refresh_clubelo
+        import cache as _cache_mod
+        scheduler.add_job(lambda: refresh_clubelo(_cache_mod), CronTrigger(hour=6, minute=0))
 
         scheduler.start()
         logger.info("Scheduler pornit: pre-calcul picks la 07:00 si 13:00")

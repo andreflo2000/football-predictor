@@ -27,6 +27,7 @@ _label_encoder = None
 _elo_ratings   = None
 _feature_means = None
 _h2h_history   = None
+_clubelo_ratings: dict = {}   # Elo externe de la clubelo.com (mai precise)
 
 
 def load_model():
@@ -48,8 +49,23 @@ def load_model():
     print(f"Model AI incarcat: {len(_team_stats)} echipe, {len(_features)} features")
 
 
+def refresh_clubelo(redis_cache=None):
+    """Actualizeaza Elo-urile externe de la clubelo.com. Apelat la startup si zilnic."""
+    global _clubelo_ratings
+    try:
+        from club_elo import fetch_club_elo
+        fresh = fetch_club_elo(redis_cache)
+        if fresh:
+            _clubelo_ratings = fresh
+            print(f"[club_elo] Actualizat: {len(_clubelo_ratings)} echipe")
+    except Exception as e:
+        print(f"[club_elo] Eroare refresh: {e}")
+
+
 def _team_elo(team: str) -> float:
-    """Cauta Elo pentru echipa in oricare liga."""
+    """Cauta Elo pentru echipa — prioritate clubelo.com, fallback la model intern."""
+    if team in _clubelo_ratings:
+        return _clubelo_ratings[team]
     vals = [v for k, v in _elo_ratings.items() if k.split("|", 1)[-1] == team]
     return max(vals) if vals else 1500.0
 
