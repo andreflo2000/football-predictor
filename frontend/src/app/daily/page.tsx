@@ -1047,7 +1047,46 @@ export default function DailyPage() {
                 )}
               </div>
             ) : (
-              shown.map((pick, i) => <PickCard key={i} pick={pick} rank={i + 1} userTier={user?.tier} />)
+              (() => {
+                const isFree = !user || user.tier === 'free'
+                const FREE_LIMIT = 3
+                return (
+                  <>
+                    {shown.map((pick, i) => {
+                      if (isFree && i >= FREE_LIMIT) return null
+                      return <PickCard key={i} pick={pick} rank={i + 1} userTier={user?.tier} />
+                    })}
+                    {isFree && shown.length > FREE_LIMIT && (
+                      <div className="relative mt-2 mb-4">
+                        {/* Picks blur preview */}
+                        <div style={{ filter: 'blur(4px)', pointerEvents: 'none', userSelect: 'none', opacity: 0.5 }}>
+                          {shown.slice(FREE_LIMIT, FREE_LIMIT + 2).map((pick, i) => (
+                            <PickCard key={i} pick={pick} rank={FREE_LIMIT + i + 1} userTier="free" />
+                          ))}
+                        </div>
+                        {/* CTA overlay */}
+                        <div className="absolute inset-0 flex flex-col items-center justify-center rounded-2xl"
+                          style={{ background: 'linear-gradient(180deg, transparent 0%, rgba(10,17,40,0.97) 40%)' }}>
+                          <div className="text-center px-6 py-6">
+                            <div className="text-2xl mb-2">🔒</div>
+                            <div className="text-white font-bold text-base mb-1">
+                              {lang === 'en' ? `${shown.length - FREE_LIMIT} more picks locked` : `Încă ${shown.length - FREE_LIMIT} pick-uri blocate`}
+                            </div>
+                            <div className="text-gray-400 text-xs font-mono mb-4">
+                              {lang === 'en' ? 'Upgrade to Analyst to unlock all picks + Kelly% + stats' : 'Upgrade la Analyst pentru toate pick-urile + Kelly% + statistici'}
+                            </div>
+                            <a href="/upgrade"
+                              className="inline-block px-6 py-2.5 rounded-xl font-bold text-sm"
+                              style={{ background: 'linear-gradient(135deg, #22d3ee, #3b82f6)', color: '#000' }}>
+                              {lang === 'en' ? '⚡ Unlock all picks — 39 RON/mo' : '⚡ Deblochează toate — 39 RON/lună'}
+                            </a>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )
+              })()
             )}
 
             {/* Share */}
