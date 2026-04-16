@@ -1014,12 +1014,19 @@ def create_checkout_session(
     return {"url": checkout_url}
 
 
+GUMROAD_WEBHOOK_SECRET = os.getenv("GUMROAD_WEBHOOK_SECRET", "")
+
 @app.post("/api/webhook/gumroad")
-async def gumroad_webhook(request: Request):
+async def gumroad_webhook(request: Request, token: Optional[str] = None):
     """
     Ping Gumroad — upgradeaza/downgradeaza tier dupa events de plata.
-    Setat in Gumroad Settings → Advanced → Ping.
+    Setat in Gumroad Settings → Advanced → Ping URL:
+      https://football-predictor-api-n9sl.onrender.com/api/webhook/gumroad?token=SECRET
     """
+    if GUMROAD_WEBHOOK_SECRET and token != GUMROAD_WEBHOOK_SECRET:
+        logger.warning("[gumroad] Webhook cu token invalid: %s", token)
+        raise HTTPException(status_code=403, detail="Forbidden")
+
     try:
         body = await request.body()
         # Gumroad trimite form-encoded
