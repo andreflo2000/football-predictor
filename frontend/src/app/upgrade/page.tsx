@@ -159,6 +159,11 @@ export default function UpgradePage() {
                   <span style={{ fontSize: 42, fontWeight: 800, color: '#f1f5f9' }}>{plan.price}</span>
                   <span style={{ fontSize: 16, color: '#64748b' }}>RON/{lang === 'en' ? 'month' : 'lună'}</span>
                 </div>
+                {lang === 'en' && (
+                  <div style={{ fontSize: 13, color: '#475569', marginTop: 4, fontFamily: 'monospace' }}>
+                    ≈ {plan.price === 39 ? '8' : '20'}€/month
+                  </div>
+                )}
               </div>
 
               <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 24px 0', flexGrow: 1 }}>
