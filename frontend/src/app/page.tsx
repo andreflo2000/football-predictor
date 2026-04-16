@@ -173,19 +173,19 @@ function calcAllMarkets(prediction: Prediction, lang = 'ro') {
     },
     {
       category: en ? '⏸️ Half-Time — Total Goals' : '⏸️ Pauză — Total goluri', items: [
-        { name: 'HT Over 0.5', probability: htOver05, odds: odd(htOver05) },
-        { name: 'HT Under 0.5', probability: 100 - htOver05, odds: odd(100 - htOver05) },
-        { name: 'HT Over 1.5', probability: htOver15, odds: odd(htOver15) },
-        { name: 'HT Under 1.5', probability: 100 - htOver15, odds: odd(100 - htOver15) },
-        { name: 'HT Over 2.5', probability: htOver25, odds: odd(htOver25) },
-        { name: 'HT Under 2.5', probability: 100 - htOver25, odds: odd(100 - htOver25) },
+        { name: en ? 'HT Over 0.5' : 'La pauză Peste 0.5', probability: htOver05, odds: odd(htOver05) },
+        { name: en ? 'HT Under 0.5' : 'La pauză Sub 0.5', probability: 100 - htOver05, odds: odd(100 - htOver05) },
+        { name: en ? 'HT Over 1.5' : 'La pauză Peste 1.5', probability: htOver15, odds: odd(htOver15) },
+        { name: en ? 'HT Under 1.5' : 'La pauză Sub 1.5', probability: 100 - htOver15, odds: odd(100 - htOver15) },
+        { name: en ? 'HT Over 2.5' : 'La pauză Peste 2.5', probability: htOver25, odds: odd(htOver25) },
+        { name: en ? 'HT Under 2.5' : 'La pauză Sub 2.5', probability: 100 - htOver25, odds: odd(100 - htOver25) },
       ]
     },
     {
       category: en ? '🕐 Half-Time Result' : '🕐 Rezultat la pauză', items: [
-        { name: en ? `HT 1 — ${prediction.home_team} leads` : `HT 1 — ${prediction.home_team} conduce`, probability: htHome, odds: odd(htHome) },
-        { name: en ? 'HT X — Draw at half-time' : 'HT X — Egal la pauză', probability: htDraw, odds: odd(htDraw) },
-        { name: en ? `HT 2 — ${prediction.away_team} leads` : `HT 2 — ${prediction.away_team} conduce`, probability: Math.max(htAway, 1), odds: odd(Math.max(htAway, 1)) },
+        { name: en ? `HT 1 — ${prediction.home_team} leads` : `Pauză 1 — ${prediction.home_team} conduce`, probability: htHome, odds: odd(htHome) },
+        { name: en ? 'HT X — Draw at half-time' : 'Pauză X — Egal la pauză', probability: htDraw, odds: odd(htDraw) },
+        { name: en ? `HT 2 — ${prediction.away_team} leads` : `Pauză 2 — ${prediction.away_team} conduce`, probability: Math.max(htAway, 1), odds: odd(Math.max(htAway, 1)) },
       ]
     },
   ]
@@ -624,9 +624,9 @@ function TierComparisonTable() {
               })}
             </div>
             {tier.name !== 'Free' && (
-              <a href="/upgrade" className="mt-3 block text-center py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all"
+              <a href="/upgrade" className="mt-3 block text-center py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-wide transition-all"
                 style={{ background: `${tier.color}20`, color: tier.color, border: `1px solid ${tier.color}40` }}>
-                {ro ? 'Activează →' : 'Activate →'}
+                {ro ? 'Activează' : 'Activate'}
               </a>
             )}
           </div>
@@ -655,7 +655,7 @@ function PredictionDisplay({ prediction, fixture, standings, user }: {
 
   const tabs = [
     { key: 'markets',   label: lang === 'en' ? '🎯 Bets' : '🎯 Pariuri' },
-    { key: 'value',     label: `💎 Value${!isFree && valueBets.length > 0 ? ` (${valueBets.length})` : ''}`, locked: isFree },
+    { key: 'value',     label: `💎 ${lang === 'en' ? 'Value' : 'Valoare'}${!isFree && valueBets.length > 0 ? ` (${valueBets.length})` : ''}`, locked: isFree },
     { key: 'scores',    label: lang === 'en' ? '⚽ Scores' : '⚽ Scoruri', locked: isFree },
     { key: 'stats',     label: '📊 Stats' },
     { key: 'standings', label: lang === 'en' ? '🏆 Stand.' : '🏆 Clas.' },
