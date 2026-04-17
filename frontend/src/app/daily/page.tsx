@@ -45,6 +45,9 @@ interface Pick {
   over25_rate?: number
   competition_code?: string
   has_odds?: boolean
+  odds_home?: number | null
+  odds_draw?: number | null
+  odds_away?: number | null
   // BI signals
   edge?: number
   value_bet?: boolean
@@ -83,6 +86,14 @@ function confColor(level: string, lang: 'ro' | 'en' = 'ro') {
   if (level === 'high')   return { bg: 'rgba(34,197,94,0.12)',  border: 'rgba(34,197,94,0.35)',  text: '#22c55e', label: lang === 'en' ? 'HIGH' : 'RIDICATĂ' }
   if (level === 'medium') return { bg: 'rgba(245,158,11,0.12)', border: 'rgba(245,158,11,0.35)', text: '#f59e0b', label: lang === 'en' ? 'MEDIUM' : 'MEDIE' }
   return                         { bg: 'rgba(99,102,241,0.10)', border: 'rgba(99,102,241,0.30)', text: '#818cf8', label: lang === 'en' ? 'LOW' : 'SCĂZUTĂ' }
+}
+
+// Returneaza cota reala daca exista, altfel estimeaza din probabilitate
+function getOdd(p: Pick, prediction: 'H' | 'D' | 'A', prob: number): { odd: string; isReal: boolean } {
+  if (prediction === 'H' && p.odds_home) return { odd: p.odds_home.toFixed(2), isReal: true }
+  if (prediction === 'D' && p.odds_draw) return { odd: p.odds_draw.toFixed(2), isReal: true }
+  if (prediction === 'A' && p.odds_away) return { odd: p.odds_away.toFixed(2), isReal: true }
+  return { odd: ((100 / Math.max(prob, 1)) * 0.92).toFixed(2), isReal: false }
 }
 
 function predLabel(p: Pick, lang: 'ro' | 'en' = 'ro') {
@@ -805,7 +816,7 @@ function BankerCard({ picks }: { picks: Pick[] }) {
   const banker = validPicks.find(p => p.confidence >= 65) ?? validPicks[0]
   if (!banker) return null
   const pred   = predLabel(banker, lang)
-  const odd    = ((100 / Math.max(pred.prob, 1)) * 0.92).toFixed(2)
+  const { odd, isReal } = getOdd(banker, banker.prediction, pred.prob)
 
   return (
     <div className="mb-4 fade-in">
@@ -833,8 +844,10 @@ function BankerCard({ picks }: { picks: Pick[] }) {
             </div>
           </div>
           <div className="text-right ml-4 shrink-0">
-            <div className="text-2xl font-bold font-mono text-purple-400">~{odd}</div>
-            <div className="text-[9px] text-gray-600 font-mono">{lang === 'en' ? 'estimated odds' : 'cotă estimată'}</div>
+            <div className="text-2xl font-bold font-mono text-purple-400">{isReal ? '' : '~'}{odd}</div>
+            <div className="text-[9px] font-mono" style={{ color: isReal ? '#10b981' : '#6b7280' }}>
+              {isReal ? (lang === 'en' ? '✓ live odds' : '✓ cotă live') : (lang === 'en' ? 'estimated odds' : 'cotă estimată')}
+            </div>
           </div>
         </div>
       </div>

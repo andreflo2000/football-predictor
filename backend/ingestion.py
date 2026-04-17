@@ -66,6 +66,9 @@ def compute_and_store_picks(date: str = None) -> dict:
                 "btts_rate":        round(result.get("btts_rate", 0.5) * 100, 0),
                 "over25_rate":      round(result.get("over25_rate", 0.5) * 100, 0),
                 "has_odds":         odds is not None,
+                "odds_home":        round(odds["AvgH"], 2) if odds and odds.get("AvgH") else None,
+                "odds_draw":        round(odds["AvgD"], 2) if odds and odds.get("AvgD") else None,
+                "odds_away":        round(odds["AvgA"], 2) if odds and odds.get("AvgA") else None,
                 "vip_only":         False,
                 "model_version":    MODEL_VERSION,
                 # BI signals
