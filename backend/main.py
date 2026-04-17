@@ -153,7 +153,13 @@ def auth_login(req: AuthRequest, request: Request):
 
 @app.get("/api/auth/me")
 def auth_me(user: dict = Depends(require_user)):
-    """Returneaza datele utilizatorului curent."""
+    """Returneaza datele utilizatorului curent cu tier live din DB."""
+    from db import get_client
+    client = get_client()
+    if client:
+        rows = client.table("users").select("tier").eq("id", int(user["id"])).execute()
+        if rows.data:
+            user = {**user, "tier": rows.data[0]["tier"]}
     return user
 
 

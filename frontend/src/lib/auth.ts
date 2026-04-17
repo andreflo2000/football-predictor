@@ -74,6 +74,24 @@ export function logout() {
   window.location.reload()
 }
 
+export async function refreshTier(): Promise<void> {
+  const token = getToken()
+  if (!token) return
+  try {
+    const res = await fetch(`${API}/api/auth/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    if (!res.ok) return
+    const data = await res.json()
+    const user = getUser()
+    if (user && data.tier && data.tier !== user.tier) {
+      localStorage.setItem('flopi_user', JSON.stringify({ ...user, tier: data.tier }))
+    }
+  } catch {
+    // silently fail — tier ramine din localStorage
+  }
+}
+
 function _saveSession(data: { access_token: string; tier: string }) {
   localStorage.setItem('flopi_token', data.access_token)
   // Decode payload din JWT (fara librarie)

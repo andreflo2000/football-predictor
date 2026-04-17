@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { t } from './i18n'
 import axios from 'axios'
 import { useLang } from '@/lib/LangContext'
-import { getUser, logout, type AuthUser } from '@/lib/auth'
+import { getUser, logout, refreshTier, type AuthUser } from '@/lib/auth'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -1128,7 +1128,10 @@ export default function Home() {
   const { lang } = useLang()
   const tr = t[lang]
   const [user, setUser] = useState<AuthUser | null>(null)
-  useEffect(() => { setUser(getUser()) }, [])
+  useEffect(() => {
+    setUser(getUser())
+    refreshTier().then(() => setUser(getUser()))
+  }, [])
   const [leagues, setLeagues] = useState<League[]>([])
   const [selectedLeague, setSelectedLeague] = useState<number | null>(null)
   const [fixtures, setFixtures] = useState<Fixture[]>([])
