@@ -27,6 +27,10 @@ logger = logging.getLogger(__name__)
 
 ADMIN_SECRET = os.getenv("ADMIN_SECRET", "")
 
+@app.get("/api/admin/check")
+def admin_check(x_admin_key: Optional[str] = Header(None, alias="X-Admin-Key")):
+    return {"secret_len": len(ADMIN_SECRET), "secret_preview": ADMIN_SECRET[:3] + "***" if ADMIN_SECRET else "EMPTY", "key_received": x_admin_key[:3] + "***" if x_admin_key else "NONE", "match": x_admin_key == ADMIN_SECRET}
+
 # ── Sentry (erori in productie) ─────────────────────────────
 _sentry_dsn = os.getenv("SENTRY_DSN", "")
 if _sentry_dsn:
