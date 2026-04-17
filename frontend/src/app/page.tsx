@@ -134,7 +134,7 @@ function calcAllMarkets(prediction: Prediction, lang = 'ro') {
   const htAway = Math.round(100 - htHome - htDraw)
 
   const margin = 1.08
-  const odd = (p: number) => (100 / Math.max(p, 1) * margin).toFixed(2)
+  const odd = (p: number) => (100 / (Math.max(p, 1) * margin)).toFixed(2)
 
   return [
     {
@@ -191,50 +191,38 @@ function calcAllMarkets(prediction: Prediction, lang = 'ro') {
   ]
 }
 
-// ── Bet Value — identifică pariuri cu valoare față de piață ──────────────────
+// ── Bet Value — pariuri cu convingere ridicată + cote estimate ───────────────
 function calcBetValue(prediction: Prediction, lang = 'ro') {
   const markets = calcAllMarkets(prediction, lang)
-  const margin  = 1.08
+  const mkt_margin = 1.08  // marja tipica bookmaker ~8%
   const results: Array<{
-    name: string; probability: number; our_odds: string
-    market_odds: number; ev: number; value_pct: number; rating: string; color: string
+    name: string; probability: number
+    fair_odds: number; est_bk_odds: number
+    conviction: number; rating: string; color: string
   }> = []
 
   for (const group of markets) {
     for (const item of group.items) {
-      const p         = item.probability / 100
-      const our_odds  = parseFloat(item.odds)
-      // Cota "corectă" fără marjă de risc: 1/p
-      // Piața tipică adaugă 8-12% marjă → implied_prob = p / 1.10
-      // Dacă modelul nostru are p > implied_prob_piata → value pozitiv
-      const mkt_margin   = 1.10                    // marja medie bookmaker
-      const implied_mkt  = p / mkt_margin          // prob implicita la bookmaker
-      const fair_mkt_odd = 1 / implied_mkt         // cota justa de la bookmaker
-      // EV = p * fair_mkt_odd - 1 (cat castigi in medie per 1 unitate pariu)
-      const ev         = Math.round((p * fair_mkt_odd - 1) * 100) / 100
-      // Value% = cat de mult depaseste modelul marja pietei
-      const value_pct  = Math.round((p - implied_mkt) * 100)
+      const p = item.probability / 100
+      if (p < 0.55) continue  // doar pariuri cu convingere reala
 
-      if (value_pct > 0 && p >= 0.45) {
-        const rating = lang === 'en'
-          ? (value_pct >= 8 ? '🔥 High Value' : value_pct >= 4 ? '✅ Good Value' : '⚡ Small Value')
-          : (value_pct >= 8 ? '🔥 Valoare ridicată' : value_pct >= 4 ? '✅ Valoare bună' : '⚡ Valoare mică')
-        const color  = value_pct >= 8 ? '#10b981' : value_pct >= 4 ? '#f59e0b' : '#6b7280'
-        results.push({
-          name: item.name,
-          probability: item.probability,
-          our_odds: item.odds,
-          market_odds: parseFloat(fair_mkt_odd.toFixed(2)),
-          ev,
-          value_pct,
-          rating,
-          color,
-        })
-      }
+      // Cota corecta a modelului (fara marja): 1/p
+      const fair_odds = parseFloat((1 / p).toFixed(2))
+      // Cota estimata bookmaker (cu marja 8%): 1/(p * 1.08) — mai mica decat fair
+      const est_bk_odds = parseFloat((1 / (p * mkt_margin)).toFixed(2))
+      // Convingere = cat depaseste pragul de 55%
+      const conviction = Math.round((p - 0.55) * 100)
+
+      const rating = lang === 'en'
+        ? (p >= 0.75 ? '🔥 High conviction' : p >= 0.65 ? '✅ Good conviction' : '⚡ Moderate')
+        : (p >= 0.75 ? '🔥 Convingere ridicată' : p >= 0.65 ? '✅ Convingere bună' : '⚡ Moderat')
+      const color = p >= 0.75 ? '#10b981' : p >= 0.65 ? '#f59e0b' : '#6b7280'
+
+      results.push({ name: item.name, probability: item.probability, fair_odds, est_bk_odds, conviction, rating, color })
     }
   }
 
-  return results.sort((a, b) => b.value_pct - a.value_pct).slice(0, 8)
+  return results.sort((a, b) => b.probability - a.probability).slice(0, 8)
 }
 
 // ── Top 3 cele mai sigure pariuri ─────────────────────────────────────────────
@@ -890,10 +878,13 @@ function PredictionDisplay({ prediction, fixture, standings, user }: {
       )}
       {activeTab === 'value' && isProOrOwner && (
         <div className="card p-5 fade-in" style={{ overflow: 'hidden' }}>
-          <div className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest mb-1 text-center">💎 {lang === 'en' ? 'Bet Value — Positive Expected Value Bets' : 'Pariuri cu Valoare — Valoare Așteptată Pozitivă'}</div>
-          <div className="text-[10px] text-gray-600 text-center mb-4 font-mono">{lang === 'en' ? 'AI model detects where probability exceeds bookmaker margin' : 'Modelul AI detectează unde probabilitatea depășește marja bookmaker-ului'}</div>
+          <div className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest mb-1 text-center">💎 {lang === 'en' ? 'High Conviction Bets' : 'Pariuri cu Convingere Ridicată'}</div>
+          <div className="text-[10px] text-gray-600 text-center mb-1 font-mono">{lang === 'en' ? 'Bets where model confidence ≥55% · Estimated odds only' : 'Pariuri cu probabilitate model ≥55% · Cote doar estimate'}</div>
+          <div className="text-[10px] text-amber-600 text-center mb-4 font-mono">
+            {lang === 'en' ? '⚠️ Estimated odds — verify at Betano/bet365 before betting' : '⚠️ Cote estimate — verifică la Betano/bet365 înainte de a paria'}
+          </div>
           {valueBets.length === 0 ? (
-            <div className="text-center py-8 text-gray-600 text-sm">{lang === 'en' ? 'No clear value bets for this match' : 'Nu există pariuri cu valoare clară pentru acest meci'}</div>
+            <div className="text-center py-8 text-gray-600 text-sm">{lang === 'en' ? 'No high-conviction bets for this match' : 'Nu există pariuri cu convingere ridicată pentru acest meci'}</div>
           ) : (
             <div className="space-y-3">
               {valueBets.map((bet, i) => (
@@ -904,30 +895,26 @@ function PredictionDisplay({ prediction, fixture, standings, user }: {
                       <div className="text-[10px] font-bold mt-0.5" style={{ color: bet.color }}>{bet.rating}</div>
                     </div>
                     <div className="text-right shrink-0">
-                      <div className="text-lg font-bold font-mono" style={{ color: bet.color }}>+{bet.value_pct}%</div>
-                      <div className="text-[10px] text-gray-600 font-mono">{lang === 'en' ? 'edge vs market' : 'avantaj față de piață'}</div>
+                      <div className="text-lg font-bold font-mono" style={{ color: bet.color }}>{bet.probability}%</div>
+                      <div className="text-[10px] text-gray-600 font-mono">{lang === 'en' ? 'model probability' : 'probabilitate model'}</div>
                     </div>
                   </div>
-                  <div className="grid grid-cols-3 gap-2 mt-3">
+                  <div className="grid grid-cols-2 gap-2 mt-3">
                     <div className="bg-gray-900/50 rounded-lg p-2 text-center">
-                      <div className="text-[10px] text-gray-600 uppercase tracking-widest">{lang === 'en' ? 'Model prob.' : 'Prob. model'}</div>
-                      <div className="text-sm font-bold font-mono text-white">{bet.probability}%</div>
+                      <div className="text-[10px] text-gray-600 uppercase tracking-widest">{lang === 'en' ? 'Fair odds (model)' : 'Cotă corectă (model)'}</div>
+                      <div className="text-sm font-bold font-mono text-white">{bet.fair_odds}</div>
+                      <div className="text-[9px] text-gray-700 mt-0.5">{lang === 'en' ? 'bet if odds ≥ this' : 'pariază dacă cota ≥ asta'}</div>
                     </div>
                     <div className="bg-gray-900/50 rounded-lg p-2 text-center">
-                      <div className="text-[10px] text-gray-600 uppercase tracking-widest">{lang === 'en' ? 'Est. odds' : 'Cotă estimată'}</div>
-                      <div className="text-sm font-bold font-mono" style={{ color: bet.color }}>{bet.market_odds}</div>
-                    </div>
-                    <div className="bg-gray-900/50 rounded-lg p-2 text-center">
-                      <div className="text-[10px] text-gray-600 uppercase tracking-widest">{lang === 'en' ? 'EV / unit' : 'EV / unitate'}</div>
-                      <div className="text-sm font-bold font-mono" style={{ color: bet.ev > 0 ? '#10b981' : '#ef4444' }}>
-                        {bet.ev > 0 ? '+' : ''}{bet.ev}
-                      </div>
+                      <div className="text-[10px] text-gray-600 uppercase tracking-widest">{lang === 'en' ? 'Est. bookmaker odds*' : 'Cotă est. bookmaker*'}</div>
+                      <div className="text-sm font-bold font-mono" style={{ color: bet.color }}>{bet.est_bk_odds}</div>
+                      <div className="text-[9px] text-gray-700 mt-0.5">{lang === 'en' ? '~8% margin applied' : 'marjă ~8% aplicată'}</div>
                     </div>
                   </div>
                 </div>
               ))}
               <div className="text-[10px] text-gray-700 text-center mt-3 font-mono px-4">
-                {lang === 'en' ? '* Value calculated vs. avg. bookmaker margin 10%. Positive EV = statistically profitable long-term. Bet responsibly.' : '* Valoare calculată față de marja medie bookmaker 10%. EV pozitiv = profitabil pe termen lung statistic. Pariați responsabil.'}
+                {lang === 'en' ? '* Estimated odds based on model probabilities + 8% bookmaker margin. Not real market odds. Always verify. Bet responsibly.' : '* Cote estimate pe baza probabilităților modelului + marjă 8% bookmaker. Nu sunt cote reale de piață. Verificați întotdeauna. Pariați responsabil.'}
               </div>
             </div>
           )}
