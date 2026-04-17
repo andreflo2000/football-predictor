@@ -881,7 +881,7 @@ function PredictionDisplay({ prediction, fixture, standings, user }: {
           <div className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest mb-1 text-center">💎 {lang === 'en' ? 'High Conviction Bets' : 'Pariuri cu Convingere Ridicată'}</div>
           <div className="text-[10px] text-gray-600 text-center mb-1 font-mono">{lang === 'en' ? 'Bets where model confidence ≥55% · Estimated odds only' : 'Pariuri cu probabilitate model ≥55% · Cote doar estimate'}</div>
           <div className="text-[10px] text-amber-600 text-center mb-4 font-mono">
-            {lang === 'en' ? '⚠️ Estimated odds — verify at Betano/bet365 before betting' : '⚠️ Cote estimate — verifică la Betano/bet365 înainte de a paria'}
+            {lang === 'en' ? '⚠️ Estimated odds — always verify at your bookmaker before betting' : '⚠️ Cote estimate — verifică întotdeauna la bookmaker-ul tău înainte de a paria'}
           </div>
           {valueBets.length === 0 ? (
             <div className="text-center py-8 text-gray-600 text-sm">{lang === 'en' ? 'No high-conviction bets for this match' : 'Nu există pariuri cu convingere ridicată pentru acest meci'}</div>
@@ -914,7 +914,7 @@ function PredictionDisplay({ prediction, fixture, standings, user }: {
                 </div>
               ))}
               <div className="text-[10px] text-gray-700 text-center mt-3 font-mono px-4">
-                {lang === 'en' ? '* Estimated odds based on model probabilities + 8% bookmaker margin. Not real market odds. Always verify. Bet responsibly.' : '* Cote estimate pe baza probabilităților modelului + marjă 8% bookmaker. Nu sunt cote reale de piață. Verificați întotdeauna. Pariați responsabil.'}
+                {lang === 'en' ? '* Estimated odds based on model probabilities + 8% bookmaker margin. Not real market odds. Always verify before betting. Bet responsibly.' : '* Cote estimate pe baza probabilităților modelului + marjă 8%. Nu sunt cote reale de piață. Verificați întotdeauna înainte de a paria. Pariați responsabil.'}
               </div>
             </div>
           )}
