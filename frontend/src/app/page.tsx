@@ -563,22 +563,23 @@ function TierComparisonTable() {
     { label: ro ? ro : en, ok: ok1 }, { label: ro ? ro : en, ok: ok2 }, { label: ro ? ro : en, ok: ok3 }
   ]
   const labels = [
-    { ro: 'Acces Pagina Predicții',             en: 'Predictions page access',          free: true,  analyst: true,  pro: true  },
-    { ro: 'Direcție meci (1 / X / 2)',          en: 'Match direction (1 / X / 2)',       free: true,  analyst: true,  pro: true  },
-    { ro: 'Toate ligile disponibile',           en: 'All leagues available',             free: true,  analyst: true,  pro: true  },
+    { ro: 'Predicții HIGH confidence',          en: 'HIGH confidence predictions',       free: false, analyst: true,  pro: true  },
     { ro: 'Probabilități exacte (%)',           en: 'Exact probabilities (%)',           free: false, analyst: true,  pro: true  },
-    { ro: 'Scor de încredere AI',               en: 'AI confidence score',               free: false, analyst: true,  pro: true  },
     { ro: 'Piețe complete (Over/Under, BTTS)',  en: 'Full markets (Over/Under, BTTS)',   free: false, analyst: true,  pro: true  },
-    { ro: 'Value Bet & Edge față de piață',     en: 'Value Bet & market edge',           free: false, analyst: true,  pro: true  },
-    { ro: 'Score Matrix & xG Stats',            en: 'Score Matrix & xG Stats',           free: false, analyst: true,  pro: true  },
-    { ro: 'Picks zilnice AI (07:00 & 13:00)',   en: 'Daily AI picks (07:00 & 13:00)',    free: false, analyst: true,  pro: true  },
-    { ro: 'Notificări Telegram (2x/zi)',        en: 'Telegram alerts (2x/day)',          free: false, analyst: true,  pro: true  },
+    { ro: 'Acumulator 3-fold zilnic',           en: '3-fold daily accumulator',          free: false, analyst: true,  pro: true  },
+    { ro: 'Notificări Telegram (2×/zi)',        en: 'Telegram alerts (2×/day)',          free: false, analyst: true,  pro: true  },
+    { ro: 'Track record (7 zile)',              en: 'Track record (7 days)',             free: false, analyst: true,  pro: true  },
+    { ro: 'xG + Elo + Model breakdown',         en: 'xG + Elo + Model breakdown',        free: false, analyst: false, pro: true  },
+    { ro: 'VALUE BET cu edge față de piață',    en: 'VALUE BET with market edge',        free: false, analyst: false, pro: true  },
+    { ro: 'Score Matrix (Poisson bivariate)',   en: 'Score Matrix (Poisson bivariate)',  free: false, analyst: false, pro: true  },
+    { ro: 'Track record complet + ROI',         en: 'Full track record + ROI',           free: false, analyst: false, pro: true  },
     { ro: 'VIP Picks — confidence ≥75%',        en: 'VIP Picks — confidence ≥75%',      free: false, analyst: false, pro: true  },
+    { ro: 'Acumulator 5-fold optimizat AI',     en: '5-fold AI accumulator',             free: false, analyst: false, pro: true  },
   ]
   const tiers = [
-    { name: 'Free',    price: '0 RON',                    color: '#6b7280',  highlight: false, key: 'free'    as const },
-    { name: 'Analyst', price: ro ? '39 RON/lună' : '$8/mo', color: '#3b82f6', highlight: true,  key: 'analyst' as const },
-    { name: 'Pro',     price: ro ? '99 RON/lună' : '$20/mo', color: '#f59e0b', highlight: false, key: 'pro'     as const },
+    { name: 'Free',    price: ro ? '0 RON' : '$0',           color: '#6b7280',  highlight: false, key: 'free'    as const, count: 0 },
+    { name: 'Analyst', price: ro ? '39 RON/lună' : '$8/mo',  color: '#3b82f6',  highlight: false, key: 'analyst' as const, count: 6 },
+    { name: 'Pro',     price: ro ? '99 RON/lună' : '$20/mo', color: '#f59e0b',  highlight: true,  key: 'pro'     as const, count: 12 },
   ]
   return (
     <div className="card p-5 mb-6 fade-in" style={{ overflow: 'hidden' }}>
@@ -607,6 +608,12 @@ function TierComparisonTable() {
             <div className="text-center mb-3">
               <div className="text-sm font-bold" style={{ color: tier.color }}>{tier.name}</div>
               <div className="text-[10px] font-mono text-gray-500 mt-0.5">{tier.price}</div>
+              {tier.count > 0 && (
+                <div className="text-[9px] font-bold mt-1 px-2 py-0.5 rounded-full inline-block"
+                  style={{ background: `${tier.color}15`, color: tier.color, border: `1px solid ${tier.color}30` }}>
+                  {tier.count} {ro ? 'funcții' : 'features'}
+                </div>
+              )}
             </div>
             <div className="space-y-1.5 flex-1">
               {labels.map((f, i) => {
@@ -640,6 +647,7 @@ function PredictionDisplay({ prediction, fixture, standings, user }: {
   prediction: Prediction; fixture: Fixture; standings: StandingRow[]; user: AuthUser | null
 }) {
   const isFree = !user || user.tier === 'free'
+  const isProOrOwner = user?.tier === 'pro' || user?.tier === 'owner'
   const { lang } = useLang()
   const [activeTab, setActiveTab] = useState('markets')
   const pred = prediction.prediction || {}
@@ -655,11 +663,11 @@ function PredictionDisplay({ prediction, fixture, standings, user }: {
 
   const tabs = [
     { key: 'markets',   label: lang === 'en' ? '🎯 Bets' : '🎯 Pariuri' },
-    { key: 'value',     label: `💎 ${lang === 'en' ? 'Value' : 'Valoare'}${!isFree && valueBets.length > 0 ? ` (${valueBets.length})` : ''}`, locked: isFree },
+    { key: 'value',     label: `💎 ${lang === 'en' ? 'Value' : 'Valoare'}${isProOrOwner && valueBets.length > 0 ? ` (${valueBets.length})` : ''}`, locked: !isProOrOwner },
     { key: 'scores',    label: lang === 'en' ? '⚽ Scores' : '⚽ Scoruri', locked: isFree },
     { key: 'stats',     label: '📊 Stats' },
     { key: 'standings', label: lang === 'en' ? '🏆 Stand.' : '🏆 Clas.' },
-    { key: 'models',    label: lang === 'en' ? '🤖 Models' : '🤖 Modele' },
+    { key: 'models',    label: lang === 'en' ? '🤖 Models' : '🤖 Modele', locked: !isProOrOwner },
   ]
 
   return (
@@ -867,7 +875,18 @@ function PredictionDisplay({ prediction, fixture, standings, user }: {
       )}
 
       {/* Tab: Bet Value */}
-      {activeTab === 'value' && !isFree && (
+      {activeTab === 'value' && !isProOrOwner && (
+        <div className="card p-6 fade-in text-center" style={{ overflow: 'hidden' }}>
+          <div className="text-3xl mb-3">💎</div>
+          <div className="text-sm font-bold text-white mb-2">{lang === 'en' ? 'Value Bet — Pro feature' : 'Value Bet — funcție Pro'}</div>
+          <div className="text-xs text-gray-500 mb-4 px-4">{lang === 'en' ? 'See exactly which bets have positive expected value vs. the bookmaker margin. Exclusive to Pro.' : 'Vezi exact ce pariuri au valoare așteptată pozitivă față de marja bookmaker-ului. Exclusiv Pro.'}</div>
+          <a href="/upgrade" className="inline-block px-6 py-2.5 rounded-full text-sm font-bold"
+            style={{ background: 'linear-gradient(135deg,#f59e0b,#ef4444)', color: 'white' }}>
+            {lang === 'en' ? 'Upgrade to Pro — $20/mo' : 'Upgrade la Pro — 99 RON/lună'}
+          </a>
+        </div>
+      )}
+      {activeTab === 'value' && isProOrOwner && (
         <div className="card p-5 fade-in" style={{ overflow: 'hidden' }}>
           <div className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest mb-1 text-center">💎 {lang === 'en' ? 'Bet Value — Positive Expected Value Bets' : 'Pariuri cu Valoare — Valoare Așteptată Pozitivă'}</div>
           <div className="text-[10px] text-gray-600 text-center mb-4 font-mono">{lang === 'en' ? 'AI model detects where probability exceeds bookmaker margin' : 'Modelul AI detectează unde probabilitatea depășește marja bookmaker-ului'}</div>
@@ -1055,7 +1074,18 @@ function PredictionDisplay({ prediction, fixture, standings, user }: {
       )}
 
       {/* Tab: Modele */}
-      {activeTab === 'models' && (
+      {activeTab === 'models' && !isProOrOwner && (
+        <div className="card p-6 fade-in text-center" style={{ overflow: 'hidden' }}>
+          <div className="text-3xl mb-3">🤖</div>
+          <div className="text-sm font-bold text-white mb-2">{lang === 'en' ? 'Model breakdown — Pro feature' : 'Detalii model — funcție Pro'}</div>
+          <div className="text-xs text-gray-500 mb-4 px-4">{lang === 'en' ? 'Full XGBoost + Elo + Poisson breakdown with weights and probabilities per model. Exclusive to Pro.' : 'Detalii complete XGBoost + Elo + Poisson cu ponderi și probabilități per model. Exclusiv Pro.'}</div>
+          <a href="/upgrade" className="inline-block px-6 py-2.5 rounded-full text-sm font-bold"
+            style={{ background: 'linear-gradient(135deg,#f59e0b,#ef4444)', color: 'white' }}>
+            {lang === 'en' ? 'Upgrade to Pro — $20/mo' : 'Upgrade la Pro — 99 RON/lună'}
+          </a>
+        </div>
+      )}
+      {activeTab === 'models' && isProOrOwner && (
         <div className="card p-5 fade-in" style={{ overflow: 'hidden' }}>
           <div className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-4 text-center">{lang === 'en' ? 'Prediction model details' : 'Detalii modele predicție'}</div>
           <div className="space-y-4">

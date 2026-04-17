@@ -11,41 +11,63 @@ const PLANS = (lang: 'ro' | 'en') => [
     price: 39,
     priceUsd: 8,
     badge: null,
+    featureCount: 5,
     features: lang === 'en' ? [
       'All HIGH confidence predictions',
+      'Full markets (Over/Under · BTTS · Double Chance)',
       'Daily 3-fold accumulator',
-      'Advanced xG + Elo statistics',
-      'Telegram notifications',
-      'Full track record history',
+      'Telegram notifications (2×/day)',
+      'Basic track record (last 7 days)',
     ] : [
-      'Toate predictiile HIGH confidence',
+      'Toate predicțiile HIGH confidence',
+      'Piețe complete (Over/Under · BTTS · Șansă dublă)',
       'Acumulator zilnic 3-fold',
-      'Statistici avansate xG + Elo',
-      'Notificari Telegram',
-      'Istoric complet track record',
+      'Notificări Telegram (2×/zi)',
+      'Track record de bază (ultimele 7 zile)',
     ],
-    notIncluded: lang === 'en' ? ['Exclusive VIP picks', 'Priority support'] : ['Picks VIP exclusive', 'Suport prioritar'],
+    notIncluded: lang === 'en' ? [
+      'xG + Elo + Model breakdown',
+      'Value Bet with edge vs. market',
+      'Full track record + personal ROI',
+      'Exclusive VIP picks',
+      'Priority support',
+    ] : [
+      'xG + Elo + Model breakdown',
+      'Value Bet cu avantaj față de piață',
+      'Track record complet + ROI personal',
+      'Picks VIP exclusive',
+      'Suport prioritar',
+    ],
   },
   {
     id: 'pro' as const,
     name: 'Pro',
     price: 99,
     priceUsd: 20,
-    badge: lang === 'en' ? 'Recommended' : 'Recomandat',
+    badge: lang === 'en' ? 'Best Value' : 'Cea mai bună alegere',
+    featureCount: 10,
     features: lang === 'en' ? [
-      'Everything in Analyst',
-      'Exclusive VIP picks (top 3 daily)',
-      '5-fold high-value accumulator',
-      'Comparative market analysis',
+      'Everything in Analyst (5 features)',
+      'xG + Elo + full model breakdown',
+      'VALUE BET marked with edge vs. market',
+      'Score Matrix — Poisson bivariate',
+      'Complete track record + personal ROI',
+      'Exclusive VIP picks (top 3 daily · confidence ≥75%)',
+      '5-fold AI-optimized accumulator',
+      'Odds comparator — is your bet worth it?',
       'Priority support 24/7',
       'Beta access to new features',
     ] : [
-      'Tot ce include Analyst',
-      'Picks VIP exclusive (top 3 zilnic)',
-      'Acumulator 5-fold high-value',
-      'Analiza comparativa piete',
+      'Tot ce include Analyst (5 funcții)',
+      'xG + Elo + detalii complete model',
+      'VALUE BET marcat cu avantaj față de piață',
+      'Score Matrix — Poisson bivariate',
+      'Track record complet + ROI personal',
+      'Picks VIP exclusive (top 3 zilnic · confidence ≥75%)',
+      'Acumulator 5-fold optimizat AI',
+      'Comparator cote — merită pariul tău?',
       'Suport prioritar 24/7',
-      'Acces beta functii noi',
+      'Acces beta funcții noi',
     ],
     notIncluded: [],
   },
@@ -153,9 +175,20 @@ export default function UpgradePage() {
                 </div>
               )}
 
-              <div style={{ marginBottom: 24 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: '#94a3b8', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 1 }}>
-                  {plan.name}
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1 }}>
+                    {plan.name}
+                  </div>
+                  <div style={{
+                    fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase',
+                    padding: '3px 10px', borderRadius: 99,
+                    background: plan.badge ? 'rgba(245,158,11,0.15)' : 'rgba(59,130,246,0.15)',
+                    color: plan.badge ? '#f59e0b' : '#60a5fa',
+                    border: `1px solid ${plan.badge ? 'rgba(245,158,11,0.3)' : 'rgba(59,130,246,0.3)'}`,
+                  }}>
+                    {(plan as any).featureCount} {lang === 'en' ? 'features' : 'funcții'}
+                  </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
                   {lang === 'en' ? (
@@ -170,17 +203,36 @@ export default function UpgradePage() {
                     </>
                   )}
                 </div>
+                {plan.badge && (
+                  <div style={{ marginTop: 6, fontSize: 11, color: '#94a3b8' }}>
+                    {lang === 'en' ? '2.5× more features · same low price ratio' : 'De 2× mai multe funcții · cel mai bun raport calitate/preț'}
+                  </div>
+                )}
               </div>
 
               <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 24px 0', flexGrow: 1 }}>
-                {plan.features.map((f) => (
-                  <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 12, color: '#cbd5e1', fontSize: 14 }}>
-                    <span style={{ color: '#4ade80', fontWeight: 700, flexShrink: 0, marginTop: 1 }}>✓</span>
-                    {f}
+                {plan.features.map((f, i) => (
+                  <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 10, color: '#cbd5e1', fontSize: 13 }}>
+                    <span style={{
+                      color: i === 0 && plan.id === 'pro' ? '#94a3b8' : '#4ade80',
+                      fontWeight: 700, flexShrink: 0, marginTop: 1,
+                      fontSize: i === 0 && plan.id === 'pro' ? 11 : 13,
+                    }}>
+                      {i === 0 && plan.id === 'pro' ? '↳' : '✓'}
+                    </span>
+                    <span style={{ color: i === 0 && plan.id === 'pro' ? '#64748b' : '#cbd5e1' }}>{f}</span>
                   </li>
                 ))}
+                {plan.notIncluded.length > 0 && (
+                  <>
+                    <li style={{ borderTop: '1px solid rgba(255,255,255,0.06)', margin: '14px 0 10px' }} />
+                    <li style={{ fontSize: 10, color: '#475569', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
+                      {lang === 'en' ? 'Not included' : 'Nu include'}
+                    </li>
+                  </>
+                )}
                 {plan.notIncluded.map((f) => (
-                  <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 12, color: '#475569', fontSize: 14 }}>
+                  <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 8, color: '#374151', fontSize: 12 }}>
                     <span style={{ flexShrink: 0, marginTop: 1 }}>✗</span>
                     {f}
                   </li>
