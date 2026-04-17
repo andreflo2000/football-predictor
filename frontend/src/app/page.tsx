@@ -563,7 +563,9 @@ function TierComparisonTable() {
     { label: ro ? ro : en, ok: ok1 }, { label: ro ? ro : en, ok: ok2 }, { label: ro ? ro : en, ok: ok3 }
   ]
   const labels = [
-    { ro: 'Predicții HIGH confidence',          en: 'HIGH confidence predictions',       free: false, analyst: true,  pro: true  },
+    { ro: 'Acces pagina Predicții',             en: 'Predictions page access',           free: true,  analyst: true,  pro: true  },
+    { ro: 'Direcție meci (1 / X / 2)',          en: 'Match direction (1 / X / 2)',       free: true,  analyst: true,  pro: true  },
+    { ro: 'Toate ligile disponibile',           en: 'All leagues available',             free: true,  analyst: true,  pro: true  },
     { ro: 'Probabilități exacte (%)',           en: 'Exact probabilities (%)',           free: false, analyst: true,  pro: true  },
     { ro: 'Piețe complete (Over/Under, BTTS)',  en: 'Full markets (Over/Under, BTTS)',   free: false, analyst: true,  pro: true  },
     { ro: 'Acumulator 3-fold zilnic',           en: '3-fold daily accumulator',          free: false, analyst: true,  pro: true  },
@@ -577,9 +579,9 @@ function TierComparisonTable() {
     { ro: 'Acumulator 5-fold optimizat AI',     en: '5-fold AI accumulator',             free: false, analyst: false, pro: true  },
   ]
   const tiers = [
-    { name: 'Free',    price: ro ? '0 RON' : '$0',           color: '#6b7280',  highlight: false, key: 'free'    as const, count: 0 },
-    { name: 'Analyst', price: ro ? '39 RON/lună' : '$8/mo',  color: '#3b82f6',  highlight: false, key: 'analyst' as const, count: 6 },
-    { name: 'Pro',     price: ro ? '99 RON/lună' : '$20/mo', color: '#f59e0b',  highlight: true,  key: 'pro'     as const, count: 12 },
+    { name: 'Free',    price: ro ? '0 RON' : '$0',           color: '#6b7280',  highlight: false, key: 'free'    as const, count: 3 },
+    { name: 'Analyst', price: ro ? '39 RON/lună' : '$8/mo',  color: '#3b82f6',  highlight: false, key: 'analyst' as const, count: 8 },
+    { name: 'Pro',     price: ro ? '99 RON/lună' : '$20/mo', color: '#f59e0b',  highlight: true,  key: 'pro'     as const, count: 14 },
   ]
   return (
     <div className="card p-5 mb-6 fade-in" style={{ overflow: 'hidden' }}>
