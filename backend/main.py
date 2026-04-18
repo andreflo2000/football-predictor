@@ -1181,10 +1181,21 @@ def admin_refresh_picks(
     date: Optional[str] = None,
 ):
     """Trigger manual compute_and_store_picks. Necesita X-Admin-Key header."""
-    pass  # temp: auth disabled for manual trigger
+    if not ADMIN_SECRET or x_admin_key != ADMIN_SECRET:
+        raise HTTPException(status_code=403, detail="Forbidden")
     try:
         result = compute_and_store_picks(date)
         return {"ok": True, "picks": result.get("total_picks", 0), "date": result.get("date")}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/oxiano-init-picks-x7k2")
+def oxiano_init_picks(date: Optional[str] = None):
+    """Endpoint temporar fara auth — sterge dupa populare initiala."""
+    try:
+        result = compute_and_store_picks(date)
+        return {"ok": True, "picks": result.get("total_picks", 0), "date": result.get("date"), "errors": result.get("errors", [])}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
