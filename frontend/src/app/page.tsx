@@ -109,10 +109,10 @@ function calcAllMarkets(prediction: Prediction, lang = 'ro') {
   const btts    = Math.round(pHomeSc * pAwaySc / 100)
   const bttsNo  = 100 - btts
 
-  // Șansă dublă
-  const dc1x = Math.min(97, Math.round((home_w + draw) * 0.97))
-  const dcx2 = Math.min(97, Math.round((draw + away_w) * 0.97))
-  const dc12 = Math.min(97, Math.round((home_w + away_w) * 0.97))
+  // Șansă dublă — probabilitate directă fara factor artificial
+  const dc1x = Math.min(97, Math.round(home_w + draw))
+  const dcx2 = Math.min(97, Math.round(draw + away_w))
+  const dc12 = Math.min(97, Math.round(home_w + away_w))
 
   // Pauză — xG la pauză ≈ 42% din total
   const htH = xgHome * 0.42
@@ -123,15 +123,20 @@ function calcAllMarkets(prediction: Prediction, lang = 'ro') {
   const htOver15 = pOver(htTotal, 1)
   const htOver25 = pOver(htTotal, 2)
 
-  // Rezultat pauză (Poisson bivariate simplificat)
-  const pHtHomeSc = 1 - poissonCDF(htH, 0)  // P(gazdă înscrie >= 1 la pauză)
-  const pHtAwaySc = 1 - poissonCDF(htA, 0)
-  const pHtBoth   = pHtHomeSc * pHtAwaySc
-  const pHtNone   = poissonCDF(htH, 0) * poissonCDF(htA, 0)
-  // P(HT 1-0 sau 2-0...) ≈ P(home >= 1) * P(away = 0)
-  const htHome = Math.round(pHtHomeSc * poissonCDF(htA, 0) * 100)
-  const htDraw = Math.round((pHtNone + pHtBoth) * 100)  // 0-0 sau ambii înscriu egal
-  const htAway = Math.round(100 - htHome - htDraw)
+  // Rezultat pauză — Poisson bivariate exact (matrice 5x5)
+  const poiP = (l: number, k: number) => { let t = Math.exp(-l); for (let i = 0; i < k; i++) t *= l / (i + 1); return t }
+  let htHomeP = 0, htDrawP = 0, htAwayP = 0
+  for (let h = 0; h <= 4; h++) {
+    for (let a = 0; a <= 4; a++) {
+      const p = poiP(htH, h) * poiP(htA, a)
+      if (h > a) htHomeP += p
+      else if (h === a) htDrawP += p
+      else htAwayP += p
+    }
+  }
+  const htHome = Math.round(htHomeP * 100)
+  const htDraw = Math.round(htDrawP * 100)
+  const htAway = Math.max(1, Math.round(htAwayP * 100))
 
   const margin = 1.08
   const odd = (p: number) => (100 / (Math.max(p, 1) * margin)).toFixed(2)
