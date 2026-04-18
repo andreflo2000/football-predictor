@@ -139,58 +139,60 @@ function calcAllMarkets(prediction: Prediction, lang = 'ro') {
   const htAway = Math.max(1, Math.round(htAwayP * 100))
 
   const margin = 1.08
-  const odd = (p: number) => (100 / (Math.max(p, 1) * margin)).toFixed(2)
+  // Cap: nicio probabilitate nu poate fi 0% sau 100% — e imposibil in fotbal
+  const cap = (p: number) => Math.min(99, Math.max(1, p))
+  const odd = (p: number) => (100 / (cap(p) * margin)).toFixed(2)
 
   return [
     {
       category: en ? '⚽ Match Result (1X2)' : '⚽ Rezultat meci (1X2)', items: [
-        { name: en ? `1 — ${prediction.home_team} Win` : `1 — Victorie ${prediction.home_team}`, probability: home_w, odds: odd(home_w) },
-        { name: en ? 'X — Draw' : 'X — Egal', probability: draw, odds: odd(draw) },
-        { name: en ? `2 — ${prediction.away_team} Win` : `2 — Victorie ${prediction.away_team}`, probability: away_w, odds: odd(away_w) },
+        { name: en ? `1 — ${prediction.home_team} Win` : `1 — Victorie ${prediction.home_team}`, probability: cap(home_w), odds: odd(home_w) },
+        { name: en ? 'X — Draw' : 'X — Egal', probability: cap(draw), odds: odd(draw) },
+        { name: en ? `2 — ${prediction.away_team} Win` : `2 — Victorie ${prediction.away_team}`, probability: cap(away_w), odds: odd(away_w) },
       ]
     },
     {
       category: en ? '🎯 Double Chance' : '🎯 Șansă dublă', items: [
-        { name: en ? `1X — ${prediction.home_team} or Draw` : `1X — ${prediction.home_team} sau Egal`, probability: dc1x, odds: odd(dc1x) },
-        { name: en ? `X2 — Draw or ${prediction.away_team}` : `X2 — Egal sau ${prediction.away_team}`, probability: dcx2, odds: odd(dcx2) },
-        { name: en ? '12 — No Draw' : '12 — Fără egal', probability: dc12, odds: odd(dc12) },
+        { name: en ? `1X — ${prediction.home_team} or Draw` : `1X — ${prediction.home_team} sau Egal`, probability: cap(dc1x), odds: odd(dc1x) },
+        { name: en ? `X2 — Draw or ${prediction.away_team}` : `X2 — Egal sau ${prediction.away_team}`, probability: cap(dcx2), odds: odd(dcx2) },
+        { name: en ? '12 — No Draw' : '12 — Fără egal', probability: cap(dc12), odds: odd(dc12) },
       ]
     },
     {
       category: en ? '📊 Total Goals (full match)' : '📊 Total goluri (meci întreg)', items: [
-        { name: en ? 'Over 0.5 goals' : 'Peste 0.5 goluri în meci', probability: over05, odds: odd(over05) },
-        { name: en ? 'Under 0.5 goals' : 'Sub 0.5 goluri în meci', probability: 100 - over05, odds: odd(100 - over05) },
-        { name: en ? 'Over 1.5 goals' : 'Peste 1.5 goluri în meci', probability: over15, odds: odd(over15) },
-        { name: en ? 'Under 1.5 goals' : 'Sub 1.5 goluri în meci', probability: 100 - over15, odds: odd(100 - over15) },
-        { name: en ? 'Over 2.5 goals' : 'Peste 2.5 goluri în meci', probability: over25, odds: odd(over25) },
-        { name: en ? 'Under 2.5 goals' : 'Sub 2.5 goluri în meci', probability: 100 - over25, odds: odd(100 - over25) },
-        { name: en ? 'Over 3.5 goals' : 'Peste 3.5 goluri în meci', probability: over35, odds: odd(over35) },
-        { name: en ? 'Under 3.5 goals' : 'Sub 3.5 goluri în meci', probability: 100 - over35, odds: odd(100 - over35) },
-        { name: en ? 'Over 4.5 goals' : 'Peste 4.5 goluri în meci', probability: over45, odds: odd(over45) },
-        { name: en ? 'Under 4.5 goals' : 'Sub 4.5 goluri în meci', probability: 100 - over45, odds: odd(100 - over45) },
+        { name: en ? 'Over 0.5 goals' : 'Peste 0.5 goluri în meci', probability: cap(over05), odds: odd(over05) },
+        { name: en ? 'Under 0.5 goals' : 'Sub 0.5 goluri în meci', probability: cap(100 - over05), odds: odd(100 - over05) },
+        { name: en ? 'Over 1.5 goals' : 'Peste 1.5 goluri în meci', probability: cap(over15), odds: odd(over15) },
+        { name: en ? 'Under 1.5 goals' : 'Sub 1.5 goluri în meci', probability: cap(100 - over15), odds: odd(100 - over15) },
+        { name: en ? 'Over 2.5 goals' : 'Peste 2.5 goluri în meci', probability: cap(over25), odds: odd(over25) },
+        { name: en ? 'Under 2.5 goals' : 'Sub 2.5 goluri în meci', probability: cap(100 - over25), odds: odd(100 - over25) },
+        { name: en ? 'Over 3.5 goals' : 'Peste 3.5 goluri în meci', probability: cap(over35), odds: odd(over35) },
+        { name: en ? 'Under 3.5 goals' : 'Sub 3.5 goluri în meci', probability: cap(100 - over35), odds: odd(100 - over35) },
+        { name: en ? 'Over 4.5 goals' : 'Peste 4.5 goluri în meci', probability: cap(over45), odds: odd(over45) },
+        { name: en ? 'Under 4.5 goals' : 'Sub 4.5 goluri în meci', probability: cap(100 - over45), odds: odd(100 - over45) },
       ]
     },
     {
       category: en ? '🔄 Both Teams to Score (BTTS)' : '🔄 Ambele înscriu (BTTS)', items: [
-        { name: en ? 'BTTS — Yes' : 'BTTS — Da', probability: btts, odds: odd(btts) },
-        { name: en ? 'BTTS — No' : 'BTTS — Nu', probability: bttsNo, odds: odd(bttsNo) },
+        { name: en ? 'BTTS — Yes' : 'BTTS — Da', probability: cap(btts), odds: odd(btts) },
+        { name: en ? 'BTTS — No' : 'BTTS — Nu', probability: cap(bttsNo), odds: odd(bttsNo) },
       ]
     },
     {
       category: en ? '⏸️ Half-Time — Total Goals' : '⏸️ Pauză — Total goluri', items: [
-        { name: en ? 'HT Over 0.5' : 'La pauză Peste 0.5 goluri', probability: htOver05, odds: odd(htOver05) },
-        { name: en ? 'HT Under 0.5' : 'La pauză Sub 0.5 goluri', probability: 100 - htOver05, odds: odd(100 - htOver05) },
-        { name: en ? 'HT Over 1.5' : 'La pauză Peste 1.5 goluri', probability: htOver15, odds: odd(htOver15) },
-        { name: en ? 'HT Under 1.5' : 'La pauză Sub 1.5 goluri', probability: 100 - htOver15, odds: odd(100 - htOver15) },
-        { name: en ? 'HT Over 2.5' : 'La pauză Peste 2.5 goluri', probability: htOver25, odds: odd(htOver25) },
-        { name: en ? 'HT Under 2.5' : 'La pauză Sub 2.5 goluri', probability: 100 - htOver25, odds: odd(100 - htOver25) },
+        { name: en ? 'HT Over 0.5' : 'La pauză Peste 0.5 goluri', probability: cap(htOver05), odds: odd(htOver05) },
+        { name: en ? 'HT Under 0.5' : 'La pauză Sub 0.5 goluri', probability: cap(100 - htOver05), odds: odd(100 - htOver05) },
+        { name: en ? 'HT Over 1.5' : 'La pauză Peste 1.5 goluri', probability: cap(htOver15), odds: odd(htOver15) },
+        { name: en ? 'HT Under 1.5' : 'La pauză Sub 1.5 goluri', probability: cap(100 - htOver15), odds: odd(100 - htOver15) },
+        { name: en ? 'HT Over 2.5' : 'La pauză Peste 2.5 goluri', probability: cap(htOver25), odds: odd(htOver25) },
+        { name: en ? 'HT Under 2.5' : 'La pauză Sub 2.5 goluri', probability: cap(100 - htOver25), odds: odd(100 - htOver25) },
       ]
     },
     {
       category: en ? '🕐 Half-Time Result' : '🕐 Rezultat la pauză', items: [
-        { name: en ? `HT 1 — ${prediction.home_team} leads` : `Pauză 1 — ${prediction.home_team} conduce`, probability: htHome, odds: odd(htHome) },
-        { name: en ? 'HT X — Draw at half-time' : 'Pauză X — Egal la pauză', probability: htDraw, odds: odd(htDraw) },
-        { name: en ? `HT 2 — ${prediction.away_team} leads` : `Pauză 2 — ${prediction.away_team} conduce`, probability: Math.max(htAway, 1), odds: odd(Math.max(htAway, 1)) },
+        { name: en ? `HT 1 — ${prediction.home_team} leads` : `Pauză 1 — ${prediction.home_team} conduce`, probability: cap(htHome), odds: odd(htHome) },
+        { name: en ? 'HT X — Draw at half-time' : 'Pauză X — Egal la pauză', probability: cap(htDraw), odds: odd(htDraw) },
+        { name: en ? `HT 2 — ${prediction.away_team} leads` : `Pauză 2 — ${prediction.away_team} conduce`, probability: cap(htAway), odds: odd(htAway) },
       ]
     },
   ]
