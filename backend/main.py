@@ -1190,15 +1190,6 @@ def admin_refresh_picks(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/api/oxiano-init-picks-x7k2")
-def oxiano_init_picks(date: Optional[str] = None):
-    """Endpoint temporar fara auth — sterge dupa populare initiala."""
-    try:
-        result = compute_and_store_picks(date)
-        return {"ok": True, "picks": result.get("total_picks", 0), "date": result.get("date"), "errors": result.get("errors", [])}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
 
 # ─────────────────────────────────────────────
 # ECHIPE CUNOSCUTE
