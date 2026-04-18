@@ -240,13 +240,18 @@ function getTop3Bets(prediction: Prediction, lang = 'ro') {
     }
   }
   return all
+    .filter(b => {
+      const odds = parseFloat(b.odds)
+      // Exclude pariuri triviale (cota < 1.15 = probabilitate > ~85%) si sub pragul de convingere
+      return b.probability >= 55 && odds >= 1.15
+    })
     .sort((a, b) => b.probability - a.probability)
     .slice(0, 3)
     .map(b => ({
       ...b,
       confidence: lang === 'en'
-        ? (b.probability >= 70 ? '🟢 Confident' : b.probability >= 55 ? '🟡 Moderate' : '🔴 Risk')
-        : (b.probability >= 70 ? '🟢 Sigur' : b.probability >= 55 ? '🟡 Moderat' : '🔴 Risc'),
+        ? (b.probability >= 70 ? '🟢 Confident' : '🟡 Moderate')
+        : (b.probability >= 70 ? '🟢 Sigur' : '🟡 Moderat'),
     }))
 }
 
