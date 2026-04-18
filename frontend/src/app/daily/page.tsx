@@ -709,81 +709,167 @@ function PickCard({ pick, rank, userTier }: { pick: Pick; rank: number; userTier
 
 function FreePicks({ picks }: { picks: Pick[] }) {
   const { lang } = useLang()
+  const [mode, setMode] = useState<'result' | 'goals'>('result')
   if (picks.length === 0) return null
+
+  const oddSingle = (prob: number) => parseFloat((100 / (Math.max(prob, 1) * 1.08)).toFixed(2))
 
   // Top 3 picks valide (non-VIP, cu probabilitati reale)
   const seen = new Set<string>()
-  const top3: Pick[] = []
+  const validPicks: Pick[] = []
   for (const p of picks) {
     if (p.home_win === null || p.home_win === undefined) continue
     if ((p as any).vip_only) continue
     const key = `${p.home}-${p.away}`
-    if (!seen.has(key)) { seen.add(key); top3.push(p) }
-    if (top3.length === 3) break
+    if (!seen.has(key)) { seen.add(key); validPicks.push(p) }
   }
+
+  const top3Result = validPicks.slice(0, 3)
+
+  // Varianta goluri — selecteaza cea mai clara piata de goluri per meci
+  interface GoalPick { pick: Pick; label: string; prob: number }
+  const goalCandidates: GoalPick[] = []
+  const seenGoals = new Set<string>()
+  for (const p of validPicks) {
+    const key = `${p.home}-${p.away}`
+    if (seenGoals.has(key)) continue
+    const over25 = p.over25_rate ?? 50
+    const btts   = p.btts_rate   ?? 50
+    let best: GoalPick | null = null
+    const candidates: GoalPick[] = []
+    if (over25 >= 58) candidates.push({ pick: p, label: lang === 'en' ? 'Over 2.5' : 'Peste 2.5 goluri', prob: over25 })
+    if (over25 <= 38) candidates.push({ pick: p, label: lang === 'en' ? 'Under 2.5' : 'Sub 2.5 goluri', prob: 100 - over25 })
+    if (btts >= 58)   candidates.push({ pick: p, label: lang === 'en' ? 'BTTS — Yes' : 'Ambele marchează', prob: btts })
+    if (btts <= 33)   candidates.push({ pick: p, label: lang === 'en' ? 'BTTS — No' : 'Clean sheet posibil', prob: 100 - btts })
+    if (candidates.length > 0) {
+      best = candidates.sort((a, b) => b.prob - a.prob)[0]
+      goalCandidates.push(best)
+      seenGoals.add(key)
+    }
+    if (goalCandidates.length === 3) break
+  }
+
+  const top3 = mode === 'result' ? top3Result : goalCandidates.map(g => g.pick)
   if (top3.length < 1) return null
 
-  // Cota combinata (acumulator) — marja 8% reduce cota fata de valoarea corecta
-  const oddSingle = (prob: number) => parseFloat((100 / (Math.max(prob, 1) * 1.08)).toFixed(2))
-  const comboOdd  = top3.reduce((acc, p) => {
-    const prob = p.prediction === 'H' ? p.home_win : p.prediction === 'A' ? p.away_win : p.draw
-    return acc * oddSingle(prob)
-  }, 1)
+  const comboOdd = mode === 'result'
+    ? top3Result.reduce((acc, p) => {
+        const prob = p.prediction === 'H' ? p.home_win : p.prediction === 'A' ? p.away_win : p.draw
+        return acc * oddSingle(prob)
+      }, 1)
+    : goalCandidates.slice(0, 3).reduce((acc, g) => acc * oddSingle(g.prob), 1)
+
+  const medals = ['🥇', '🥈', '🥉']
 
   return (
     <div className="mb-6 fade-in">
-      {/* Header card */}
       <div className="rounded-2xl p-4 mb-3"
         style={{ background: 'linear-gradient(135deg, rgba(251,191,36,0.12), rgba(245,158,11,0.06))', border: '1px solid rgba(251,191,36,0.3)' }}>
+
+        {/* Header */}
         <div className="flex items-center justify-between mb-3">
           <div>
             <div className="text-xs font-bold text-amber-400 uppercase tracking-widest">🎁 {lang === 'en' ? 'Free Picks' : 'Ponturi Gratuite'}</div>
-            <div className="text-[10px] text-gray-500 font-mono mt-0.5">{lang === 'en' ? 'Top 3 selections · Most probable outcomes' : 'Top 3 selecții · Cele mai probabile rezultate'}</div>
+            <div className="text-[10px] text-gray-500 font-mono mt-0.5">
+              {mode === 'result'
+                ? (lang === 'en' ? 'Top 3 · Match result' : 'Top 3 · Rezultat meci')
+                : (lang === 'en' ? 'Top 3 · Goals market' : 'Top 3 · Piața golurilor')}
+            </div>
           </div>
           <div className="text-right">
-            <div className="text-[10px] text-gray-500 font-mono uppercase tracking-widest">{lang === 'en' ? 'Estimated accumulator' : 'Acumulator estimat'}</div>
+            <div className="text-[10px] text-gray-500 font-mono uppercase tracking-widest">{lang === 'en' ? 'Est. accumulator' : 'Acumulator est.'}</div>
             <div className="text-2xl font-bold font-mono text-amber-400">x{comboOdd.toFixed(2)}</div>
           </div>
         </div>
 
-        <div className="space-y-2">
-          {top3.map((p, i) => {
-            const pred   = predLabel(p)
-            const prob   = pred.prob
-            const odd    = oddSingle(prob)
-            const c      = confColor(p.confidence_level)
-            const medals = ['🥇', '🥈', '🥉']
-            return (
-              <div key={i} className="flex items-center gap-3 bg-black/20 rounded-xl px-3 py-2.5">
-                <span className="text-base shrink-0">{medals[i]}</span>
-                <div className="flex-1 min-w-0">
-                  <div className="text-xs font-bold text-white truncate">
-                    {p.flag} {p.home} <span className="text-gray-500">vs</span> {p.away}
-                  </div>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded font-mono"
-                      style={{ backgroundColor: `${c.text}20`, color: c.text }}>
-                      {pred.short} — {pred.full}
-                    </span>
-                    <span className="text-[10px] text-gray-600 font-mono">{p.league}</span>
-                  </div>
-                </div>
-                <div className="text-right shrink-0">
-                  <div className="text-sm font-bold font-mono text-amber-400">~{odd.toFixed(2)}</div>
-                  <div className="text-[10px] font-mono" style={{ color: c.text }}>{prob}%</div>
-                </div>
-              </div>
-            )
-          })}
+        {/* Toggle */}
+        <div className="flex gap-1 mb-3">
+          {(['result', 'goals'] as const).map(m => (
+            <button key={m} onClick={() => setMode(m)}
+              className="flex-1 py-1.5 rounded-lg text-[11px] font-bold font-mono transition-all"
+              style={{
+                background: mode === m ? 'rgba(251,191,36,0.2)' : 'rgba(255,255,255,0.04)',
+                border: `1px solid ${mode === m ? 'rgba(251,191,36,0.5)' : 'rgba(255,255,255,0.08)'}`,
+                color: mode === m ? '#fbbf24' : '#6b7280',
+              }}>
+              {m === 'result' ? (lang === 'en' ? '⚽ 1X2' : '⚽ Rezultate') : (lang === 'en' ? '🎯 Goals' : '🎯 Goluri')}
+            </button>
+          ))}
         </div>
 
+        {/* Picks */}
+        {mode === 'result' ? (
+          <div className="space-y-2">
+            {top3Result.map((p, i) => {
+              const pred = predLabel(p, lang)
+              const prob = pred.prob
+              const odd  = oddSingle(prob)
+              const c    = confColor(p.confidence_level, lang)
+              return (
+                <div key={i} className="flex items-center gap-3 bg-black/20 rounded-xl px-3 py-2.5">
+                  <span className="text-base shrink-0">{medals[i]}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-bold text-white truncate">
+                      {p.flag} {p.home} <span className="text-gray-500">vs</span> {p.away}
+                    </div>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded font-mono"
+                        style={{ backgroundColor: `${c.text}20`, color: c.text }}>
+                        {pred.short} — {pred.full}
+                      </span>
+                      <span className="text-[10px] text-gray-600 font-mono">{p.league}</span>
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <div className="text-sm font-bold font-mono text-amber-400">~{odd.toFixed(2)}</div>
+                    <div className="text-[10px] font-mono text-gray-500">{prob}%</div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        ) : goalCandidates.length === 0 ? (
+          <div className="text-center py-6 text-gray-600 text-xs font-mono">
+            {lang === 'en' ? 'No clear goal signals today' : 'Niciun semnal clar pe goluri azi'}
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {goalCandidates.slice(0, 3).map((g, i) => {
+              const odd = oddSingle(g.prob)
+              const color = g.prob >= 65 ? '#10b981' : '#f59e0b'
+              return (
+                <div key={i} className="flex items-center gap-3 bg-black/20 rounded-xl px-3 py-2.5">
+                  <span className="text-base shrink-0">{medals[i]}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-bold text-white truncate">
+                      {g.pick.flag} {g.pick.home} <span className="text-gray-500">vs</span> {g.pick.away}
+                    </div>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded font-mono"
+                        style={{ backgroundColor: `${color}20`, color }}>
+                        {g.label}
+                      </span>
+                      <span className="text-[10px] text-gray-600 font-mono">{g.pick.league}</span>
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <div className="text-sm font-bold font-mono text-amber-400">~{odd.toFixed(2)}</div>
+                    <div className="text-[10px] font-mono text-gray-500">{g.prob}%</div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+
+        {/* Footer */}
         <div className="mt-3 pt-3 border-t border-amber-900/30 flex items-center justify-between gap-2">
           <div className="text-[10px] text-gray-600 font-mono">{lang === 'en' ? '* Estimated odds with 8% margin' : '* Cote estimate cu marjă 8%'}</div>
           <div className="flex gap-2">
             <button
               onClick={() => {
                 const dateStr = formatDate(new Date().toISOString().split('T')[0])
-                const text = buildAccumulatorCard(top3, dateStr)
+                const text = buildAccumulatorCard(top3Result, dateStr)
                 window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank')
               }}
               className="text-[10px] font-bold px-3 py-1.5 rounded-lg"
@@ -793,7 +879,7 @@ function FreePicks({ picks }: { picks: Pick[] }) {
             <button
               onClick={() => {
                 const dateStr = formatDate(new Date().toISOString().split('T')[0])
-                const text = buildAccumulatorCard(top3, dateStr)
+                const text = buildAccumulatorCard(top3Result, dateStr)
                 navigator.clipboard?.writeText(text).then(() => alert('Copiat! Lipește în Telegram.'))
               }}
               className="text-[10px] font-bold px-3 py-1.5 rounded-lg"
