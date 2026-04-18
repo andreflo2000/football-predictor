@@ -75,7 +75,7 @@ function computeKelly(confidence: number, edge: number | undefined, hasOdds: boo
     odds = 1 / pMarket
   } else {
     // Fara edge: presupunem marja de 8% a bookmakerului
-    odds = (1 / p) * 0.92
+    odds = 1 / (p * 1.08)
   }
   const b = odds - 1
   const kelly = (b * p - (1 - p)) / b
@@ -93,7 +93,7 @@ function getOdd(p: Pick, prediction: 'H' | 'D' | 'A', prob: number): { odd: stri
   if (prediction === 'H' && p.odds_home) return { odd: p.odds_home.toFixed(2), isReal: true }
   if (prediction === 'D' && p.odds_draw) return { odd: p.odds_draw.toFixed(2), isReal: true }
   if (prediction === 'A' && p.odds_away) return { odd: p.odds_away.toFixed(2), isReal: true }
-  return { odd: ((100 / Math.max(prob, 1)) * 0.92).toFixed(2), isReal: false }
+  return { odd: (100 / (Math.max(prob, 1) * 1.08)).toFixed(2), isReal: false }
 }
 
 function predLabel(p: Pick, lang: 'ro' | 'en' = 'ro') {
@@ -105,7 +105,6 @@ function predLabel(p: Pick, lang: 'ro' | 'en' = 'ro') {
 // ── Format share Telegram ────────────────────────────────────────────────────
 function buildShareCard(p: Pick, dateStr: string): string {
   const pred  = predLabel(p)
-  const odd   = ((100 / Math.max(pred.prob, 1)) * 0.92).toFixed(2)
   const bar   = (pct: number) => '█'.repeat(Math.round(pct / 10)) + '░'.repeat(10 - Math.round(pct / 10))
   const conf  = p.confidence >= 65 ? '🟢 HIGH' : p.confidence >= 55 ? '🟡 MEDIUM' : '🔵 LOW'
 
@@ -144,7 +143,6 @@ function buildShareCard(p: Pick, dateStr: string): string {
 // ── Format share WhatsApp (markdown nativ WA) ────────────────────────────────
 function buildShareCardWA(p: Pick, dateStr: string): string {
   const pred = predLabel(p)
-  const odd  = ((100 / Math.max(pred.prob, 1)) * 0.92).toFixed(2)
   const conf = p.confidence >= 65 ? '🟢 *HIGH*' : p.confidence >= 55 ? '🟡 *MEDIUM*' : '🔵 *LOW*'
   const edge = p.edge && p.edge > 0 ? `📐 Edge: *+${p.edge.toFixed(1)}%*` : ''
 
@@ -175,13 +173,13 @@ function buildShareCardWA(p: Pick, dateStr: string): string {
 function buildAccumulatorCard(picks: Pick[], dateStr: string): string {
   const lines = picks.slice(0, 3).map((p, i) => {
     const pred = predLabel(p)
-    const odd  = ((100 / Math.max(pred.prob, 1)) * 0.92).toFixed(2)
+    const odd  = (100 / (Math.max(pred.prob, 1) * 1.08)).toFixed(2)
     const medals = ['🥇', '🥈', '🥉']
     return `${medals[i]} ${p.flag} ${p.home} vs ${p.away}\n   ➤ ${pred.short} — ${pred.full}  |  ~${odd}  |  ${p.confidence}% conf`
   })
   const combo = picks.slice(0, 3).reduce((acc, p) => {
     const pred = predLabel(p)
-    return acc * ((100 / Math.max(pred.prob, 1)) * 0.92)
+    return acc * (100 / (Math.max(pred.prob, 1) * 1.08))
   }, 1)
 
   return [
@@ -223,7 +221,7 @@ function PersonalTracker({ picks }: { picks: Pick[] }) {
 
   const addBet = (p: Pick) => {
     const pred   = predLabel(p)
-    const odd    = parseFloat(((100 / Math.max(pred.prob, 1)) * 0.92).toFixed(2))
+    const odd    = parseFloat((100 / (Math.max(pred.prob, 1) * 1.08)).toFixed(2))
     const id     = `${p.home}-${p.away}-${Date.now()}`
     const bet: TrackedBet = {
       id, odd,
@@ -726,7 +724,7 @@ function FreePicks({ picks }: { picks: Pick[] }) {
   if (top3.length < 1) return null
 
   // Cota combinata (acumulator) — marja 8% reduce cota fata de valoarea corecta
-  const oddSingle = (prob: number) => parseFloat(((100 / Math.max(prob, 1)) * 0.92).toFixed(2))
+  const oddSingle = (prob: number) => parseFloat((100 / (Math.max(prob, 1) * 1.08)).toFixed(2))
   const comboOdd  = top3.reduce((acc, p) => {
     const prob = p.prediction === 'H' ? p.home_win : p.prediction === 'A' ? p.away_win : p.draw
     return acc * oddSingle(prob)

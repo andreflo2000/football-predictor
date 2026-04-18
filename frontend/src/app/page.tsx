@@ -258,9 +258,9 @@ function shareOnWhatsApp(prediction: Prediction, fixture: Fixture) {
     `📅 ${getDayLabel(fixture.date)} · ${formatDateRO(fixture.date)}${fixture.time ? ` · 🕐 ${fixture.time}` : ''}\n` +
     `🎯 Încredere AI: *${conf.score}%* (${conf.label})\n\n` +
     `📊 *Probabilități:*\n` +
-    `1️⃣ ${prediction.home_team}: *${home_w}%* (cotă ~${(100/Math.max(home_w,1)*1.08).toFixed(2)})\n` +
-    `🤝 Egal: *${draw}%* (cotă ~${(100/Math.max(draw,1)*1.08).toFixed(2)})\n` +
-    `2️⃣ ${prediction.away_team}: *${away_w}%* (cotă ~${(100/Math.max(away_w,1)*1.08).toFixed(2)})\n\n` +
+    `1️⃣ ${prediction.home_team}: *${home_w}%* (cotă ~${(100/(Math.max(home_w,1)*1.08)).toFixed(2)})\n` +
+    `🤝 Egal: *${draw}%* (cotă ~${(100/(Math.max(draw,1)*1.08)).toFixed(2)})\n` +
+    `2️⃣ ${prediction.away_team}: *${away_w}%* (cotă ~${(100/(Math.max(away_w,1)*1.08)).toFixed(2)})\n\n` +
     `🏆 *Top 3 pariuri recomandate:*\n` +
     top3.map((b, i) => `${i+1}. ${b.name} — ${b.probability}% ${b.confidence}`).join('\n') + '\n\n' +
     `🔮 _Generat de Oxiano_\n🌐 oxiano.com`
@@ -737,9 +737,9 @@ function PredictionDisplay({ prediction, fixture, standings, user }: {
           </div>
           <div className="grid grid-cols-3 gap-2">
             {[
-              { label: lang === 'en' ? '1 Home' : '1 Gazdă', odd: (100/Math.max(home_w,1)*1.08).toFixed(2), color: '#3b82f6' },
-              { label: lang === 'en' ? 'X Draw' : 'X Egal', odd: (100/Math.max(draw,1)*1.08).toFixed(2), color: '#6b7280' },
-              { label: lang === 'en' ? '2 Away' : '2 Oaspete', odd: (100/Math.max(away_w,1)*1.08).toFixed(2), color: '#f97316' },
+              { label: lang === 'en' ? '1 Home' : '1 Gazdă', odd: (100/(Math.max(home_w,1)*1.08)).toFixed(2), color: '#3b82f6' },
+              { label: lang === 'en' ? 'X Draw' : 'X Egal', odd: (100/(Math.max(draw,1)*1.08)).toFixed(2), color: '#6b7280' },
+              { label: lang === 'en' ? '2 Away' : '2 Oaspete', odd: (100/(Math.max(away_w,1)*1.08)).toFixed(2), color: '#f97316' },
             ].map(o => (
               <div key={o.label} className="bg-gray-800/50 rounded-xl p-3 text-center border border-gray-700/30">
                 <div className="text-[10px] text-gray-500 uppercase tracking-widest mb-1">{o.label}</div>

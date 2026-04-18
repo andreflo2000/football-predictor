@@ -16,7 +16,7 @@ function impliedOdds(confidence: number | null | undefined, edge?: number, hasOd
     const pMarket = Math.max(0.05, p - edge / 100)
     return Math.round((1 / pMarket) * 100) / 100
   }
-  return Math.round((1 / p) * 0.92 * 100) / 100
+  return Math.round((1 / (p * 1.08)) * 100) / 100
 }
 
 export default function BetBuilderPage() {
