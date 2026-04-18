@@ -429,27 +429,31 @@ def predict_match(
             elif fav_is_away and best_class != "A" and model_h > impl_h + 0.03:
                 upset_risk = True
 
+    def _cap(v: float) -> float:
+        """Nicio probabilitate nu poate fi 0% sau 100% — imposibil in fotbal."""
+        return round(max(0.01, min(0.99, v)), 3)
+
     return {
         "home_team":        home_team,
         "away_team":        away_team,
-        "home_win":         prob_map.get("H", 0.0),
-        "draw":             prob_map.get("D", 0.0),
-        "away_win":         prob_map.get("A", 0.0),
+        "home_win":         _cap(prob_map.get("H", 0.0)),
+        "draw":             _cap(prob_map.get("D", 0.0)),
+        "away_win":         _cap(prob_map.get("A", 0.0)),
         "prediction":       best_class,
         "prediction_label": label_map.get(best_class, "Necunoscut"),
-        "confidence":       round(confidence, 3),
+        "confidence":       _cap(confidence),
         "confidence_level": confidence_level,
         "high_confidence":  confidence >= 0.65,
         "home_elo":         round(_team_elo(home_team), 0),
         "away_elo":         round(_team_elo(away_team), 0),
-        "home_form":        round(h_stats.get("pts5", 0.40), 3),
-        "away_form":        round(a_stats.get("pts5", 0.40), 3),
-        "home_venue_form":  round(h_stats.get("pts_venue5", 0.40), 3),
-        "away_venue_form":  round(a_stats.get("pts_venue5", 0.40), 3),
+        "home_form":        _cap(h_stats.get("pts5", 0.40)),
+        "away_form":        _cap(a_stats.get("pts5", 0.40)),
+        "home_venue_form":  _cap(h_stats.get("pts_venue5", 0.40)),
+        "away_venue_form":  _cap(a_stats.get("pts_venue5", 0.40)),
         "home_goals_avg":   round(h_stats.get("atk_all5", 1.3), 2),
         "away_goals_avg":   round(a_stats.get("atk_all5", 1.3), 2),
-        "btts_rate":        round((h_stats.get("btts5", 0.50) + a_stats.get("btts5", 0.50)) / 2, 3),
-        "over25_rate":      _poisson_over25(h_stats.get("atk_all5", 1.3) + a_stats.get("atk_all5", 1.3)),
+        "btts_rate":        _cap((h_stats.get("btts5", 0.50) + a_stats.get("btts5", 0.50)) / 2),
+        "over25_rate":      _cap(_poisson_over25(h_stats.get("atk_all5", 1.3) + a_stats.get("atk_all5", 1.3))),
         "has_odds":         odds is not None,
         # ── BI signals ─────────────────────────────────────────────────────
         "edge":             round(edge * 100, 1),    # % avantaj față de piață
