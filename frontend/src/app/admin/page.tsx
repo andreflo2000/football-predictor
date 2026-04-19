@@ -21,6 +21,7 @@ export default function AdminPage() {
   const [loginEmail, setLoginEmail] = useState('')
   const [loginPass, setLoginPass]   = useState('')
   const [loginErr, setLoginErr]     = useState('')
+  const [showPass, setShowPass]     = useState(false)
   const [loginLoading, setLoginLoading] = useState(false)
 
   const [search, setSearch]       = useState('')
@@ -110,9 +111,16 @@ export default function AdminPage() {
               value={loginEmail} onChange={e => setLoginEmail(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && doLogin()} />
             <span style={s.label}>Parolă</span>
-            <input style={s.input} type="password" placeholder="••••••••"
-              value={loginPass} onChange={e => setLoginPass(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && doLogin()} />
+            <div style={{ position: 'relative', marginBottom: 12 }}>
+              <input style={{ ...s.input, marginBottom: 0, paddingRight: 42 }}
+                type={showPass ? 'text' : 'password'} placeholder="••••••••"
+                value={loginPass} onChange={e => setLoginPass(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && doLogin()} />
+              <button onClick={() => setShowPass(v => !v)}
+                style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', fontSize: 18, lineHeight: 1 }}>
+                {showPass ? '🙈' : '👁️'}
+              </button>
+            </div>
             {loginErr && <div style={{ color: '#f87171', fontSize: 13, marginBottom: 10 }}>{loginErr}</div>}
             <button style={s.btn} onClick={doLogin} disabled={loginLoading}>
               {loginLoading ? 'Se conectează...' : 'Intră în Admin'}
