@@ -98,7 +98,7 @@ export async function refreshTier(): Promise<void> {
   }
 }
 
-function _saveSession(data: { access_token: string; tier: string }) {
+function _saveSession(data: { access_token: string; tier: string; role?: string }) {
   localStorage.setItem('flopi_token', data.access_token)
   // Decode payload din JWT (fara librarie)
   try {
