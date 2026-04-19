@@ -233,7 +233,6 @@ def api_leagues():
         {"id": 78,  "code": "BL1", "name": "Bundesliga",        "country": "Germany",     "flag": "🇩🇪",       "confederation": "UEFA", "rating": 88},
         {"id": 61,  "code": "FL1", "name": "Ligue 1",           "country": "France",      "flag": "🇫🇷",       "confederation": "UEFA", "rating": 82},
         {"id": 2,   "code": "CL",  "name": "Champions League",  "country": "Europe",      "flag": "🏆",        "confederation": "UEFA", "rating": 99},
-        {"id": 3,   "code": "EL",  "name": "Europa League",     "country": "Europe",      "flag": "🌍",        "confederation": "UEFA", "rating": 80},
         {"id": 94,  "code": "PPL", "name": "Primeira Liga",     "country": "Portugal",    "flag": "🇵🇹",       "confederation": "UEFA", "rating": 72},
         {"id": 88,  "code": "DED", "name": "Eredivisie",        "country": "Netherlands", "flag": "🇳🇱",       "confederation": "UEFA", "rating": 70},
         # Div 2 (doar Championship disponibil pe free tier)
