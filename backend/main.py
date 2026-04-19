@@ -20,7 +20,7 @@ from predictor import predict_match, load_model, get_known_teams
 from fixtures import get_today_fixtures, get_today_odds, _fetch_fixtures_for_range, fetch_competition_fixtures
 from db import log_predictions_bulk, get_client
 import cache as redis_cache
-from auth import register_user, login_user, get_current_user, require_user
+from auth import register_user, login_user, get_current_user, require_user, require_admin
 from ingestion import compute_and_store_picks, load_picks_from_db, auto_mark_results
 
 logger = logging.getLogger(__name__)
@@ -164,6 +164,7 @@ def auth_me(user: dict = Depends(require_user)):
             row = rows.data[0]
             tier = row["tier"]
             tier_expires = row.get("tier_expires")
+            role = row.get("role", "user") or "user"
             # Daca tier-ul are expirare si a expirat, retrogradam la free
             if tier_expires and tier in ("pro", "analyst", "vip"):
                 try:
@@ -173,7 +174,7 @@ def auth_me(user: dict = Depends(require_user)):
                         tier = "free"
                 except Exception:
                     pass
-            user = {**user, "tier": tier}
+            user = {**user, "tier": tier, "role": role}
     return user
 
 
@@ -865,8 +866,10 @@ class SetTierRequest(BaseModel):
 def admin_set_tier(
     req: SetTierRequest,
     x_admin_key: Optional[str] = Header(None, alias="X-Admin-Key"),
+    current_user: Optional[dict] = Depends(get_current_user),
 ):
-    if not ADMIN_SECRET or x_admin_key != ADMIN_SECRET:
+    is_jwt_admin = current_user and current_user.get("role") in ("owner", "admin")
+    if not is_jwt_admin and (not ADMIN_SECRET or x_admin_key != ADMIN_SECRET):
         raise HTTPException(403, "Acces interzis")
     if req.tier not in ("free", "analyst", "pro", "vip"):
         raise HTTPException(400, "Tier invalid")
@@ -888,8 +891,10 @@ def admin_set_tier(
 def admin_list_users(
     search: Optional[str] = Query(None),
     x_admin_key: Optional[str] = Header(None, alias="X-Admin-Key"),
+    current_user: Optional[dict] = Depends(get_current_user),
 ):
-    if not ADMIN_SECRET or x_admin_key != ADMIN_SECRET:
+    is_jwt_admin = current_user and current_user.get("role") in ("owner", "admin")
+    if not is_jwt_admin and (not ADMIN_SECRET or x_admin_key != ADMIN_SECRET):
         raise HTTPException(403, "Acces interzis")
     client = get_client()
     if not client:

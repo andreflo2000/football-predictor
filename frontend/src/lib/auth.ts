@@ -1,9 +1,15 @@
-const API = process.env.NEXT_PUBLIC_API_URL || 'https://football-predictor-api.onrender.com'
+const API = process.env.NEXT_PUBLIC_API_URL || 'https://football-predictor-api-n9sl.onrender.com'
 
 export interface AuthUser {
   id: string
   email: string
   tier: 'free' | 'analyst' | 'pro' | 'vip'
+  role?: string
+}
+
+export function isAdmin(): boolean {
+  const role = getUser()?.role
+  return role === 'owner' || role === 'admin'
 }
 
 export function getToken(): string | null {
@@ -101,6 +107,7 @@ function _saveSession(data: { access_token: string; tier: string }) {
       id:    payload.sub,
       email: payload.email,
       tier:  data.tier,
+      role:  data.role || payload.role || 'user',
     }))
   } catch {
     localStorage.setItem('flopi_user', JSON.stringify({ tier: data.tier }))

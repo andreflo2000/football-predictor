@@ -37,10 +37,10 @@ def _verify(plain: str, hashed: str) -> bool:
         return False
 
 
-def _create_token(user_id: int, email: str, tier: str) -> str:
+def _create_token(user_id: int, email: str, tier: str, role: str = "user") -> str:
     exp = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TTL)
     return jwt.encode(
-        {"sub": str(user_id), "email": email, "tier": tier, "exp": exp},
+        {"sub": str(user_id), "email": email, "tier": tier, "role": role, "exp": exp},
         SECRET_KEY,
         algorithm=ALGORITHM,
     )
@@ -105,8 +105,9 @@ def login_user(email: str, password: str) -> dict:
     if not _verify(password, user["password_hash"]):
         raise HTTPException(401, "Email sau parola incorecta")
 
-    token = _create_token(user["id"], user["email"], user["tier"])
-    return {"access_token": token, "token_type": "bearer", "tier": user["tier"]}
+    role = user.get("role", "user") or "user"
+    token = _create_token(user["id"], user["email"], user["tier"], role)
+    return {"access_token": token, "token_type": "bearer", "tier": user["tier"], "role": role}
 
 
 # ─── dependency injection ───────────────────────────────────
@@ -126,6 +127,7 @@ def get_current_user(
             "id":    payload.get("sub"),
             "email": payload.get("email"),
             "tier":  payload.get("tier", "free"),
+            "role":  payload.get("role", "user"),
         }
     except JWTError:
         return None
@@ -146,4 +148,11 @@ def require_vip(user: dict = Depends(require_user)) -> dict:
     """Dependency — arunca 403 daca nu e tier VIP."""
     if user.get("tier") != "vip":
         raise HTTPException(403, "Acces rezervat utilizatorilor VIP")
+    return user
+
+
+def require_admin(user: dict = Depends(require_user)) -> dict:
+    """Dependency — arunca 403 daca nu e owner/admin."""
+    if user.get("role") not in ("owner", "admin"):
+        raise HTTPException(403, "Acces rezervat administratorilor")
     return user
