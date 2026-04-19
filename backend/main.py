@@ -854,6 +854,53 @@ def track_record_vip():
 
 
 # ─────────────────────────────────────────────
+# ADMIN — gestionare useri
+# ─────────────────────────────────────────────
+class SetTierRequest(BaseModel):
+    email: str
+    tier: str          # 'free' | 'analyst' | 'pro' | 'vip'
+    days: Optional[int] = None  # None = nelimitat
+
+@app.post("/api/admin/set-tier")
+def admin_set_tier(
+    req: SetTierRequest,
+    x_admin_key: Optional[str] = Header(None, alias="X-Admin-Key"),
+):
+    if not ADMIN_SECRET or x_admin_key != ADMIN_SECRET:
+        raise HTTPException(403, "Acces interzis")
+    if req.tier not in ("free", "analyst", "pro", "vip"):
+        raise HTTPException(400, "Tier invalid")
+    client = get_client()
+    if not client:
+        raise HTTPException(503, "DB indisponibil")
+    rows = client.table("users").select("id,email,tier").eq("email", req.email).execute()
+    if not rows.data:
+        raise HTTPException(404, f"User negasit: {req.email}")
+    user = rows.data[0]
+    expires = None
+    if req.days and req.tier != "free":
+        from datetime import datetime, timezone, timedelta
+        expires = (datetime.now(timezone.utc) + timedelta(days=req.days)).isoformat()
+    client.table("users").update({"tier": req.tier, "tier_expires": expires}).eq("id", user["id"]).execute()
+    return {"ok": True, "email": req.email, "tier": req.tier, "tier_expires": expires}
+
+@app.get("/api/admin/users")
+def admin_list_users(
+    search: Optional[str] = Query(None),
+    x_admin_key: Optional[str] = Header(None, alias="X-Admin-Key"),
+):
+    if not ADMIN_SECRET or x_admin_key != ADMIN_SECRET:
+        raise HTTPException(403, "Acces interzis")
+    client = get_client()
+    if not client:
+        raise HTTPException(503, "DB indisponibil")
+    q = client.table("users").select("id,email,tier,tier_expires,created_at")
+    if search:
+        q = q.ilike("email", f"%{search}%")
+    rows = q.order("created_at", desc=True).limit(50).execute()
+    return rows.data
+
+
 # ADMIN — marcare rezultate WIN/LOSS
 # ─────────────────────────────────────────────
 class PickResultRequest(BaseModel):
