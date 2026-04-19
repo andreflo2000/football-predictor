@@ -156,11 +156,24 @@ def auth_login(req: AuthRequest, request: Request):
 def auth_me(user: dict = Depends(require_user)):
     """Returneaza datele utilizatorului curent cu tier live din DB."""
     from db import get_client
+    from datetime import datetime, timezone
     client = get_client()
     if client:
-        rows = client.table("users").select("tier").eq("id", int(user["id"])).execute()
+        rows = client.table("users").select("tier,tier_expires").eq("id", int(user["id"])).execute()
         if rows.data:
-            user = {**user, "tier": rows.data[0]["tier"]}
+            row = rows.data[0]
+            tier = row["tier"]
+            tier_expires = row.get("tier_expires")
+            # Daca tier-ul are expirare si a expirat, retrogradam la free
+            if tier_expires and tier in ("pro", "analyst", "vip"):
+                try:
+                    exp_dt = datetime.fromisoformat(tier_expires.replace("Z", "+00:00"))
+                    if datetime.now(timezone.utc) > exp_dt:
+                        client.table("users").update({"tier": "free", "tier_expires": None}).eq("id", int(user["id"])).execute()
+                        tier = "free"
+                except Exception:
+                    pass
+            user = {**user, "tier": tier}
     return user
 
 
