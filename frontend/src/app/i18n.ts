@@ -17,7 +17,7 @@ export const t = {
     tagline: 'Quantitative Analysis',
 
     // Hero
-    hero_sub: 'xG · Elo · XGBoost · Poisson · 10 Ligi Active',
+    hero_sub: 'xG · Elo · XGBoost · Poisson · 9 Competiții',
 
     // Selector
     select_league: 'Ligă / Competiție',
@@ -120,7 +120,7 @@ export const t = {
     predictions: 'AI Predictions',
     results: 'Results',
     tagline: 'Quantitative Analysis',
-    hero_sub: 'xG · Elo · XGBoost · Poisson · 10 Active Leagues',
+    hero_sub: 'xG · Elo · XGBoost · Poisson · 9 Competitions',
     select_league: 'League / Competition',
     select_league_placeholder: 'Select league...',
     select_match: 'Match',
