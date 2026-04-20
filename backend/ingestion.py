@@ -259,7 +259,12 @@ def auto_mark_results(date: str = None) -> dict:
         result = "win" if prediction == actual else "loss"
 
         try:
-            client.table("pick_results").upsert({
+            client.table("pick_results").delete()\
+                .eq("pick_date", target)\
+                .eq("home", pick["home"])\
+                .eq("away", pick["away"])\
+                .execute()
+            client.table("pick_results").insert({
                 "pick_date":    target,
                 "home":         pick["home"],
                 "away":         pick["away"],
@@ -267,13 +272,13 @@ def auto_mark_results(date: str = None) -> dict:
                 "confidence":   confidence,
                 "actual_score": f"{home_goals}-{away_goals}",
                 "prediction":   pick.get("prediction"),
-            }, on_conflict="pick_date,home,away").execute()
+            }).execute()
             marked += 1
             logger.info("[results] %s vs %s: pred=%s actual=%s (%s-%s) -> %s",
                         pick["home"], pick["away"], prediction, actual,
                         home_goals, away_goals, result)
         except Exception as e:
-            logger.error("[results] Upsert failed pentru %s vs %s: %s", pick["home"], pick["away"], e)
+            logger.error("[results] Insert failed pentru %s vs %s: %s", pick["home"], pick["away"], e)
 
     logger.info("[results] Complet: %d marcate, %d sarite pentru %s", marked, skipped, target)
     return {"marked": marked, "skipped": skipped, "finished_found": len(finished)}
