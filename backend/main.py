@@ -997,16 +997,40 @@ def admin_debug_results(
     picks = db_data.get("picks", []) if db_data else []
     pl_picks = [p for p in picks if p.get("competition_code") == "PL"]
 
-    # Ruleaza auto_mark_results sincron pentru aceasta data
-    from ingestion import auto_mark_results
-    mark_result = auto_mark_results(date)
+    # Test direct insert in pick_results
+    insert_test = {}
+    client = get_client()
+    if client:
+        try:
+            client.table("pick_results").delete()\
+                .eq("pick_date", "1999-01-01")\
+                .eq("home", "_test_")\
+                .eq("away", "_test_")\
+                .execute()
+            client.table("pick_results").insert({
+                "pick_date":    "1999-01-01",
+                "home":         "_test_",
+                "away":         "_test_",
+                "result":       "win",
+                "confidence":   0.7,
+                "actual_score": "2-1",
+                "prediction":   "H",
+            }).execute()
+            insert_test = {"ok": True}
+            # Cleanup
+            client.table("pick_results").delete()\
+                .eq("pick_date", "1999-01-01")\
+                .eq("home", "_test_")\
+                .execute()
+        except Exception as e:
+            insert_test = {"error": str(e)}
 
     return {
         "date": date,
         "picks_total": len(picks),
         "pl_picks": [{"home": p["home"], "away": p["away"]} for p in pl_picks],
         "pl_results_normalized": finished,
-        "auto_mark_result": mark_result,
+        "insert_test": insert_test,
     }
 
 
