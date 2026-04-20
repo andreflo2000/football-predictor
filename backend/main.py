@@ -954,6 +954,16 @@ def admin_auto_results(
     return {"started": True, "date": date or "today"}
 
 
+@app.get("/api/admin/picks/debug-results")
+def admin_debug_results(
+    date: str = Query(...),
+    user: dict = Depends(require_admin),
+):
+    """Debug sincron: ruleaza auto_mark_results si returneaza detalii."""
+    result = auto_mark_results(date)
+    return result
+
+
 @app.post("/api/admin/picks/backfill")
 def admin_backfill_results(
     background_tasks: BackgroundTasks,
