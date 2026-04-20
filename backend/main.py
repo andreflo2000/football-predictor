@@ -997,11 +997,16 @@ def admin_debug_results(
     picks = db_data.get("picks", []) if db_data else []
     pl_picks = [p for p in picks if p.get("competition_code") == "PL"]
 
+    # Ruleaza auto_mark_results sincron pentru aceasta data
+    from ingestion import auto_mark_results
+    mark_result = auto_mark_results(date)
+
     return {
         "date": date,
         "picks_total": len(picks),
         "pl_picks": [{"home": p["home"], "away": p["away"]} for p in pl_picks],
         "pl_results_normalized": finished,
+        "auto_mark_result": mark_result,
     }
 
 
