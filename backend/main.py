@@ -959,12 +959,44 @@ def admin_debug_results(
     date: str = Query(...),
     user: dict = Depends(require_admin),
 ):
-    """Debug sincron: ruleaza auto_mark_results si returneaza detalii."""
-    from ingestion import load_picks_from_db
+    """Debug sincron: diagnoza completa auto_mark_results."""
+    import os, requests as req
+    from ingestion import load_picks_from_db, MODEL_VERSION
+    from fixtures import COMPETITIONS, _normalize_name
+    from predictor import get_known_teams
+
+    # 1. Verifica picks in DB
     db_data = load_picks_from_db(date)
-    picks_count = len(db_data.get("picks", [])) if db_data else 0
-    result = auto_mark_results(date)
-    return {**result, "picks_in_db": picks_count, "db_data_ok": db_data is not None}
+    picks = db_data.get("picks", []) if db_data else []
+
+    # 2. Verifica FOOTBALL_DATA_KEY
+    api_key = os.getenv("FOOTBALL_DATA_KEY", "")
+
+    # 3. Fetch un singur competition ca test (PL)
+    test_resp = None
+    if api_key:
+        try:
+            r = req.get(
+                "https://api.football-data.org/v4/competitions/PL/matches",
+                headers={"X-Auth-Token": api_key},
+                params={"dateFrom": date, "dateTo": date, "status": "FINISHED"},
+                timeout=10,
+            )
+            test_resp = {"status": r.status_code, "matches": len(r.json().get("matches", []))}
+        except Exception as e:
+            test_resp = {"error": str(e)}
+
+    # 4. Sample: primul pick vs primul meci gasit
+    sample_pick = picks[0] if picks else None
+
+    return {
+        "date": date,
+        "model_version_server": MODEL_VERSION,
+        "api_key_set": bool(api_key),
+        "picks_in_db": len(picks),
+        "sample_pick": {"home": sample_pick["home"], "away": sample_pick["away"]} if sample_pick else None,
+        "pl_test": test_resp,
+    }
 
 
 @app.post("/api/admin/picks/backfill")
