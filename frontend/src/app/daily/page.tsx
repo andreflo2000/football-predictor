@@ -1005,16 +1005,82 @@ function LoadingState() {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 interface VipStats { total: number; wins: number; accuracy: number; this_month_total: number; this_month_wins: number; this_month_accuracy: number }
+interface PickResult { date: string; home: string; away: string; result: 'win' | 'loss' | 'void'; confidence: number }
+
+// ── Model Streak Bar ──────────────────────────────────────────────────────────
+function ModelStreakBar({ results, lang }: { results: PickResult[]; lang: 'ro' | 'en' }) {
+  if (!results.length) return null
+  const last10 = results.slice(0, 10).reverse()  // oldest → newest
+  const decisive = results.filter(r => r.result !== 'void')
+
+  // Calculate current streak
+  let streak = 0
+  let streakType: 'win' | 'loss' | null = null
+  for (const r of results) {  // results is newest-first from API
+    if (r.result === 'void') continue
+    if (streakType === null) { streakType = r.result; streak = 1 }
+    else if (r.result === streakType) streak++
+    else break
+  }
+
+  const dot = (r: PickResult, i: number) => {
+    const color = r.result === 'win' ? '#22c55e' : r.result === 'loss' ? '#ef4444' : '#4b5563'
+    const bg    = r.result === 'win' ? 'rgba(34,197,94,0.2)' : r.result === 'loss' ? 'rgba(239,68,68,0.2)' : 'rgba(75,85,99,0.2)'
+    const label = r.result === 'win' ? 'W' : r.result === 'loss' ? 'L' : '—'
+    return (
+      <span key={i} title={`${r.home} vs ${r.away} · ${r.result.toUpperCase()}`}
+        style={{
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+          width: 18, height: 18, borderRadius: '50%',
+          background: bg, border: `1px solid ${color}50`,
+          fontSize: 8, fontWeight: 700, color, fontFamily: 'monospace',
+        }}>
+        {label}
+      </span>
+    )
+  }
+
+  const acc = decisive.length > 0
+    ? Math.round(decisive.filter(r => r.result === 'win').length / decisive.length * 100)
+    : null
+
+  return (
+    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full"
+      style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+      <span style={{ fontSize: 9, color: '#4b5563', fontFamily: 'monospace', textTransform: 'uppercase', letterSpacing: '0.08em', whiteSpace: 'nowrap' }}>
+        {lang === 'en' ? 'Last 10' : 'Ultimele 10'}
+      </span>
+      <div className="flex items-center gap-0.5">
+        {last10.map((r, i) => dot(r, i))}
+      </div>
+      {streakType && streak >= 2 && (
+        <span style={{
+          fontSize: 9, fontWeight: 700, fontFamily: 'monospace',
+          color: streakType === 'win' ? '#22c55e' : '#ef4444',
+          whiteSpace: 'nowrap',
+        }}>
+          {streak}{streakType === 'win' ? '🔥' : '❄️'}
+        </span>
+      )}
+      {acc !== null && (
+        <span style={{ fontSize: 9, color: '#6b7280', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
+          · {acc}%
+        </span>
+      )}
+    </div>
+  )
+}
 
 export default function DailyPage() {
-  const [data, setData]           = useState<DailyResponse | null>(null)
-  const [loading, setLoading]     = useState(true)
-  const [filter, setFilter]       = useState<'all' | 'high'>('all')
-  const [error, setError]         = useState('')
-  const [notifPerm, setNotifPerm] = useState<string>('default')
-  const [user, setUser]           = useState<AuthUser | null>(null)
-  const [vipStats, setVipStats]   = useState<VipStats | null>(null)
-  const { lang }                  = useLang()
+  const [data, setData]               = useState<DailyResponse | null>(null)
+  const [loading, setLoading]         = useState(true)
+  const [filter, setFilter]           = useState<'all' | 'high'>('all')
+  const [error, setError]             = useState('')
+  const [notifPerm, setNotifPerm]     = useState<string>('default')
+  const [user, setUser]               = useState<AuthUser | null>(null)
+  const [vipStats, setVipStats]       = useState<VipStats | null>(null)
+  const [streakResults, setStreakResults] = useState<PickResult[]>([])
+  const { lang }                      = useLang()
 
   useEffect(() => { setUser(getUser()) }, [])
 
@@ -1028,9 +1094,11 @@ export default function DailyPage() {
         return d
       }),
       fetch(`${API_BASE}/api/track-record/vip`).then(r => r.json()).catch(() => null),
-    ]).then(([d, v]) => {
+      fetch(`${API_BASE}/api/track-record/history?limit=10`).then(r => r.json()).catch(() => null),
+    ]).then(([d, v, h]) => {
       setData(d)
       if (v) setVipStats(v)
+      if (h?.results) setStreakResults(h.results)
       setLoading(false)
     }).catch(() => setLoading(false))
     if ('Notification' in window) setNotifPerm(Notification.permission)
@@ -1099,6 +1167,13 @@ export default function DailyPage() {
               </a>
             </div>
           </div>
+
+          {/* Model streak bar */}
+          {streakResults.length > 0 && (
+            <div className="flex justify-center mt-2">
+              <ModelStreakBar results={streakResults} lang={lang} />
+            </div>
+          )}
 
           {notifPerm !== 'granted' && notifPerm !== 'denied' && (
             <button onClick={enableNotifications}
@@ -1200,7 +1275,7 @@ export default function DailyPage() {
                 </div>
                 {filter === 'high' && (
                   <button
-                    onClick={() => {}}
+                    onClick={() => setFilter('all')}
                     className="text-xs font-mono px-4 py-2 rounded-lg"
                     style={{ background: 'rgba(99,102,241,0.12)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.25)' }}>
                     {lang === 'en' ? 'See all picks →' : 'Vezi toate pick-urile →'}
