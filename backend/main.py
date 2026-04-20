@@ -946,7 +946,7 @@ def admin_set_pick_result(
 @app.post("/api/admin/picks/auto-results")
 def admin_auto_results(
     background_tasks: BackgroundTasks,
-    date: Optional[str] = None,
+    date: Optional[str] = Query(None),
     user: dict = Depends(require_admin),
 ):
     """Trigger manual auto-marcare WIN/LOSS pentru o data. Ruleaza in background."""
@@ -957,8 +957,8 @@ def admin_auto_results(
 @app.post("/api/admin/picks/backfill")
 def admin_backfill_results(
     background_tasks: BackgroundTasks,
-    date_from: str,
-    date_to: Optional[str] = None,
+    date_from: str = Query(...),
+    date_to: Optional[str] = Query(None),
     user: dict = Depends(require_admin),
 ):
     """Backfill WIN/LOSS pentru un interval de date. Ruleaza in background."""
