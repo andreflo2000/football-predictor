@@ -7,7 +7,7 @@ import datetime
 import time
 import logging
 import requests
-from fastapi import FastAPI, HTTPException, Query, Request, Depends, Header
+from fastapi import FastAPI, HTTPException, Query, Request, Depends, Header, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr
 from typing import Optional
@@ -945,32 +945,41 @@ def admin_set_pick_result(
 
 @app.post("/api/admin/picks/auto-results")
 def admin_auto_results(
+    background_tasks: BackgroundTasks,
     date: Optional[str] = None,
     user: dict = Depends(require_admin),
 ):
-    """Trigger manual auto-marcare WIN/LOSS pentru o data. Necesita JWT admin."""
-    result = auto_mark_results(date)
-    return result
+    """Trigger manual auto-marcare WIN/LOSS pentru o data. Ruleaza in background."""
+    background_tasks.add_task(auto_mark_results, date)
+    return {"started": True, "date": date or "today"}
 
 
 @app.post("/api/admin/picks/backfill")
 def admin_backfill_results(
+    background_tasks: BackgroundTasks,
     date_from: str,
     date_to: Optional[str] = None,
     user: dict = Depends(require_admin),
 ):
-    """Backfill WIN/LOSS pentru un interval de date. Necesita JWT admin."""
+    """Backfill WIN/LOSS pentru un interval de date. Ruleaza in background."""
     import datetime as _dt, time as _time
-    end = date_to or date_from
-    current = _dt.date.fromisoformat(date_from)
-    stop    = _dt.date.fromisoformat(end)
-    results = []
-    while current <= stop:
-        r = auto_mark_results(current.isoformat())
-        results.append({"date": current.isoformat(), **r})
-        current += _dt.timedelta(days=1)
-        _time.sleep(1)
-    return {"backfill": results, "days": len(results)}
+
+    def _run():
+        end = date_to or date_from
+        current = _dt.date.fromisoformat(date_from)
+        stop    = _dt.date.fromisoformat(end)
+        while current <= stop:
+            try:
+                auto_mark_results(current.isoformat())
+            except Exception as e:
+                logger.warning("[backfill] Eroare la %s: %s", current, e)
+            current += _dt.timedelta(days=1)
+            _time.sleep(2)
+
+    background_tasks.add_task(_run)
+    import datetime as _dt2
+    days = (_dt2.date.fromisoformat(date_to or date_from) - _dt2.date.fromisoformat(date_from)).days + 1
+    return {"started": True, "date_from": date_from, "date_to": date_to or date_from, "days": days}
 
 
 @app.get("/api/admin/picks/results")
