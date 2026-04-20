@@ -507,7 +507,7 @@ function PickCard({ pick, rank, userTier }: { pick: Pick; rank: number; userTier
           <span className="text-[11px] font-mono font-bold" style={{ color: '#eab308' }}>
             {lang === 'en' ? 'Confidence' : 'Certitudine'}: {pick.confidence}%
           </span>
-          {pick.value_bet && <span className="text-[10px] font-mono" style={{ color: '#f59e0b' }}>💎 VALUE</span>}
+          {pick.value_bet && <span className="text-[10px] font-mono" style={{ color: '#f59e0b' }}>💎 EDGE+</span>}
         </div>
 
         {/* Blur: predictie + probabilitati + Kelly */}
@@ -769,7 +769,7 @@ function FreePicks({ picks }: { picks: Pick[] }) {
         {/* Header */}
         <div className="flex items-center justify-between mb-3">
           <div>
-            <div className="text-xs font-bold text-amber-400 uppercase tracking-widest">🎁 {lang === 'en' ? 'Free Picks' : 'Ponturi Gratuite'}</div>
+            <div className="text-xs font-bold text-amber-400 uppercase tracking-widest">🎁 {lang === 'en' ? 'Free Analysis' : 'Analize Gratuite'}</div>
             <div className="text-[10px] text-gray-500 font-mono mt-0.5">
               {mode === 'result'
                 ? (lang === 'en' ? 'Top 3 · Match result' : 'Top 3 · Rezultat meci')
@@ -897,10 +897,44 @@ function FreePicks({ picks }: { picks: Pick[] }) {
 function BankerCard({ picks }: { picks: Pick[] }) {
   const { lang } = useLang()
   const validPicks = picks.filter(p => p.home_win !== null && p.home_win !== undefined && !(p as any).vip_only)
-  const banker = validPicks.find(p => p.confidence >= 65) ?? validPicks[0]
-  if (!banker) return null
-  const pred   = predLabel(banker, lang)
-  const { odd, isReal } = getOdd(banker, banker.prediction, pred.prob)
+  if (!validPicks.length) return null
+
+  // Candidati: toate cele 3 directii din fiecare pick
+  type Cand = { pick: Pick; dir: 'H' | 'D' | 'A'; prob: number; oddVal: number; isReal: boolean; score: number }
+  const candidates: Cand[] = []
+  for (const p of validPicks) {
+    const opts: Array<{ dir: 'H' | 'D' | 'A'; prob: number; realOdd: number | null }> = [
+      { dir: 'H', prob: p.home_win, realOdd: p.odds_home ?? null },
+      { dir: 'D', prob: p.draw,     realOdd: p.odds_draw ?? null },
+      { dir: 'A', prob: p.away_win, realOdd: p.odds_away ?? null },
+    ]
+    for (const o of opts) {
+      if (!o.prob || o.prob < 55) continue
+      const isReal = !!o.realOdd
+      const oddVal = o.realOdd ?? Math.max(1.01, 100 / (o.prob * 1.08))
+      if (oddVal < 1.50) continue
+      candidates.push({ pick: p, dir: o.dir, prob: o.prob, oddVal, isReal, score: o.prob * Math.log(oddVal) })
+    }
+  }
+  // Sortam dupa scor (probabilitate × log(cota)) — cel mai bun raport
+  candidates.sort((a, b) => b.score - a.score)
+
+  // Daca nu gasim nimic cu cota >= 1.50, fallback la cel mai sigur pick
+  const best = candidates[0]
+  const banker = best ? best.pick : validPicks.sort((a, b) => b.confidence - a.confidence)[0]
+  const bankerDir: 'H' | 'D' | 'A' = best ? best.dir : banker.prediction
+  const bankerProb = best ? best.prob : (bankerDir === 'H' ? banker.home_win : bankerDir === 'A' ? banker.away_win : banker.draw)
+  const bankerOdd = best ? best.oddVal.toFixed(2) : Math.max(1.01, 100 / (bankerProb * 1.08)).toFixed(2)
+  const bankerIsReal = best ? best.isReal : false
+
+  const dirLabel = (dir: 'H' | 'D' | 'A') => {
+    if (dir === 'H') return { short: '1', full: banker.home }
+    if (dir === 'A') return { short: '2', full: banker.away }
+    return { short: 'X', full: lang === 'en' ? 'Draw' : 'Egal' }
+  }
+  const pred = dirLabel(bankerDir)
+  const odd = bankerOdd
+  const isReal = bankerIsReal
 
   return (
     <div className="mb-4 fade-in">
@@ -910,12 +944,12 @@ function BankerCard({ picks }: { picks: Pick[] }) {
           <span className="text-xl">🏦</span>
           <div>
             <div className="text-xs font-bold text-purple-400 uppercase tracking-widest">Banker of the Day</div>
-            <div className="text-[10px] text-gray-500 font-mono">{lang === 'en' ? 'Safest bet · Recommended for accumulators' : 'Cel mai sigur pariu · Recomandat la acumulatori'}</div>
+            <div className="text-[10px] text-gray-500 font-mono">{lang === 'en' ? 'Highest confidence · Recommended analysis' : 'Cea mai mare convingere · Analiză recomandată'}</div>
           </div>
           <div className="ml-auto">
             <span className="text-[9px] font-bold px-2 py-1 rounded-full font-mono"
               style={{ backgroundColor: 'rgba(139,92,246,0.2)', color: '#a78bfa', border: '1px solid rgba(139,92,246,0.4)' }}>
-              {banker.confidence}% conf
+              {bankerProb}% prob
             </span>
           </div>
         </div>
