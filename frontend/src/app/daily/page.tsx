@@ -1022,7 +1022,7 @@ export default function DailyPage() {
     setLoading(true)
     setData(null)
     Promise.all([
-      fetch(`${API_BASE}/api/daily?min_confidence=0.45`).then(r => r.json()),
+      fetch(`${API_BASE}/api/daily?min_confidence=0.55`).then(r => r.json()),
       fetch(`${API_BASE}/api/track-record/vip`).then(r => r.json()).catch(() => null),
     ]).then(([d, v]) => {
       setData(d)
