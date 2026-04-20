@@ -960,8 +960,11 @@ def admin_debug_results(
     user: dict = Depends(require_admin),
 ):
     """Debug sincron: ruleaza auto_mark_results si returneaza detalii."""
+    from ingestion import load_picks_from_db
+    db_data = load_picks_from_db(date)
+    picks_count = len(db_data.get("picks", [])) if db_data else 0
     result = auto_mark_results(date)
-    return result
+    return {**result, "picks_in_db": picks_count, "db_data_ok": db_data is not None}
 
 
 @app.post("/api/admin/picks/backfill")
