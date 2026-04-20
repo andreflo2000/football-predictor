@@ -943,28 +943,12 @@ def admin_set_pick_result(
         raise HTTPException(500, str(e))
 
 
-def _check_admin_auth(x_admin_key: Optional[str], authorization: Optional[str]) -> bool:
-    if ADMIN_SECRET and x_admin_key == ADMIN_SECRET:
-        return True
-    if authorization and authorization.startswith("Bearer "):
-        try:
-            from auth import _decode_token
-            payload = _decode_token(authorization.split(" ", 1)[1])
-            return payload.get("role") in ("owner", "admin")
-        except Exception:
-            pass
-    return False
-
-
 @app.post("/api/admin/picks/auto-results")
 def admin_auto_results(
     date: Optional[str] = None,
-    x_admin_key: Optional[str] = Header(None, alias="X-Admin-Key"),
-    authorization: Optional[str] = Header(None),
+    user: dict = Depends(require_admin),
 ):
-    """Trigger manual auto-marcare WIN/LOSS pentru o data. Accepta X-Admin-Key sau JWT admin."""
-    if not _check_admin_auth(x_admin_key, authorization):
-        raise HTTPException(403, "Unauthorized")
+    """Trigger manual auto-marcare WIN/LOSS pentru o data. Necesita JWT admin."""
     result = auto_mark_results(date)
     return result
 
@@ -973,13 +957,10 @@ def admin_auto_results(
 def admin_backfill_results(
     date_from: str,
     date_to: Optional[str] = None,
-    x_admin_key: Optional[str] = Header(None, alias="X-Admin-Key"),
-    authorization: Optional[str] = Header(None),
+    user: dict = Depends(require_admin),
 ):
-    """Backfill WIN/LOSS pentru un interval de date. Accepta X-Admin-Key sau JWT admin."""
+    """Backfill WIN/LOSS pentru un interval de date. Necesita JWT admin."""
     import datetime as _dt, time as _time
-    if not _check_admin_auth(x_admin_key, authorization):
-        raise HTTPException(403, "Unauthorized")
     end = date_to or date_from
     current = _dt.date.fromisoformat(date_from)
     stop    = _dt.date.fromisoformat(end)
