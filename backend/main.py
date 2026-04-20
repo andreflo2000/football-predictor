@@ -959,21 +959,17 @@ def admin_debug_results(
     date: str = Query(...),
     user: dict = Depends(require_admin),
 ):
-    """Debug sincron: diagnoza completa auto_mark_results."""
+    """Debug sincron: diagnoza completa matching picks vs rezultate."""
     import os, requests as req
-    from ingestion import load_picks_from_db, MODEL_VERSION
-    from fixtures import COMPETITIONS, _normalize_name
+    from ingestion import load_picks_from_db
+    from fixtures import _normalize_name, COMPETITIONS
     from predictor import get_known_teams
 
-    # 1. Verifica picks in DB
-    db_data = load_picks_from_db(date)
-    picks = db_data.get("picks", []) if db_data else []
-
-    # 2. Verifica FOOTBALL_DATA_KEY
     api_key = os.getenv("FOOTBALL_DATA_KEY", "")
+    known = get_known_teams()
 
-    # 3. Fetch un singur competition ca test (PL)
-    test_resp = None
+    # Fetch PL matches ca test
+    finished = []
     if api_key:
         try:
             r = req.get(
@@ -982,20 +978,30 @@ def admin_debug_results(
                 params={"dateFrom": date, "dateTo": date, "status": "FINISHED"},
                 timeout=10,
             )
-            test_resp = {"status": r.status_code, "matches": len(r.json().get("matches", []))}
+            for m in r.json().get("matches", []):
+                score = m.get("score", {}).get("fullTime", {})
+                home_raw = m.get("homeTeam", {}).get("name", "")
+                away_raw = m.get("awayTeam", {}).get("name", "")
+                finished.append({
+                    "home_raw": home_raw,
+                    "home_norm": _normalize_name(home_raw, known),
+                    "away_raw": away_raw,
+                    "away_norm": _normalize_name(away_raw, known),
+                    "score": f"{score.get('home')}-{score.get('away')}",
+                })
         except Exception as e:
-            test_resp = {"error": str(e)}
+            finished = [{"error": str(e)}]
 
-    # 4. Sample: primul pick vs primul meci gasit
-    sample_pick = picks[0] if picks else None
+    # Picks din DB
+    db_data = load_picks_from_db(date)
+    picks = db_data.get("picks", []) if db_data else []
+    pl_picks = [p for p in picks if p.get("competition_code") == "PL"]
 
     return {
         "date": date,
-        "model_version_server": MODEL_VERSION,
-        "api_key_set": bool(api_key),
-        "picks_in_db": len(picks),
-        "sample_pick": {"home": sample_pick["home"], "away": sample_pick["away"]} if sample_pick else None,
-        "pl_test": test_resp,
+        "picks_total": len(picks),
+        "pl_picks": [{"home": p["home"], "away": p["away"]} for p in pl_picks],
+        "pl_results_normalized": finished,
     }
 
 
