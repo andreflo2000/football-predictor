@@ -794,6 +794,7 @@ def track_record_history(limit: int = Query(100, le=500)):
                 "home":         r["home"],
                 "away":         r["away"],
                 "result":       r["result"],
+                "prediction":   r.get("prediction", ""),
                 "confidence":   round(r.get("confidence", 0.6) * 100, 1),
                 "actual_score": r.get("actual_score", ""),
                 "equity":       round(running_units, 2),
