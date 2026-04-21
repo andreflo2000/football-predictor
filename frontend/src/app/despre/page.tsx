@@ -114,7 +114,7 @@ export default function DesprePage() {
 
         {/* Ce nu suntem */}
         <div style={{ background: '#1a0a0a', border: '1px solid #3b1212', borderRadius: 16, padding: '32px', marginBottom: 48 }}>
-          <h2 style={{ color: '#fca5a5', fontSize: 18, fontWeight: 700, margin: '0 0 16px' }}>{lang === 'en' ? 'What Oxiano is NOT' : 'Ce Oxiano nu este'}</h2>
+          <h2 style={{ color: '#fca5a5', fontSize: 18, fontWeight: 700, margin: '0 0 16px' }}>{lang === 'en' ? 'What Oxiano is NOT' : 'Ce nu este Oxiano'}</h2>
           <ul style={{ color: '#9ca3af', fontSize: 14, lineHeight: 2, margin: 0, paddingLeft: 20 }}>
             {lang === 'en' ? <>
               <li>We are not a betting service and do not hold an ONJN licence or equivalent</li>
