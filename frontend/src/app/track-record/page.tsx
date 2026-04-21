@@ -124,7 +124,7 @@ export default function TrackRecord() {
         <div className="text-center mb-8 fade-in">
           <div className="text-4xl mb-2">📊</div>
           <h1 className="font-display text-4xl text-white mb-1" style={{ letterSpacing: '0.05em' }}>
-            TRACK RECORD
+            {lang === 'en' ? 'HISTORY & PERFORMANCE' : 'ISTORIC & PERFORMANȚĂ'}
           </h1>
           <div className="text-green-400 text-xs font-mono uppercase tracking-widest mb-1">
             {lang === 'en' ? 'Full transparency · Real data · Updated daily' : 'Transparență totală · Date reale · Actualizat zilnic'}

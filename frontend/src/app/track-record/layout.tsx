@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Track Record — Acuratețe Verificată | Oxiano Football Analytics',
+  title: 'Istoric & Performanță — Acuratețe Verificată | Oxiano Football Analytics',
   description: 'Rezultatele reale ale predicțiilor Oxiano, verificate out-of-sample. 86.1% acuratețe La Liga, 79.4% Bundesliga și Ligue 1 la confidence ≥65%. Nu ștergem picks-urile pierdute.',
   keywords: [
     'track record predicții fotbal', 'acuratețe predicții fotbal', 'rezultate predicții AI',
