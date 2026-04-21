@@ -75,7 +75,7 @@ export default function ManualPage() {
           </Section>
 
           {/* ── 2. NAVIGAREA PLATFORMEI ───────────────────────── */}
-          <Section num="02" title={ro ? 'Navigarea platformei' : 'Platform navigation'}>
+          <Section num="02" title={ro ? 'Navigarea în platformă' : 'Navigating the platform'}>
             <p style={{ ...bodyText, marginBottom: 20 }}>
               {ro ? 'Platforma are 5 secțiuni principale, fiecare cu un scop distinct:' : 'The platform has 5 main sections, each with a distinct purpose:'}
             </p>
