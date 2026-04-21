@@ -132,7 +132,7 @@ def _build_feature_vector(home_team: str, away_team: str,
     elo_diff = h_elo - a_elo
 
     # Elo probabilities (formula clasica)
-    elo_diff_adj = elo_diff + 85  # home advantage
+    elo_diff_adj = elo_diff + 50  # home advantage (calibrat post-COVID)
     elo_prob_h = 1 / (1 + 10 ** (-elo_diff_adj / 400))
     # Draw probability: aproximare empirica
     diff_abs = abs(elo_diff_adj)

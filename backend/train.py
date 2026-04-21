@@ -18,7 +18,7 @@ XG_PATH     = os.path.join(BASE_DIR, "data", "csv", "fbref_xg.csv")
 MIN_MATCHES = 6
 WINDOWS     = [3, 5, 10]
 ELO_K       = 32
-ELO_HOME    = 85
+ELO_HOME    = 50
 
 
 # ─────────────────────────────────────────────────────────
