@@ -1223,6 +1223,25 @@ export default function DailyPage() {
               ))}
             </div>
 
+            {/* Track Record Banner */}
+            <a href="/track-record" className="block mb-5 fade-in" style={{ textDecoration: 'none' }}>
+              <div className="rounded-2xl px-4 py-3 flex items-center justify-between"
+                style={{ background: 'linear-gradient(135deg, rgba(34,197,94,0.08), rgba(16,185,129,0.04))', border: '1px solid rgba(34,197,94,0.2)' }}>
+                <div className="flex items-center gap-3">
+                  <span className="text-lg">📊</span>
+                  <div>
+                    <div className="text-xs font-bold text-green-400 font-mono uppercase tracking-widest">
+                      {lang === 'en' ? 'Live Track Record' : 'Track Record Live'}
+                    </div>
+                    <div className="text-[10px] text-gray-500 font-mono mt-0.5">
+                      {lang === 'en' ? 'Every pick verified in real time · 100% transparent' : 'Fiecare pick verificat în timp real · 100% transparent'}
+                    </div>
+                  </div>
+                </div>
+                <span className="text-green-400 font-mono text-sm font-bold shrink-0">→</span>
+              </div>
+            </a>
+
             {/* 3 Ponturi Gratuite */}
             <FreePicks picks={picks} />
 
