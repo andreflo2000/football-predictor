@@ -958,7 +958,7 @@ def admin_auto_results(
 
 @app.post("/api/admin/cache/clear-odds")
 def admin_clear_odds_cache(user: dict = Depends(require_admin)):
-    """Sterge cache-ul de odds si picks ca sa refetcheze cu normalizarile noi."""
+    """Sterge cache-ul de odds si picks, recompute picks de azi cu cotele noi."""
     import datetime as _dt
     today = _dt.date.today().isoformat()
     import cache as redis_cache
@@ -966,7 +966,14 @@ def admin_clear_odds_cache(user: dict = Depends(require_admin)):
     redis_cache.delete("daily", f"{today}:0.5")
     redis_cache.delete("daily", f"{today}:0.45")
     redis_cache.delete("odds_quota_exhausted", today)
-    return {"cleared": True, "date": today}
+    # Sterge si din Supabase ca sa forteze recompute
+    client = get_client()
+    if client:
+        client.table("daily_picks").delete().eq("pick_date", today).execute()
+    # Recompute sincron
+    from ingestion import compute_and_store_picks
+    result = compute_and_store_picks(today)
+    return {"cleared": True, "date": today, "picks_recomputed": result.get("total_picks", 0)}
 
 
 @app.post("/api/admin/picks/backfill")
