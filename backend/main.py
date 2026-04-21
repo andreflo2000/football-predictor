@@ -956,6 +956,19 @@ def admin_auto_results(
 
 
 
+@app.post("/api/admin/cache/clear-odds")
+def admin_clear_odds_cache(user: dict = Depends(require_admin)):
+    """Sterge cache-ul de odds si picks ca sa refetcheze cu normalizarile noi."""
+    import datetime as _dt
+    today = _dt.date.today().isoformat()
+    import cache as redis_cache
+    redis_cache.delete("odds_daily", today)
+    redis_cache.delete("daily", f"{today}:0.5")
+    redis_cache.delete("daily", f"{today}:0.45")
+    redis_cache.delete("odds_quota_exhausted", today)
+    return {"cleared": True, "date": today}
+
+
 @app.post("/api/admin/picks/backfill")
 def admin_backfill_results(
     background_tasks: BackgroundTasks,
