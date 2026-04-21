@@ -5,22 +5,40 @@ import Link from 'next/link'
 import { getToken, logout } from '@/lib/auth'
 import { useLang } from '@/lib/LangContext'
 
-const LINKS = {
+const WEB_LINKS = {
   ro: [
-    { href: '/',             label: 'Predicții AI',     icon: '🔮' },
-    { href: '/daily',        label: 'Selecțiile zilei', icon: '🎯' },
-    { href: '/bet-builder',  label: 'Combo Analyzer',   icon: '🔢' },
-    { href: '/track-record', label: 'Track Record',     icon: '📊' },
-    { href: '/despre',       label: 'Despre',           icon: 'ℹ️'  },
-    { href: '/upgrade',      label: 'Upgrade',          icon: '⚡', highlight: true },
+    { href: '/',             label: 'Predicții',              icon: '🔮' },
+    { href: '/daily',        label: 'Analize zilnice',        icon: '🎯' },
+    { href: '/bet-builder',  label: 'Combo Analyzer',         icon: '🔢' },
+    { href: '/track-record', label: 'Istoric & Performanță',  icon: '📊' },
+    { href: '/despre',       label: 'Despre',                 icon: 'ℹ️'  },
+    { href: '/upgrade',      label: 'Upgrade',                icon: '⚡', highlight: true },
   ],
   en: [
-    { href: '/',             label: 'AI Predictions',   icon: '🔮' },
-    { href: '/daily',        label: "Daily Picks",      icon: '🎯' },
-    { href: '/bet-builder',  label: 'Combo Analyzer',   icon: '🔢' },
-    { href: '/track-record', label: 'Track Record',     icon: '📊' },
-    { href: '/despre',       label: 'About',            icon: 'ℹ️'  },
-    { href: '/upgrade',      label: 'Upgrade',          icon: '⚡', highlight: true },
+    { href: '/',             label: 'Predictions',            icon: '🔮' },
+    { href: '/daily',        label: 'Daily Analysis',         icon: '🎯' },
+    { href: '/bet-builder',  label: 'Combo Analyzer',         icon: '🔢' },
+    { href: '/track-record', label: 'History & Performance',  icon: '📊' },
+    { href: '/despre',       label: 'About',                  icon: 'ℹ️'  },
+    { href: '/upgrade',      label: 'Upgrade',                icon: '⚡', highlight: true },
+  ],
+}
+
+// Versiunea Android: fara Bet-Builder, limbaj analytics pur
+const NATIVE_LINKS = {
+  ro: [
+    { href: '/',             label: 'Predicții',              icon: '🔮' },
+    { href: '/daily',        label: 'Analize zilnice',        icon: '🎯' },
+    { href: '/track-record', label: 'Istoric & Performanță',  icon: '📊' },
+    { href: '/despre',       label: 'Despre',                 icon: 'ℹ️'  },
+    { href: '/upgrade',      label: 'Upgrade',                icon: '⚡', highlight: true },
+  ],
+  en: [
+    { href: '/',             label: 'Predictions',            icon: '🔮' },
+    { href: '/daily',        label: 'Daily Analysis',         icon: '🎯' },
+    { href: '/track-record', label: 'History & Performance',  icon: '📊' },
+    { href: '/despre',       label: 'About',                  icon: 'ℹ️'  },
+    { href: '/upgrade',      label: 'Upgrade',                icon: '⚡', highlight: true },
   ],
 }
 
@@ -29,15 +47,19 @@ export default function Navbar() {
   const router    = useRouter()
   const [open, setOpen]     = useState(false)
   const [logged, setLogged] = useState(false)
+  const [isNative, setIsNative] = useState(false)
   const { lang, setLang }   = useLang()
 
   useEffect(() => {
     setLogged(!!getToken())
+    // Detecteaza Capacitor native (Android/iOS)
+    const cap = (window as any).Capacitor
+    setIsNative(cap?.isNativePlatform?.() === true)
   }, [pathname])
 
   if (pathname?.startsWith('/manual')) return null
 
-  const links = LINKS[lang]
+  const links = (isNative ? NATIVE_LINKS : WEB_LINKS)[lang]
 
   return (
     <>

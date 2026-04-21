@@ -1125,7 +1125,7 @@ export default function DailyPage() {
       const pred = predLabel(p)
       return `${i + 1}. ${p.flag} ${p.home} vs ${p.away}\n   ${pred.short} — ${pred.full} · ${p.confidence}% conf`
     }).join('\n\n')
-    return `🎯 OXIANO — Pick-urile zilei ${formatDate(today())}\n\n${lines}\n\n🤖 Model AI · oxiano.com`
+    return `🎯 OXIANO — Predicțiile zilei ${formatDate(today())}\n\n${lines}\n\n🤖 Model AI · oxiano.com`
   }
 
   return (
@@ -1138,7 +1138,7 @@ export default function DailyPage() {
         <div className="text-center mb-6 fade-in">
           <div className="text-4xl mb-2">🎯</div>
           <h1 className="font-display text-4xl text-white mb-1" style={{ letterSpacing: '0.05em' }}>
-            {lang === 'en' ? 'DAILY PICKS' : 'SELECȚIILE ZILEI'}
+            {lang === 'en' ? 'DAILY ANALYSIS' : 'ANALIZA ZILEI'}
           </h1>
           <div className="text-green-400 text-sm font-mono uppercase tracking-widest mb-1">
             {data ? formatDate(data.date) : formatDate(today())}
@@ -1231,7 +1231,7 @@ export default function DailyPage() {
                   <span className="text-lg">📊</span>
                   <div>
                     <div className="text-xs font-bold text-green-400 font-mono uppercase tracking-widest">
-                      {lang === 'en' ? 'Live Track Record' : 'Track Record Live'}
+                      {lang === 'en' ? 'Live Performance' : 'Performanță Live'}
                     </div>
                     <div className="text-[10px] text-gray-500 font-mono mt-0.5">
                       {lang === 'en' ? 'Every pick verified in real time · 100% transparent' : 'Fiecare pick verificat în timp real · 100% transparent'}
