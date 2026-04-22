@@ -288,6 +288,24 @@ export default function ManualPage() {
             </div>
           </Section>
 
+          {/* ── Link ghid piete ──────────────────────────────── */}
+          <a href="/ghid-piete" style={{ display: 'block', textDecoration: 'none', marginBottom: 56 }}>
+            <div style={{ background: 'rgba(34,211,238,0.06)', border: '1px solid rgba(34,211,238,0.2)', borderRadius: 14, padding: '24px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+              <div>
+                <div style={{ fontSize: 11, color: '#22d3ee', fontFamily: 'monospace', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 6 }}>
+                  {ro ? 'Documentație extinsă' : 'Extended documentation'}
+                </div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: '#fff', marginBottom: 4 }}>
+                  📋 {ro ? 'Tipuri de Analize Statistice' : 'Statistical Analysis Types'}
+                </div>
+                <div style={{ fontSize: 13, color: '#6b7280' }}>
+                  {ro ? 'Cele 10 tipuri de rezultate analizate de model, cu metodologie și factori de calcul.' : 'The 10 result types analysed by the model, with methodology and calculation factors.'}
+                </div>
+              </div>
+              <span style={{ color: '#22d3ee', fontSize: 20, flexShrink: 0 }}>→</span>
+            </div>
+          </a>
+
           {/* ── 8. DISCLAIMER ─────────────────────────────────── */}
           <div style={{ marginTop: 48, background: '#1a0a0a', border: '1px solid #3b1212', borderRadius: 14, padding: '28px 28px' }}>
             <h3 style={{ color: '#fca5a5', fontSize: 16, fontWeight: 700, margin: '0 0 14px' }}>{ro ? 'Disclaimer legal' : 'Legal disclaimer'}</h3>
