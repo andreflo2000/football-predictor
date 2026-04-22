@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { t } from './i18n'
 import axios from 'axios'
 import { useLang } from '@/lib/LangContext'
@@ -1156,9 +1157,19 @@ function PredictionDisplay({ prediction, fixture, standings, user }: {
   )
 }
 
-export default function Home() {
+const QUICK_LEAGUES = [
+  { id: 39,  flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿', nameRo: 'Premier League', nameEn: 'Premier League', acc: 70.0 },
+  { id: 140, flag: '🇪🇸',       nameRo: 'La Liga',        nameEn: 'La Liga',        acc: 86.1 },
+  { id: 78,  flag: '🇩🇪',       nameRo: 'Bundesliga',     nameEn: 'Bundesliga',     acc: 79.4 },
+  { id: 135, flag: '🇮🇹',       nameRo: 'Serie A',        nameEn: 'Serie A',        acc: 71.1 },
+  { id: 2,   flag: '🏆',        nameRo: 'Champions Lg',   nameEn: 'Champions Lg',   acc: null },
+]
+
+function Home() {
   const { lang } = useLang()
   const tr = t[lang]
+  const searchParams = useSearchParams()
+  const router = useRouter()
   const [user, setUser] = useState<AuthUser | null>(null)
   useEffect(() => {
     setUser(getUser())
@@ -1178,6 +1189,20 @@ export default function Home() {
   useEffect(() => {
     axios.get(`${API_BASE}/api/leagues`).then(r => setLeagues(r.data.leagues || []))
   }, [])
+
+  // Auto-selecteaza liga din URL ?league=ID
+  useEffect(() => {
+    const leagueParam = searchParams.get('league')
+    if (leagueParam) {
+      const id = Number(leagueParam)
+      if (!isNaN(id) && id > 0) setSelectedLeague(id)
+    }
+  }, [searchParams])
+
+  const selectLeague = (id: number) => {
+    setSelectedLeague(id)
+    router.replace(`/?league=${id}`, { scroll: false })
+  }
 
   useEffect(() => {
     if (!selectedLeague) return
@@ -1244,13 +1269,52 @@ export default function Home() {
           <p className="text-gray-500 text-xs font-mono uppercase tracking-widest">{tr.hero_sub}</p>
         </div>
 
+        {/* ── Ligi rapide ─────────────────────────────────────────── */}
+        <div className="mb-6 fade-in">
+          <div className="text-[10px] font-bold text-gray-600 uppercase tracking-widest mb-3 text-center">
+            {lang === 'en' ? 'Quick select — top leagues' : 'Selectare rapidă — ligi principale'}
+          </div>
+          <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+            {QUICK_LEAGUES.map(ql => {
+              const active = selectedLeague === ql.id
+              return (
+                <button
+                  key={ql.id}
+                  onClick={() => selectLeague(ql.id)}
+                  style={{
+                    flexShrink: 0,
+                    padding: '10px 14px',
+                    borderRadius: 12,
+                    border: `1px solid ${active ? 'rgba(34,197,94,0.5)' : 'rgba(255,255,255,0.07)'}`,
+                    background: active ? 'rgba(34,197,94,0.12)' : 'rgba(255,255,255,0.03)',
+                    cursor: 'pointer',
+                    textAlign: 'center',
+                    minWidth: 90,
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  <div style={{ fontSize: 22, marginBottom: 4 }}>{ql.flag}</div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: active ? '#4ade80' : '#d1d5db', whiteSpace: 'nowrap' }}>
+                    {lang === 'en' ? ql.nameEn : ql.nameRo}
+                  </div>
+                  {ql.acc && (
+                    <div style={{ fontSize: 9, fontFamily: 'monospace', color: active ? '#86efac' : '#4b5563', marginTop: 2 }}>
+                      {ql.acc}% acc
+                    </div>
+                  )}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
         <TierComparisonTable />
 
         <div className="card p-6 mb-6 fade-in">
           <div className="grid grid-cols-1 gap-4">
             <div>
               <label className="block text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2">{tr.select_league}</label>
-              <select className="select-styled" value={selectedLeague || ''} onChange={e => setSelectedLeague(Number(e.target.value))}>
+              <select className="select-styled" value={selectedLeague || ''} onChange={e => selectLeague(Number(e.target.value))}>
                 <option value="">{tr.select_league_placeholder}</option>
                 {confGroups.map(conf => (
                   grouped[conf]?.length > 0 && (
@@ -1365,5 +1429,13 @@ export default function Home() {
         </div>
       </footer>
     </div>
+  )
+}
+
+export default function HomeWithSuspense() {
+  return (
+    <Suspense fallback={<div className="app-bg grid-bg" style={{ minHeight: '100vh' }} />}>
+      <Home />
+    </Suspense>
   )
 }
