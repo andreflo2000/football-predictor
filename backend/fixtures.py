@@ -814,44 +814,52 @@ def _fetch_european_cups(date_str: str, known_teams: list) -> list:
     return results
 
 
-def get_today_odds(known_teams: list = None) -> dict:
+def get_today_odds(known_teams: list = None, active_comp_codes: list = None) -> dict:
     """
     Descarca cotele de azi din The-Odds-API (gratis: 500 req/luna).
-    Cache Redis 24h — o singura fetching per zi, max 9 req/zi din 500 disponibile.
+    Optimizare: fetch doar pentru ligile cu meciuri azi (active_comp_codes).
+    Backup: daca quota e epuizata, returneaza cotele din ziua anterioara.
     Returneaza un dict: (home_normalized, away_normalized) -> {B365H, B365D, B365A, ...}
-    Necesita env var ODDS_API_KEY.
     """
     if not ODDS_API_KEY:
         return {}
 
     import datetime as _dt
     today = _dt.date.today().isoformat()
+    yesterday = (_dt.date.today() - _dt.timedelta(days=1)).isoformat()
 
     # Verifica cache Redis — daca avem cote pt azi, nu mai facem API calls
-    cached = None
     try:
         import cache as redis_cache
         cached = redis_cache.get("odds_daily", today)
+        if cached is not None:
+            return {tuple(k.split("|")): v for k, v in cached.items()} if isinstance(cached, dict) else {}
     except Exception:
         pass
 
-    if cached is not None:
-        # Reconstruieste cheile tuple din cache (JSON serializeaza ca string)
-        return {tuple(k.split("|")): v for k, v in cached.items()} if isinstance(cached, dict) else {}
-
-    # Verifica daca quota e epuizata azi
+    # Verifica daca quota e epuizata — returneaza backup din ziua anterioara
     try:
         import cache as redis_cache
-        quota_key = redis_cache.get("odds_quota_exhausted", today)
-        if quota_key:
+        if redis_cache.get("odds_quota_exhausted", today):
+            yesterday_cache = redis_cache.get("odds_daily", yesterday)
+            if yesterday_cache and isinstance(yesterday_cache, dict):
+                return {tuple(k.split("|")): v for k, v in yesterday_cache.items()}
             return {}
     except Exception:
         pass
 
+    # Filtreaza doar ligile cu meciuri azi — reduce request-urile de la 9 la 2-3
+    sport_map = ODDS_SPORT_MAP
+    if active_comp_codes:
+        comp_to_sport = {v: k for k, v in ODDS_SPORT_MAP.items()}
+        filtered = {comp_to_sport[c]: c for c in active_comp_codes if c in comp_to_sport}
+        if filtered:
+            sport_map = filtered
+
     odds_map = {}
     quota_exhausted = False
 
-    for sport, comp_code in ODDS_SPORT_MAP.items():
+    for sport, comp_code in sport_map.items():
         if quota_exhausted:
             break
         try:
@@ -865,18 +873,21 @@ def get_today_odds(known_teams: list = None) -> dict:
             }
             resp = requests.get(url, params=params, timeout=10)
             if resp.status_code == 401:
-                break   # cheie invalida
+                break
             if resp.status_code == 429:
-                # Quota epuizata — cache pentru restul zilei
                 quota_exhausted = True
                 try:
                     import cache as redis_cache
                     redis_cache.set("odds_quota_exhausted", today, True, ttl=86400)
+                    # Backup: returneaza cotele de ieri daca exista
+                    yesterday_cache = redis_cache.get("odds_daily", yesterday)
+                    if yesterday_cache and isinstance(yesterday_cache, dict):
+                        odds_map.update({tuple(k.split("|")): v for k, v in yesterday_cache.items()})
                 except Exception:
                     pass
                 break
             if resp.status_code == 422:
-                continue  # sport indisponibil
+                continue
             if resp.status_code != 200:
                 continue
             events = resp.json()
@@ -928,12 +939,12 @@ def get_today_odds(known_teams: list = None) -> dict:
                 "PSA":   b365_a or avg_a,
             }
 
-    # Salveaza in Redis cu TTL 24h — un singur fetch pe zi
+    # Salveaza in Redis cu TTL 48h — backup pentru ziua urmatoare daca quota se epuizeaza
     if odds_map and not quota_exhausted:
         try:
             import cache as redis_cache
             serializable = {f"{k[0]}|{k[1]}": v for k, v in odds_map.items()}
-            redis_cache.set("odds_daily", today, serializable, ttl=86400)
+            redis_cache.set("odds_daily", today, serializable, ttl=172800)
         except Exception:
             pass
 

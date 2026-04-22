@@ -29,7 +29,9 @@ def compute_and_store_picks(date: str = None) -> dict:
     known    = get_known_teams()
     fixtures = get_today_fixtures(date=target, known_teams=known)
     actual_date = fixtures[0].get("date", target) if fixtures else target
-    odds_map = get_today_odds(known_teams=known)
+    # Trimite doar ligile cu meciuri azi — reduce consumul de quota The-Odds-API
+    active_comps = list({f.get("competition_code") for f in fixtures if f.get("competition_code")})
+    odds_map = get_today_odds(known_teams=known, active_comp_codes=active_comps)
 
     picks  = []
     errors = []
