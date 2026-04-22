@@ -89,9 +89,19 @@ async def startup_event():
 
         scheduler = BackgroundScheduler(timezone="Europe/Bucharest")
 
-        # Calculeaza la 07:00 si 13:00 in fiecare zi
+        # Calculeaza picks pentru AZI la 07:00 si 13:00
         scheduler.add_job(compute_and_store_picks, CronTrigger(hour=7,  minute=0))
         scheduler.add_job(compute_and_store_picks, CronTrigger(hour=13, minute=0))
+        # Calculeaza picks pentru MAINE (+1) la 07:30
+        scheduler.add_job(
+            lambda: compute_and_store_picks((datetime.date.today() + datetime.timedelta(days=1)).isoformat()),
+            CronTrigger(hour=7, minute=30),
+        )
+        # Calculeaza picks pentru POIMAINE (+2) la 08:00
+        scheduler.add_job(
+            lambda: compute_and_store_picks((datetime.date.today() + datetime.timedelta(days=2)).isoformat()),
+            CronTrigger(hour=8, minute=0),
+        )
         # Auto-marcare WIN/LOSS la 23:30 dupa terminarea majoritatii meciurilor
         scheduler.add_job(auto_mark_results, CronTrigger(hour=23, minute=30))
         # Refresh Elo externe zilnic la 06:00 (inainte de picks)
@@ -720,55 +730,157 @@ def debug_status():
 # ─────────────────────────────────────────────
 @app.get("/api/track-record")
 def track_record():
-    """Statistici acuratete live din tabelul predictions."""
-    from db import get_client
-    import datetime as _dt
+    """Statistici acuratete live din pick_results (auto-marcate zilnic la 23:30)."""
     client = get_client()
     if client is None:
         return {"total": 0, "tracking_since": "Aprilie 2026"}
     try:
-        rows = client.table("predictions").select("confidence, result").execute()
-        data = rows.data or []
-        resolved = [r for r in data if r.get("result") in ("WIN", "LOSS")]
-
-        high = [r for r in resolved if r["confidence"] >= 0.65]
-        med  = [r for r in resolved if 0.55 <= r["confidence"] < 0.65]
+        # Citeste toate pick_results marcate WIN/LOSS
+        pr_rows = client.table("pick_results").select("*").execute()
+        pr_data = pr_rows.data or []
+        resolved = [r for r in pr_data if r.get("result") in ("win", "loss")]
 
         def acc(lst):
-            wins = sum(1 for r in lst if r["result"] == "WIN")
+            wins = sum(1 for r in lst if r["result"] == "win")
             return round(wins / len(lst) * 100, 1) if lst else 0
 
-        # Prima predictie logata
-        first_row = client.table("predictions").select("created_at").order("created_at").limit(1).execute()
-        since = first_row.data[0]["created_at"][:10] if first_row.data else "Aprilie 2026"
-        days  = (datetime.date.today() - datetime.date.fromisoformat(since)).days if since != "Aprilie 2026" else 0
+        def group(lst, min_c, max_c=None):
+            if max_c is None:
+                return [r for r in lst if (r.get("confidence") or 0) >= min_c]
+            return [r for r in lst if min_c <= (r.get("confidence") or 0) < max_c]
 
-        # Citeste si din pick_results (WIN/LOSS marcate de admin)
-        pr_rows = client.table("pick_results").select("confidence, result").execute()
-        pr_data = pr_rows.data or []
-        pr_resolved = [r for r in pr_data if r.get("result") in ("win", "loss")]
+        # Confidence breakdown (confidence stocat ca fractie 0-1 in DB)
+        above_70  = group(resolved, 0.70)
+        above_65  = group(resolved, 0.65)
+        above_60  = group(resolved, 0.60)
+        med_band  = group(resolved, 0.55, 0.65)
 
-        # Combina ambele surse
-        all_resolved = resolved + [
-            {"confidence": r.get("confidence", 0.6), "result": "WIN" if r["result"] == "win" else "LOSS"}
-            for r in pr_resolved
-        ]
-        all_high = [r for r in all_resolved if r["confidence"] >= 0.65]
-        all_med  = [r for r in all_resolved if 0.55 <= r["confidence"] < 0.65]
+        # Tracking since = primul pick_date din pick_results
+        since = "Aprilie 2026"
+        days  = 0
+        if resolved:
+            dates = [r["pick_date"] for r in resolved if r.get("pick_date")]
+            if dates:
+                since = min(dates)
+                try:
+                    days = (datetime.date.today() - datetime.date.fromisoformat(since)).days
+                except Exception:
+                    pass
+
+        # Per-liga breakdown din pick_results (home/away → liga nu e stocata direct,
+        # dar o putem aproxima din daily_picks JSONB)
+        league_stats = _compute_league_stats(client, resolved)
 
         return {
-            "total":               len(all_resolved),
-            "high_conf_total":     len(all_high),
-            "high_conf_wins":      sum(1 for r in all_high if r["result"] == "WIN"),
-            "high_conf_accuracy":  acc(all_high),
-            "med_conf_total":      len(all_med),
-            "med_conf_wins":       sum(1 for r in all_med if r["result"] == "WIN"),
-            "med_conf_accuracy":   acc(all_med),
+            "total":               len(resolved),
+            "high_conf_total":     len(above_65),
+            "high_conf_wins":      sum(1 for r in above_65 if r["result"] == "win"),
+            "high_conf_accuracy":  acc(above_65),
+            "med_conf_total":      len(med_band),
+            "med_conf_wins":       sum(1 for r in med_band if r["result"] == "win"),
+            "med_conf_accuracy":   acc(med_band),
             "tracking_since":      since,
             "days_tracked":        days,
+            # Breakdown detaliat pe praguri — înlocuiește valorile hardcodate din frontend
+            "confidence_breakdown": [
+                {
+                    "label":    "Confidence >70%",
+                    "total":    len(above_70),
+                    "wins":     sum(1 for r in above_70 if r["result"] == "win"),
+                    "accuracy": acc(above_70),
+                },
+                {
+                    "label":    "Confidence ≥65%",
+                    "total":    len(above_65),
+                    "wins":     sum(1 for r in above_65 if r["result"] == "win"),
+                    "accuracy": acc(above_65),
+                },
+                {
+                    "label":    "Confidence ≥60%",
+                    "total":    len(above_60),
+                    "wins":     sum(1 for r in above_60 if r["result"] == "win"),
+                    "accuracy": acc(above_60),
+                },
+                {
+                    "label":    "Toate predicțiile",
+                    "label_en": "All predictions",
+                    "total":    len(resolved),
+                    "wins":     sum(1 for r in resolved if r["result"] == "win"),
+                    "accuracy": acc(resolved),
+                },
+            ],
+            "league_stats": league_stats,
         }
     except Exception as e:
+        logger.error("[track-record] %s", e)
         return {"total": 0, "tracking_since": "Aprilie 2026", "error": str(e)}
+
+
+def _compute_league_stats(client, resolved: list) -> list:
+    """
+    Calculeaza acuratete per liga din daily_picks JSONB.
+    Incruciseaza pick_results cu informatia de liga din daily_picks.
+    """
+    try:
+        # Incarca daily_picks pentru datele din pick_results
+        dates = list({r["pick_date"] for r in resolved if r.get("pick_date")})
+        if not dates:
+            return []
+
+        # Build index: (date, home_lower, away_lower) -> result
+        result_index = {
+            (r["pick_date"], r["home"].lower(), r["away"].lower()): r["result"]
+            for r in resolved
+        }
+        conf_index = {
+            (r["pick_date"], r["home"].lower(), r["away"].lower()): r.get("confidence", 0.6)
+            for r in resolved
+        }
+
+        league_map: dict = {}  # league_name -> {total, wins, total65, wins65}
+
+        for date in dates:
+            rows = client.table("daily_picks").select("picks").eq("pick_date", date).execute()
+            if not rows.data:
+                continue
+            import json as _json
+            picks_raw = rows.data[0].get("picks", "[]")
+            picks = _json.loads(picks_raw) if isinstance(picks_raw, str) else picks_raw
+            for p in picks:
+                key = (date, p["home"].lower(), p["away"].lower())
+                if key not in result_index:
+                    continue
+                league = p.get("league", "Unknown")
+                conf   = conf_index.get(key, 0.6)
+                res    = result_index[key]
+                if league not in league_map:
+                    league_map[league] = {"total": 0, "wins": 0, "total65": 0, "wins65": 0}
+                league_map[league]["total"] += 1
+                if res == "win":
+                    league_map[league]["wins"] += 1
+                if conf >= 0.65:
+                    league_map[league]["total65"] += 1
+                    if res == "win":
+                        league_map[league]["wins65"] += 1
+
+        result = []
+        for league, s in league_map.items():
+            if s["total"] < 3:  # ignora ligile cu prea putine date
+                continue
+            acc_all = round(s["wins"] / s["total"] * 100, 1) if s["total"] else 0
+            acc65   = round(s["wins65"] / s["total65"] * 100, 1) if s["total65"] else 0
+            result.append({
+                "league":   league,
+                "total":    s["total"],
+                "total65":  s["total65"],
+                "accuracy": acc_all,
+                "acc65":    acc65,
+            })
+        result.sort(key=lambda x: x["acc65"], reverse=True)
+        return result
+    except Exception as e:
+        logger.warning("[track-record] league_stats failed: %s", e)
+        return []
 
 
 @app.get("/api/track-record/history")

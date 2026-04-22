@@ -4,6 +4,22 @@ import { useLang } from '@/lib/LangContext'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'https://football-predictor-api-n9sl.onrender.com'
 
+interface ConfBreakdown {
+  label: string
+  label_en?: string
+  total: number
+  wins: number
+  accuracy: number
+}
+
+interface LeagueStat {
+  league: string
+  total: number
+  total65: number
+  accuracy: number
+  acc65: number
+}
+
 interface Stats {
   total: number
   high_conf_total: number
@@ -14,6 +30,8 @@ interface Stats {
   med_conf_accuracy: number
   tracking_since: string
   days_tracked: number
+  confidence_breakdown?: ConfBreakdown[]
+  league_stats?: LeagueStat[]
 }
 
 interface PickResult {
@@ -38,19 +56,12 @@ interface History {
   }
 }
 
-const backtesting = [
-  { label: 'Confidence > 70%',  accuracy: 78.5, sampleRo: '~0.8 picks/zi · out-of-sample',            sampleEn: '~0.8 picks/day · out-of-sample',           color: '#22c55e' },
-  { label: 'Confidence ≥ 65%',  accuracy: 74.1, sampleRo: '~1.1 picks/zi · out-of-sample',            sampleEn: '~1.1 picks/day · out-of-sample',           color: '#4ade80' },
-  { label: 'Confidence ≥ 60%',  accuracy: 66.4, sampleRo: '~1.5 picks/zi · out-of-sample',            sampleEn: '~1.5 picks/day · out-of-sample',           color: '#f59e0b' },
+// Backtesting referință (out-of-sample · afișat când nu avem suficiente date live)
+const BACKTEST_REF = [
+  { label: 'Confidence > 70%',     accuracy: 78.5, sampleRo: '~0.8 picks/zi · backtest', sampleEn: '~0.8 picks/day · backtest', color: '#22c55e' },
+  { label: 'Confidence ≥ 65%',     accuracy: 74.1, sampleRo: '~1.1 picks/zi · backtest', sampleEn: '~1.1 picks/day · backtest', color: '#4ade80' },
+  { label: 'Confidence ≥ 60%',     accuracy: 66.4, sampleRo: '~1.5 picks/zi · backtest', sampleEn: '~1.5 picks/day · backtest', color: '#f59e0b' },
   { label_ro: 'Toate predicțiile', label_en: 'All predictions', accuracy: 54.6, sampleRo: '1.105 meciuri · Oct 2025–Mar 2026', sampleEn: '1,105 matches · Oct 2025–Mar 2026', color: '#818cf8' },
-]
-
-const leagueStats = [
-  { league: 'La Liga 🇪🇸',       acc65: 86.1, acc70: 92.9, picks65: 36 },
-  { league: 'Bundesliga 🇩🇪',    acc65: 79.4, acc70: 82.6, picks65: 34 },
-  { league: 'Ligue 1 🇫🇷',       acc65: 79.4, acc70: 76.9, picks65: 34 },
-  { league: 'Serie A 🇮🇹',       acc65: 71.1, acc70: 71.9, picks65: 45 },
-  { league: 'Premier League 🏴󠁧󠁢󠁥󠁮󠁧󠁿', acc65: 70.0, acc70: 71.4, picks65: 40 },
 ]
 
 interface VipStats {
@@ -314,34 +325,84 @@ export default function TrackRecord() {
           )
         })()}
 
-        {/* Backtesting */}
-        <div className="mb-6 fade-in">
-          <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3 text-center">
-            {lang === 'en' ? 'Backtesting · 225,000 matches · 2010–2025' : 'Backtesting · 225.000 meciuri · 2010–2025'}
-          </div>
-          <div className="space-y-3">
-            {backtesting.map((b: any) => (
-              <div key={b.label ?? b.label_ro} className="card p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <div>
-                    <div className="text-sm font-bold text-white">{b.label ?? (lang === 'en' ? b.label_en : b.label_ro)}</div>
-                    <div className="text-[10px] text-gray-600 font-mono">{lang === 'en' ? b.sampleEn : b.sampleRo}</div>
-                  </div>
-                  <div className="text-3xl font-bold font-mono" style={{ color: b.color }}>
-                    {b.accuracy}%
-                  </div>
+        {/* Acuratete per prag confidence — live dacă avem date, backtest ca referință */}
+        {(() => {
+          const liveBreakdown = stats?.confidence_breakdown
+          const hasLiveBreakdown = liveBreakdown && liveBreakdown.some(b => b.total >= 5)
+          const colors = ['#22c55e', '#4ade80', '#f59e0b', '#818cf8']
+
+          if (hasLiveBreakdown) {
+            return (
+              <div className="mb-6 fade-in">
+                <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3 text-center">
+                  {lang === 'en' ? 'Live accuracy · Real results from DB' : 'Acuratețe live · Rezultate reale din DB'}
                 </div>
-                <div className="h-2 bg-white/5 rounded-full overflow-hidden">
-                  <div className="h-full rounded-full transition-all duration-1000"
-                    style={{ width: `${b.accuracy}%`, background: b.color }} />
+                <div className="space-y-3">
+                  {liveBreakdown!.map((b, i) => {
+                    const color = colors[i] ?? '#818cf8'
+                    const label = lang === 'en' ? (b.label_en ?? b.label) : b.label
+                    return (
+                      <div key={b.label} className="card p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <div>
+                            <div className="text-sm font-bold text-white">{label}</div>
+                            <div className="text-[10px] text-gray-600 font-mono">
+                              {b.wins}/{b.total} {lang === 'en' ? 'wins · live data' : 'victorii · date live'}
+                            </div>
+                          </div>
+                          <div className="text-3xl font-bold font-mono" style={{ color }}>
+                            {b.total >= 5 ? `${b.accuracy}%` : '—'}
+                          </div>
+                        </div>
+                        <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+                          <div className="h-full rounded-full transition-all duration-1000"
+                            style={{ width: `${Math.min(b.accuracy, 100)}%`, background: color }} />
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+                <div className="text-center mt-2 text-[10px] text-gray-700 font-mono">
+                  {lang === 'en' ? '* Random baseline = 33.3% · Updated daily at 23:30' : '* Baseline hazard = 33.3% · Actualizat zilnic la 23:30'}
                 </div>
               </div>
-            ))}
-          </div>
-          <div className="text-center mt-2 text-[10px] text-gray-700 font-mono">
-            {lang === 'en' ? '* Random baseline = 33.3% · Model outperforms chance by +50%' : '* Random baseline = 33.3% · Modelul depășește cu +50% față de hazard'}
-          </div>
-        </div>
+            )
+          }
+
+          // Fallback: backtesting referinta cand date insuficiente
+          return (
+            <div className="mb-6 fade-in">
+              <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3 text-center">
+                {lang === 'en' ? 'Reference backtest · 225,000 matches · 2010–2025' : 'Backtest referință · 225.000 meciuri · 2010–2025'}
+              </div>
+              <div className="text-[10px] text-amber-600 font-mono text-center mb-3">
+                {lang === 'en' ? '⏳ Live data accumulating — shown when ≥5 real results per tier' : '⏳ Date live în acumulare — afișate când ≥5 rezultate reale per nivel'}
+              </div>
+              <div className="space-y-3">
+                {BACKTEST_REF.map((b: any) => (
+                  <div key={b.label ?? b.label_ro} className="card p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <div>
+                        <div className="text-sm font-bold text-white">{b.label ?? (lang === 'en' ? b.label_en : b.label_ro)}</div>
+                        <div className="text-[10px] text-gray-600 font-mono">{lang === 'en' ? b.sampleEn : b.sampleRo}</div>
+                      </div>
+                      <div className="text-3xl font-bold font-mono" style={{ color: b.color }}>
+                        {b.accuracy}%
+                      </div>
+                    </div>
+                    <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+                      <div className="h-full rounded-full transition-all duration-1000"
+                        style={{ width: `${b.accuracy}%`, background: b.color }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="text-center mt-2 text-[10px] text-gray-700 font-mono">
+                {lang === 'en' ? '* Random baseline = 33.3% · Model outperforms chance by +50%' : '* Random baseline = 33.3% · Modelul depășește cu +50% față de hazard'}
+              </div>
+            </div>
+          )
+        })()}
 
         {/* Tabel istoric detaliat */}
         <div className="mb-6 fade-in">
@@ -429,41 +490,50 @@ export default function TrackRecord() {
           )}
         </div>
 
-        {/* Per ligă */}
-        <div className="mb-6 fade-in">
-          <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3 text-center">
-            {lang === 'en' ? 'Accuracy per league · Out-of-sample Oct 2025–Mar 2026' : 'Acuratețe per ligă · Out-of-sample Oct 2025–Mar 2026'}
-          </div>
-          <div className="card overflow-hidden">
-            <table className="w-full text-xs font-mono">
-              <thead>
-                <tr style={{ borderBottom: '1px solid #1f2937' }}>
-                  <th className="text-left p-3 text-gray-600">{lang === 'en' ? 'League' : 'Ligă'}</th>
-                  <th className="text-center p-3 text-gray-600">Conf ≥65%</th>
-                  <th className="text-center p-3 text-gray-600">Conf ≥70%</th>
-                  <th className="text-right p-3 text-gray-600">{lang === 'en' ? 'Picks analysed' : 'Picks analizate'}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {leagueStats.map((l, i) => (
-                  <tr key={i} style={{ borderBottom: '1px solid #111827' }}>
-                    <td className="p-3 text-gray-300">{l.league}</td>
-                    <td className="p-3 text-center font-bold" style={{ color: l.acc65 >= 80 ? '#4ade80' : l.acc65 >= 70 ? '#f59e0b' : '#818cf8' }}>
-                      {l.acc65}%
-                    </td>
-                    <td className="p-3 text-center font-bold" style={{ color: l.acc70 >= 80 ? '#4ade80' : '#f59e0b' }}>
-                      {l.acc70}%
-                    </td>
-                    <td className="p-3 text-right text-gray-500">{l.picks65}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div className="text-center mt-2 text-[10px] text-gray-700 font-mono">
-            {lang === 'en' ? '* Valid only with available odds · 6-month out-of-sample backtest' : '* Valide doar cu cote disponibile · Backtest out-of-sample pe 6 luni'}
-          </div>
-        </div>
+        {/* Per ligă — live dacă avem date */}
+        {(() => {
+          const liveleagues = stats?.league_stats
+          if (liveleagues && liveleagues.length > 0) {
+            return (
+              <div className="mb-6 fade-in">
+                <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3 text-center">
+                  {lang === 'en' ? 'Accuracy per league · Live data' : 'Acuratețe per ligă · Date live'}
+                </div>
+                <div className="card overflow-hidden">
+                  <table className="w-full text-xs font-mono">
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid #1f2937' }}>
+                        <th className="text-left p-3 text-gray-600">{lang === 'en' ? 'League' : 'Ligă'}</th>
+                        <th className="text-center p-3 text-gray-600">{lang === 'en' ? 'Overall' : 'General'}</th>
+                        <th className="text-center p-3 text-gray-600">Conf ≥65%</th>
+                        <th className="text-right p-3 text-gray-600">{lang === 'en' ? 'Total picks' : 'Total picks'}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {liveleagues.map((l, i) => (
+                        <tr key={i} style={{ borderBottom: '1px solid #111827' }}>
+                          <td className="p-3 text-gray-300">{l.league}</td>
+                          <td className="p-3 text-center font-bold" style={{ color: l.accuracy >= 70 ? '#4ade80' : l.accuracy >= 55 ? '#f59e0b' : '#818cf8' }}>
+                            {l.total >= 3 ? `${l.accuracy}%` : '—'}
+                          </td>
+                          <td className="p-3 text-center font-bold" style={{ color: l.acc65 >= 70 ? '#4ade80' : '#f59e0b' }}>
+                            {l.total65 >= 3 ? `${l.acc65}%` : '—'}
+                          </td>
+                          <td className="p-3 text-right text-gray-500">{l.total}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="text-center mt-2 text-[10px] text-gray-700 font-mono">
+                  {lang === 'en' ? '* Updated daily · — shown when fewer than 3 picks per league' : '* Actualizat zilnic · — afișat când sub 3 picks per ligă'}
+                </div>
+              </div>
+            )
+          }
+          // Nicio data live înca — nu afisam tabelul cu valori false
+          return null
+        })()}
 
         {/* Metodologie */}
         <div className="card p-5 fade-in">
