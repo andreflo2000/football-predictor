@@ -44,7 +44,7 @@ ODDS_SPORT_MAP = {
     "soccer_germany_bundesliga":        "BL1",
     "soccer_italy_serie_a":             "SA",
     "soccer_spain_la_liga":             "PD",
-    "soccer_france_ligue_1":            "FL1",
+    "soccer_france_ligue_one":          "FL1",
     "soccer_portugal_primeira_liga":    "PPL",
     "soccer_netherlands_eredivisie":    "DED",
     "soccer_uefa_champs_league":        "CL",

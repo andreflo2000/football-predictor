@@ -750,6 +750,33 @@ def debug_status():
     return result
 
 
+@app.get("/api/debug/odds")
+def debug_odds(secret: str = Query(default="")):
+    """Test direct Odds API — arata ce cote returneaza pentru La Liga azi."""
+    admin_secret = os.getenv("ADMIN_SECRET", "")
+    if not (secret and admin_secret and secret == admin_secret):
+        raise HTTPException(403, "Unauthorized")
+    import requests as req
+    odds_key = os.getenv("ODDS_API_KEY", "")
+    if not odds_key:
+        return {"error": "ODDS_API_KEY not set"}
+    try:
+        r = req.get(
+            "https://api.the-odds-api.com/v4/sports/soccer_spain_la_liga/odds/",
+            params={"apiKey": odds_key, "regions": "eu", "markets": "h2h", "oddsFormat": "decimal"},
+            timeout=10,
+        )
+        return {
+            "status_code": r.status_code,
+            "requests_remaining": r.headers.get("x-requests-remaining"),
+            "requests_used": r.headers.get("x-requests-used"),
+            "events_count": len(r.json()) if r.status_code == 200 else 0,
+            "events": r.json() if r.status_code == 200 else r.text[:500],
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+
 # ─────────────────────────────────────────────
 # TRACK RECORD
 # ─────────────────────────────────────────────
