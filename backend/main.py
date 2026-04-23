@@ -214,6 +214,31 @@ def auth_change_password(request: Request, body: dict, user: dict = Depends(requ
     return {"message": "Parola a fost schimbata cu succes"}
 
 
+@app.patch("/api/auth/notifications-consent")
+def auth_notifications_consent(body: dict, user: dict = Depends(require_user)):
+    """Seteaza consimtamantul pentru notificari email (GDPR opt-in)."""
+    from db import get_client
+    client = get_client()
+    if client is None:
+        raise HTTPException(503, "DB indisponibil")
+    consent = bool(body.get("consent", False))
+    client.table("users").update({"notifications_consent": consent}).eq("id", int(user["id"])).execute()
+    return {"notifications_consent": consent}
+
+
+@app.get("/api/auth/notifications-consent")
+def auth_get_notifications_consent(user: dict = Depends(require_user)):
+    """Returneaza starea consimtamantului pentru notificari email."""
+    from db import get_client
+    client = get_client()
+    if client is None:
+        raise HTTPException(503, "DB indisponibil")
+    rows = client.table("users").select("notifications_consent").eq("id", int(user["id"])).execute()
+    if not rows.data:
+        return {"notifications_consent": False}
+    return {"notifications_consent": bool(rows.data[0].get("notifications_consent", False))}
+
+
 @app.delete("/api/auth/account")
 def auth_delete_account(user: dict = Depends(require_user)):
     """Sterge contul si toate datele asociate (GDPR Art. 17)."""

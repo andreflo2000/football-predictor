@@ -25,12 +25,24 @@ export default function LoginPage() {
     const u = getUser()
     setLoggedIn(!!getToken())
     setUser(u)
+    if (getToken()) {
+      fetch(`${API}/api/auth/notifications-consent`, {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      })
+        .then(r => r.json())
+        .then(d => setNotifConsent(!!d.notifications_consent))
+        .catch(() => {})
+    }
   }, [])
   const [email, setEmail]       = useState('')
   const [password, setPass]     = useState('')
   const [showPass, setShowPass] = useState(false)
   const [error, setError]       = useState('')
   const [loading, setLoading]   = useState(false)
+
+  // Notificari email
+  const [notifConsent, setNotifConsent] = useState(false)
+  const [notifLoading, setNotifLoading] = useState(false)
 
   // Schimbare parola
   const [cpCurrent, setCpCurrent] = useState('')
@@ -111,6 +123,45 @@ export default function LoginPage() {
             >
               🔑 {lang === 'en' ? 'Change password' : 'Schimbă parola'}
             </button>
+            {/* Notificari email */}
+            <button
+              disabled={notifLoading}
+              onClick={async () => {
+                setNotifLoading(true)
+                const next = !notifConsent
+                try {
+                  await fetch(`${API}/api/auth/notifications-consent`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+                    body: JSON.stringify({ consent: next }),
+                  })
+                  setNotifConsent(next)
+                } catch {}
+                setNotifLoading(false)
+              }}
+              style={{
+                padding: '12px 16px', borderRadius: '10px', cursor: notifLoading ? 'not-allowed' : 'pointer',
+                background: notifConsent ? 'rgba(34,197,94,0.1)' : 'rgba(255,255,255,0.04)',
+                border: `1px solid ${notifConsent ? 'rgba(34,197,94,0.3)' : 'rgba(255,255,255,0.1)'}`,
+                color: notifConsent ? '#4ade80' : '#6b7280',
+                fontWeight: 600, fontSize: '14px',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              }}
+            >
+              <span>📧 {lang === 'en' ? 'Email notifications' : 'Notificări email'}</span>
+              <span style={{
+                width: 36, height: 20, borderRadius: 10,
+                background: notifConsent ? '#22c55e' : '#374151',
+                position: 'relative', display: 'inline-block', transition: 'background 0.2s', flexShrink: 0,
+              }}>
+                <span style={{
+                  position: 'absolute', top: 3, left: notifConsent ? 18 : 3,
+                  width: 14, height: 14, borderRadius: '50%', background: '#fff',
+                  transition: 'left 0.2s',
+                }} />
+              </span>
+            </button>
+
             <button
               onClick={() => { logout(); setLoggedIn(false); setUser(null); router.push('/') }}
               style={{ padding: '12px', borderRadius: '10px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171', fontWeight: 700, fontSize: '14px', cursor: 'pointer' }}
