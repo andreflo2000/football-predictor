@@ -125,8 +125,6 @@ export const BLOG_POSTS: BlogPost[] = [
 <p>xG nu capturează tot. Nu știe de accidentări de ultim moment, nu cuantifică motivația (meci de titlu vs. meci fără miză), nu reflectă transferuri recente. De aceea Oxiano combină xG cu Elo, formă recentă și semnale de piață — nu depinde de o singură metrică.</p>
     `.trim(),
   },
-]
-
   {
     slug: 'analiza-1x2-fotbal-ghid-complet',
     title: 'Analiza 1X2 în fotbal — ghid complet: cum se calculează și ce înseamnă fiecare rezultat',
