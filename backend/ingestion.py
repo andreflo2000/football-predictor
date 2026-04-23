@@ -134,9 +134,11 @@ def compute_and_store_picks(date: str = None) -> dict:
 
     logger.info("[ingestion] Complet: %d picks pentru %s", len(picks), actual_date)
 
-    # Trimite notificari (Telegram + Email) doar la rularea de dimineata
+    # Trimite notificari (Telegram + Email) doar pentru picks de AZI, la rularea de dimineata
+    today = datetime.date.today().isoformat()
     hour = datetime.datetime.utcnow().hour
-    if picks and 5 <= hour <= 9:
+    is_today = actual_date == today
+    if picks and is_today and 5 <= hour <= 10:
         try:
             from notifications import send_telegram, send_email_digest, get_subscribers
             date_fmt = datetime.datetime.strptime(actual_date, "%Y-%m-%d").strftime("%d.%m.%Y")
