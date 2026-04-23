@@ -149,8 +149,8 @@ export default function DesprePage() {
             <a href="/track-record" style={{ background: 'transparent', color: '#22d3ee', padding: '12px 28px', borderRadius: 8, textDecoration: 'none', fontWeight: 600, fontSize: 15, border: '1px solid #22d3ee' }}>
               Track Record
             </a>
-            <a href="/manual" style={{ background: 'transparent', color: '#9ca3af', padding: '12px 28px', borderRadius: 8, textDecoration: 'none', fontWeight: 600, fontSize: 15, border: '1px solid #374151' }}>
-              📖 {lang === 'en' ? 'Parameter Guide PDF' : 'Manual PDF'}
+            <a href="/blog/cum-sa-folosesti-oxiano-ghid-utilizator" style={{ background: 'transparent', color: '#9ca3af', padding: '12px 28px', borderRadius: 8, textDecoration: 'none', fontWeight: 600, fontSize: 15, border: '1px solid #374151' }}>
+              📖 {lang === 'en' ? 'User Guide' : 'Ghid utilizare'}
             </a>
           </div>
           <div style={{ marginTop: 16, fontSize: 11, color: '#4b5563' }}>

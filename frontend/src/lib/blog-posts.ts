@@ -264,6 +264,86 @@ export const BLOG_POSTS: BlogPost[] = [
     `.trim(),
   },
   {
+    slug: 'cum-sa-folosesti-oxiano-ghid-utilizator',
+    title: 'Cum să folosești Oxiano — ghid complet pentru utilizatori noi',
+    description: 'Ghid pas cu pas pentru utilizarea platformei Oxiano: cum citești un pick, ce înseamnă fiecare nivel de confidence, indicatorii tehnici (Elo, Edge, Kelly, xG, H2H) și sfaturi practice pentru utilizare eficientă.',
+    date: '2026-04-23',
+    readTime: 10,
+    category: 'Ghid Platformă',
+    keywords: ['cum sa folosesti oxiano', 'ghid utilizare predicții fotbal', 'cum citesti un pick fotbal', 'confidence nivel predicție', 'indicatori tehnici fotbal oxiano'],
+    content: `
+<p>Oxiano afișează un număr de variabile per meci care, la prima vedere, pot părea copleșitoare. Acest ghid îți explică tot ce trebuie să știi ca să extragi maximum din platforma în câteva minute.</p>
+
+<h2>Cum citești un pick — pas cu pas</h2>
+
+<h3>1. Identifică meciul și liga</h3>
+<p>Verifică echipele și liga înainte de orice altceva. Modelul performează diferit în funcție de competiție — La Liga și Bundesliga au acuratețe istorică mai mare decât Premier League, tocmai pentru că Premier League e mai echilibrată. Dacă nu cunoști echipele, verifică forma recentă din cardul de meci pentru context rapid.</p>
+
+<h3>2. Citește Confidence % — indicatorul principal</h3>
+<p>Confidence este cel mai important număr de pe platformă. Reprezintă probabilitatea modelului pentru rezultatul prezis:</p>
+<ul>
+  <li><strong>≥70%</strong> — pick cu convingere ridicată. Acuratețe istorică ~78%. Frecvență: ~0.8 picks/zi.</li>
+  <li><strong>65–69%</strong> — pick recomandat. Acuratețe istorică ~74.7%. Baza principală de selecții.</li>
+  <li><strong>55–64%</strong> — pick informativ. Util ca context, nu ca selecție principală.</li>
+  <li><strong>sub 55%</strong> — meci echilibrat. Modelul recunoaște incertitudinea, nu forțează o predicție.</li>
+</ul>
+
+<h3>3. Verifică simbolul 💎 Value Bet</h3>
+<p>Dacă pick-ul are simbolul diamant, modelul vede și un dezacord față de piața sharp (Edge ≥5%). Acestea sunt cele mai selective semnale — 0.3–0.8 pe zi — și au cel mai bun raport risc/randament pe termen lung în backtesting.</p>
+
+<h3>4. Consultă tab-ul Stats</h3>
+<p>Tab-ul Stats afișează forma recentă, rating Elo, xG și head-to-head. Folosește aceste date pentru a valida sau a pune în context predicția modelului — nu lua niciodată o predicție fără să înțelegi contextul meciului.</p>
+
+<h3>5. Verifică Istoricul & Performanța modelului</h3>
+<p>Înainte de a folosi orice predicție, consultă secțiunea <a href="/track-record">Istoric & Performanță</a> pentru a înțelege acuratețea reală în timp real. Toate pick-urile trecute sunt vizibile, niciuna nu e ștearsă sau modificată după publicare.</p>
+
+<h2>Nivelurile de confidence — ce înseamnă în practică</h2>
+
+<p>Confidence nu e un număr arbitrar — e probabilitatea calibrată a modelului, validată pe meciuri nevăzute la antrenament:</p>
+<ul>
+  <li><strong>≥70% (High)</strong> — Modelul are convingere puternică. Acuratețe istorică ~78%. Recomandat ca pick principal. Frecvență redusă — aproximativ 0.8 picks/zi în medie.</li>
+  <li><strong>65–69% (Good)</strong> — Baza principală de picks. Acuratețe istorică ~74.7%. Picks zilnice standard — ~1–2 pe zi.</li>
+  <li><strong>55–64% (Medium)</strong> — Informativ. Util ca context secundar. Nu baza principală de analiză. Frecvență mare, selectivitate redusă.</li>
+  <li><strong>≥65% + Edge ≥5% (💎 Value Bet)</strong> — Cel mai selectiv semnal. Combină convingerea modelului cu dezacord față de piața sharp. ~0.3–0.8/zi. Cel mai bun raport risc/randament în backtesting.</li>
+</ul>
+
+<h2>Indicatori tehnici — referință rapidă</h2>
+
+<p>Fiecare meci analizat de Oxiano include mai mulți indicatori tehnici. Iată ce înseamnă fiecare:</p>
+
+<ul>
+  <li><strong>Confidence %</strong> — Probabilitatea modelului pentru rezultatul prezis. Baza principală de decizie. ≥65% = pick recomandat.</li>
+  <li><strong>Edge %</strong> — Diferența dintre probabilitatea modelului și cea implicată de cotele Pinnacle. Edge ≥5% = dezacord semnificativ față de piața sharp. Disponibil în planul Analyst.</li>
+  <li><strong>Kelly %</strong> — Procentul optim din bankroll conform Criteriului Kelly. Oxiano aplică Kelly fracțional, limitat la 10% per pick. Disponibil în planul Analyst.</li>
+  <li><strong>Value Bet 💎</strong> — Confidence ≥65% + Edge ≥5% simultan. Cel mai selectiv semnal al platformei.</li>
+  <li><strong>Elo Rating</strong> — Forța relativă a echipei, inspirat din sistemul de rating din șah. 1700+ = echipă de elită. O diferență Elo de 100 puncte înseamnă ~64% șanse de victorie pentru echipa mai bine cotată. Unul dintre cei mai predictivi indicatori.</li>
+  <li><strong>xG (Expected Goals)</strong> — Goluri așteptate statistic pe baza calității ocaziilor create. xG >1.5 per meci = atac puternic. Calculat din date istorice, actualizat zilnic.</li>
+  <li><strong>H2H (Head-to-Head)</strong> — Statistici din ultimele 6 meciuri directe: rata de victorie, egaluri și diferența de goluri a gazdei. Unele rivalități au tipare statistice stabile.</li>
+  <li><strong>Formă recentă</strong> — Rata de victorie din ultimele 5 și 10 meciuri, calculată separat pentru acasă și deplasare. O echipă poate fi formidabilă acasă și slabă în deplasare — statisticile globale maschează această asimetrie.</li>
+</ul>
+
+<h2>Sfaturi practice pentru utilizare eficientă</h2>
+
+<h3>Verifică platforma de două ori pe zi</h3>
+<p>Picks-urile se calculează automat la <strong>07:00 și 13:30 ora României</strong>. Prima verificare dimineața îți dă timp să analizezi meciurile de la prânz și seară; a doua prinde meciurile de după-amiază adăugate mai târziu.</p>
+
+<h3>Pornește mereu din Analiza Zilei</h3>
+<p>Pagina <a href="/daily">/daily</a> este deja filtrată și sortată descrescător după confidence. Economisești timp față de a parcurge manual toate predicțiile de pe pagina principală.</p>
+
+<h3>Urmărește Value Bets cu atenție specială</h3>
+<p>Sunt rare (0.3–0.8/zi) și reprezintă dezacordul modelului față de piața sharp. Pe termen lung, în backtesting, acestea au cel mai bun raport risc/randament din toate tipurile de picks.</p>
+
+<h3>Consultă Istoricul săptămânal</h3>
+<p>Urmărește acuratețea live, nu doar performanța declarată. Dacă modelul trece printr-o perioadă slabă pe o anumită ligă, e important să știi contextul înainte de a te baza pe picks din acea ligă.</p>
+
+<h3>Folosește Combo Analyzer cu precauție</h3>
+<p>Probabilitățile combinate scad exponențial cu fiecare meci adăugat. Un combo de 3 picks cu 70% fiecare are probabilitate combinată de doar ~34%. Secțiunea <a href="/bet-builder">Combo Analyzer</a> calculează automat această probabilitate ca să nu fii surprins.</p>
+
+<h3>Abonează-te la canalul Telegram</h3>
+<p>Canalul <a href="https://t.me/Oxianoo" target="_blank" rel="noopener noreferrer">@Oxianoo</a> trimite zilnic un combo automat cu cele mai bune 2–3 picks ale zilei (confidence ≥70%, cotă combinată ≥1.80). Dacă nu există un combo care îndeplinește criteriile, nu se trimite nimic — fără spam, fără picks forțate.</p>
+    `.trim(),
+  },
+  {
     slug: 'btts-both-teams-to-score-analiza',
     title: 'BTTS — Both Teams To Score: ce este, cum se calculează și în ce meciuri apare cel mai des',
     description: 'BTTS (Both Teams To Score) sau "Ambele echipe marchează" este o piață statistică care măsoară probabilitatea ca ambele echipe să înscrie cel puțin un gol. Explicăm calculul, factorii determinanți și cum identifici meciurile cu BTTS ridicat.',

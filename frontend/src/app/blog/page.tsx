@@ -11,6 +11,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   'Serie A': '#f87171',
   'Educație': '#22d3ee',
   'Ghid Piețe': '#4ade80',
+  'Ghid Platformă': '#f59e0b',
 }
 
 export default function BlogPage() {

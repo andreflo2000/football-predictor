@@ -480,7 +480,7 @@ export default function GhidPietePage() {
             <a href="/blog" style={{ padding: '12px 28px', borderRadius: 9, textDecoration: 'none', fontWeight: 700, fontSize: 14, background: 'rgba(34,197,94,0.12)', color: '#4ade80', border: '1px solid rgba(34,197,94,0.25)' }}>
               {ro ? '📝 Blog & Analize' : '📝 Blog & Analysis'}
             </a>
-            <a href="/manual" style={{ padding: '12px 28px', borderRadius: 9, textDecoration: 'none', fontWeight: 700, fontSize: 14, background: 'rgba(255,255,255,0.06)', color: '#e5e7eb', border: '1px solid rgba(255,255,255,0.12)' }}>
+            <a href="/blog/cum-sa-folosesti-oxiano-ghid-utilizator" style={{ padding: '12px 28px', borderRadius: 9, textDecoration: 'none', fontWeight: 700, fontSize: 14, background: 'rgba(255,255,255,0.06)', color: '#e5e7eb', border: '1px solid rgba(255,255,255,0.12)' }}>
               {ro ? '📖 Ghid de utilizare' : '📖 User Guide'}
             </a>
           </div>

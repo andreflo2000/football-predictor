@@ -26,6 +26,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: 'https://oxiano.com/blog/analiza-1x2-fotbal-ghid-complet', lastModified: new Date('2026-04-23'), changeFrequency: 'monthly', priority: 0.82 },
     { url: 'https://oxiano.com/blog/over-under-25-goluri-analiza', lastModified: new Date('2026-04-23'), changeFrequency: 'monthly', priority: 0.82 },
     { url: 'https://oxiano.com/blog/btts-both-teams-to-score-analiza', lastModified: new Date('2026-04-23'), changeFrequency: 'monthly', priority: 0.80 },
+    { url: 'https://oxiano.com/blog/cum-sa-folosesti-oxiano-ghid-utilizator', lastModified: new Date('2026-04-23'), changeFrequency: 'monthly', priority: 0.78 },
     { url: 'https://oxiano.com/track-record', lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
     { url: 'https://oxiano.com/ghid-piete', lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
     { url: 'https://oxiano.com/despre', lastModified: now, changeFrequency: 'monthly', priority: 0.6 },

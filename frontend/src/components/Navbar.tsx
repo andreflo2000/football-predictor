@@ -61,8 +61,6 @@ export default function Navbar() {
     setIsNative(cap?.isNativePlatform?.() === true)
   }, [pathname])
 
-  if (pathname?.startsWith('/manual')) return null
-
   const links = (isNative ? NATIVE_LINKS : WEB_LINKS)[lang]
 
   return (
