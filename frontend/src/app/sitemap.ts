@@ -7,7 +7,7 @@ const LEAGUES = [
   'bundesliga',
   'ligue-1',
   'champions-league',
-  'europa-league',
+
   'primeira-liga',
   'eredivisie',
   'championship',

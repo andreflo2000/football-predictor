@@ -89,18 +89,6 @@ const LEAGUES: Record<string, {
     teams: ['PSG', 'Bayern Munich', 'Arsenal', 'Atletico Madrid'],
     apiNames: ['UEFA Champions League', 'Champions League', 'UCL'],
   },
-  'europa-league': {
-    name: 'Europa League',
-    flag: '🌍',
-    country: 'Europa',
-    acc65: 70.8,
-    acc70: 73.3,
-    picks65: 24,
-    description: 'Predicții Europa League prin analiză cantitativă. Model antrenat pe toate competițiile UEFA cu Elo cross-ligă și forme recente.',
-    keywords: ['predicții Europa League', 'pronosticuri Europa League', 'UEL predictions AI', 'Europa League analysis', 'predictii UEL'],
-    teams: ['Nottingham Forest', 'Aston Villa', 'Braga', 'Freiburg'],
-    apiNames: ['UEFA Europa League', 'Europa League', 'UEL'],
-  },
   'primeira-liga': {
     name: 'Primeira Liga',
     flag: '🇵🇹',
