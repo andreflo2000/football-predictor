@@ -1162,6 +1162,10 @@ const QUICK_LEAGUES = [
   { id: 140, flag: '🇪🇸',       nameRo: 'La Liga',        nameEn: 'La Liga',        acc: 86.1 },
   { id: 78,  flag: '🇩🇪',       nameRo: 'Bundesliga',     nameEn: 'Bundesliga',     acc: 79.4 },
   { id: 135, flag: '🇮🇹',       nameRo: 'Serie A',        nameEn: 'Serie A',        acc: 71.1 },
+  { id: 61,  flag: '🇫🇷',       nameRo: 'Ligue 1',        nameEn: 'Ligue 1',        acc: 79.4 },
+  { id: 94,  flag: '🇵🇹',       nameRo: 'Primeira Liga',  nameEn: 'Primeira Liga',  acc: 73.2 },
+  { id: 88,  flag: '🇳🇱',       nameRo: 'Eredivisie',     nameEn: 'Eredivisie',     acc: null },
+  { id: 40,  flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿', nameRo: 'Championship',   nameEn: 'Championship',   acc: null },
   { id: 2,   flag: '🏆',        nameRo: 'Champions Lg',   nameEn: 'Champions Lg',   acc: null },
 ]
 

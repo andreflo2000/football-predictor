@@ -12,14 +12,44 @@ const CATEGORY_COLORS: Record<string, string> = {
   'Educație': '#22d3ee',
   'Ghid Piețe': '#4ade80',
   'Ghid Platformă': '#f59e0b',
+  'Analiză': '#fb923c',
+  'Champions League': '#fbbf24',
+  'Actualitate': '#f472b6',
+}
+
+function PostCard({ post }: { post: (typeof BLOG_POSTS)[0] }) {
+  const color = CATEGORY_COLORS[post.category] || '#6b7280'
+  return (
+    <Link href={`/blog/${post.slug}`} style={{ textDecoration: 'none' }}>
+      <div className="card p-5 hover:border-blue-800 transition-all cursor-pointer mb-3"
+        style={{ border: '1px solid rgba(255,255,255,0.06)' }}>
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full font-mono uppercase tracking-widest"
+            style={{ background: `${color}15`, color, border: `1px solid ${color}30` }}>
+            {post.category}
+          </span>
+          <span className="text-[10px] text-gray-600 font-mono">{post.date} · {post.readTime} min</span>
+        </div>
+        <h2 className="text-white font-bold text-sm leading-snug mb-1 hover:text-blue-300 transition-colors">
+          {post.title}
+        </h2>
+        <p className="text-gray-500 text-xs leading-relaxed line-clamp-2">
+          {post.description}
+        </p>
+      </div>
+    </Link>
+  )
 }
 
 export default function BlogPage() {
   const { lang } = useLang()
 
+  const sportsArticles = BLOG_POSTS.filter(p => p.type === 'sports')
+  const educationalArticles = BLOG_POSTS.filter(p => p.type === 'educational' || !p.type)
+
   return (
     <div style={{ overflowX: 'hidden', minHeight: '100vh' }} className="app-bg grid-bg">
-      <main className="max-w-3xl mx-auto px-4 py-8">
+      <main className="max-w-5xl mx-auto px-4 py-8">
 
         <div className="text-center mb-10 fade-in">
           <div className="text-4xl mb-3">📝</div>
@@ -28,89 +58,96 @@ export default function BlogPage() {
           </h1>
           <p className="text-gray-500 text-sm font-mono">
             {lang === 'en'
-              ? 'Football statistics, model methodology and quantitative analysis'
-              : 'Statistici fotbal, metodologie model și analiză cantitativă'}
+              ? 'Match analysis, statistics and quantitative methodology'
+              : 'Analize meciuri, statistici și metodologie cantitativă'}
           </p>
         </div>
 
-        {/* Ghid Complet — featured card */}
-        <Link href="/ghid-piete" style={{ textDecoration: 'none' }} className="fade-in">
-          <div className="mb-8 p-6 rounded-2xl cursor-pointer transition-all hover:scale-[1.01]"
-            style={{
-              background: 'linear-gradient(135deg, rgba(34,197,94,0.08) 0%, rgba(34,211,238,0.06) 100%)',
-              border: '1px solid rgba(34,197,94,0.25)',
-            }}>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 fade-in">
+
+          {/* ── COLOANA STANGA: Analize Sportive ─────────────────── */}
+          <div className="lg:col-span-2">
             <div className="flex items-center gap-3 mb-4">
-              <span style={{ fontSize: 28 }}>📋</span>
-              <div>
-                <div className="text-[10px] font-bold font-mono uppercase tracking-widest mb-1"
-                  style={{ color: '#4ade80' }}>
-                  {lang === 'en' ? 'Complete Reference Guide' : 'Ghid de referință complet'}
+              <div className="text-[10px] font-bold font-mono uppercase tracking-widest"
+                style={{ color: '#fb923c' }}>
+                ⚽ {lang === 'en' ? 'Match Analysis' : 'Analize Meciuri'}
+              </div>
+              <div style={{ flex: 1, height: 1, background: 'rgba(251,146,60,0.2)' }} />
+            </div>
+
+            {sportsArticles.length === 0 ? (
+              <div className="card p-8 text-center"
+                style={{ border: '1px solid rgba(251,146,60,0.15)', background: 'rgba(251,146,60,0.03)' }}>
+                <div style={{ fontSize: 32, marginBottom: 12 }}>⚽</div>
+                <div className="text-sm font-bold text-gray-400 mb-2">
+                  {lang === 'en' ? 'Match analyses coming soon' : 'Analizele de meciuri vin în curând'}
                 </div>
-                <h2 className="text-white font-bold text-lg leading-tight">
+                <div className="text-xs text-gray-600 leading-relaxed">
                   {lang === 'en'
-                    ? 'Statistical Markets Guide — All 10 Analysis Types'
-                    : 'Ghid Piețe Statistice — Toate cele 10 tipuri de analize'}
-                </h2>
+                    ? 'Daily match previews, tactical analysis and pre-match statistics will appear here.'
+                    : 'Preview-uri zilnice, analize tactice și statistici pre-meci vor apărea aici.'}
+                </div>
+              </div>
+            ) : (
+              <div>
+                {sportsArticles.map(post => <PostCard key={post.slug} post={post} />)}
+              </div>
+            )}
+          </div>
+
+          {/* ── COLOANA DREAPTA: Educație & Metodologie ──────────── */}
+          <div className="lg:col-span-1">
+            {/* Ghid Complet — featured */}
+            <Link href="/ghid-piete" style={{ textDecoration: 'none' }}>
+              <div className="mb-4 p-4 rounded-xl cursor-pointer transition-all hover:scale-[1.01]"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(34,197,94,0.08) 0%, rgba(34,211,238,0.05) 100%)',
+                  border: '1px solid rgba(34,197,94,0.2)',
+                }}>
+                <div className="text-[9px] font-bold font-mono uppercase tracking-widest mb-2" style={{ color: '#4ade80' }}>
+                  📋 {lang === 'en' ? 'Reference Guide' : 'Ghid de referință'}
+                </div>
+                <div className="text-white font-bold text-sm leading-snug mb-1">
+                  {lang === 'en' ? 'All 10 Statistical Markets' : 'Toate cele 10 piețe statistice'}
+                </div>
+                <div className="text-gray-500 text-xs">1X2 · Over/Under · BTTS · Handicap →</div>
+              </div>
+            </Link>
+
+            <div className="flex items-center gap-3 mb-3">
+              <div className="text-[10px] font-bold font-mono uppercase tracking-widest" style={{ color: '#60a5fa' }}>
+                🎓 {lang === 'en' ? 'Education & Methodology' : 'Educație & Metodologie'}
               </div>
             </div>
-            <p className="text-gray-400 text-sm leading-relaxed mb-4">
-              {lang === 'en'
-                ? 'Complete reference for all statistical market types analyzed by the Oxiano model: 1X2, Over/Under, BTTS, Asian Handicap, Correct Score, Clean Sheet and more. With complexity ratings, calculation factors and model insights for each.'
-                : 'Referință completă pentru toate tipurile de piețe statistice analizate de modelul Oxiano: 1X2, Over/Under, BTTS, Handicap Asiatic, Scor Exact, Clean Sheet și altele. Cu nivel de complexitate, factori de calcul și insight model pentru fiecare.'}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {['1X2', 'Over/Under 2.5', 'BTTS', 'Handicap Asiatic', 'Scor Exact', 'Clean Sheet'].map(tag => (
-                <span key={tag} className="text-[10px] font-mono font-bold px-2 py-1 rounded"
-                  style={{ background: 'rgba(34,197,94,0.1)', color: '#4ade80', border: '1px solid rgba(34,197,94,0.2)' }}>
-                  {tag}
-                </span>
-              ))}
-              <span className="text-[10px] font-mono text-gray-600 px-2 py-1">
-                {lang === 'en' ? '+ 4 more →' : '+ 4 altele →'}
-              </span>
+            <div style={{ borderLeft: '2px solid rgba(96,165,250,0.15)', paddingLeft: 12 }}>
+              {educationalArticles.map(post => {
+                const color = CATEGORY_COLORS[post.category] || '#6b7280'
+                return (
+                  <Link key={post.slug} href={`/blog/${post.slug}`} style={{ textDecoration: 'none' }}>
+                    <div className="mb-3 p-3 rounded-xl cursor-pointer transition-all hover:bg-white/5"
+                      style={{ border: '1px solid rgba(255,255,255,0.05)' }}>
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded font-mono uppercase"
+                        style={{ background: `${color}15`, color, border: `1px solid ${color}25` }}>
+                        {post.category}
+                      </span>
+                      <div className="text-gray-300 font-semibold text-xs leading-snug mt-1.5 hover:text-white transition-colors line-clamp-2">
+                        {post.title}
+                      </div>
+                      <div className="text-[10px] text-gray-600 font-mono mt-1">{post.readTime} min</div>
+                    </div>
+                  </Link>
+                )
+              })}
             </div>
           </div>
-        </Link>
 
-        <div className="space-y-4 fade-in">
-          {BLOG_POSTS.map(post => {
-            const color = CATEGORY_COLORS[post.category] || '#6b7280'
-            return (
-              <Link key={post.slug} href={`/blog/${post.slug}`} style={{ textDecoration: 'none' }}>
-                <div className="card p-6 hover:border-blue-800 transition-all cursor-pointer mb-4"
-                  style={{ border: '1px solid rgba(255,255,255,0.06)' }}>
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full font-mono uppercase tracking-widest"
-                      style={{ background: `${color}15`, color, border: `1px solid ${color}30` }}>
-                      {post.category}
-                    </span>
-                    <span className="text-[10px] text-gray-600 font-mono">{post.date} · {post.readTime} min</span>
-                  </div>
-                  <h2 className="text-white font-bold text-base leading-snug mb-2 hover:text-blue-300 transition-colors">
-                    {post.title}
-                  </h2>
-                  <p className="text-gray-500 text-sm leading-relaxed line-clamp-2">
-                    {post.description}
-                  </p>
-                  <div className="mt-4 flex flex-wrap gap-1">
-                    {post.keywords.slice(0, 3).map(kw => (
-                      <span key={kw} className="text-[10px] font-mono text-gray-700 bg-gray-800/50 px-2 py-0.5 rounded">
-                        {kw}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </Link>
-            )
-          })}
         </div>
 
         <div className="mt-10 text-center">
           <p className="text-xs text-gray-700 font-mono">
             {lang === 'en'
-              ? 'Articles published weekly · Statistical analysis · Not betting advice'
-              : 'Articole publicate săptămânal · Analiză statistică · Nu sfaturi de pariere'}
+              ? 'Statistical analysis · Not betting advice'
+              : 'Analiză statistică · Nu sfaturi de pariere'}
           </p>
         </div>
       </main>

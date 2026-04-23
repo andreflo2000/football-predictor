@@ -7,6 +7,7 @@ export interface BlogPost {
   category: string
   keywords: string[]
   content: string // HTML string
+  type?: 'educational' | 'sports' // educational = metodologie/ghiduri, sports = actualitate sportiva
 }
 
 export const BLOG_POSTS: BlogPost[] = [
@@ -17,6 +18,7 @@ export const BLOG_POSTS: BlogPost[] = [
     date: '2026-04-22',
     readTime: 7,
     category: 'Metodologie',
+    type: 'educational',
     keywords: ['predicții fotbal AI', 'model XGBoost fotbal', 'cum funcționează predicțiile fotbal', 'analiză cantitativă fotbal', 'Elo fotbal'],
     content: `
 <p>Când spui „predicție fotbal bazată pe AI", mulți se gândesc la un algoritm magic care ghicește scoruri. Realitatea e mai interesantă — și mai verificabilă.</p>
@@ -62,6 +64,7 @@ export const BLOG_POSTS: BlogPost[] = [
     date: '2026-04-20',
     readTime: 6,
     category: 'Premier League',
+    type: 'educational',
     keywords: ['predicții Premier League', 'pronosticuri Premier League azi', 'Premier League AI predictions', 'fotbal Anglia predicții', 'analiză Premier League'],
     content: `
 <p>Premier League e considerată cea mai echilibrată ligă de top din lume. Diferența dintre locul 1 și locul 10 e mai mică decât în orice altă ligă majoră. Asta o face și cea mai grea de prezis.</p>
@@ -99,6 +102,7 @@ export const BLOG_POSTS: BlogPost[] = [
     date: '2026-04-18',
     readTime: 5,
     category: 'Educație',
+    type: 'educational',
     keywords: ['ce este xG fotbal', 'expected goals explicat', 'xG fotbal Romania', 'statistici avansate fotbal', 'cum se calculeaza xG'],
     content: `
 <p>Dacă urmărești fotbal și statistici, ai văzut sigur abrevierea „xG". Dar ce înseamnă exact și de ce contează pentru predicții?</p>
@@ -132,6 +136,7 @@ export const BLOG_POSTS: BlogPost[] = [
     date: '2026-04-23',
     readTime: 8,
     category: 'Ghid Piețe',
+    type: 'educational',
     keywords: ['analiza 1X2 fotbal', 'ce inseamna 1X2 la pariuri', 'probabilitati fotbal', 'cum se calculeaza 1X2', 'pronosticuri 1X2 fotbal'],
     content: `
 <p>Dacă ai deschis vreodată un bilet de pariuri sau ai urmărit o predicție sportivă, ai văzut sigur notația <strong>1X2</strong>. Este cel mai fundamental tip de analiză din fotbal — și, surprinzător, cel mai greșit înțeles.</p>
@@ -194,6 +199,7 @@ export const BLOG_POSTS: BlogPost[] = [
     date: '2026-04-23',
     readTime: 7,
     category: 'Ghid Piețe',
+    type: 'educational',
     keywords: ['over under 2.5 goluri fotbal', 'ce inseamna over 2.5', 'analiza over under fotbal', 'probabilitate goluri fotbal', 'over 2.5 statistici'],
     content: `
 <p>„Over 2.5" sau „Under 2.5" — poate cea mai vizibilă piață de analiză din fotbalul modern. Dar ce se ascunde în spatele acestui prag și cum îl calculează un model statistic?</p>
@@ -270,6 +276,7 @@ export const BLOG_POSTS: BlogPost[] = [
     date: '2026-04-23',
     readTime: 10,
     category: 'Ghid Platformă',
+    type: 'educational',
     keywords: ['cum sa folosesti oxiano', 'ghid utilizare predicții fotbal', 'cum citesti un pick fotbal', 'confidence nivel predicție', 'indicatori tehnici fotbal oxiano'],
     content: `
 <p>Oxiano afișează un număr de variabile per meci care, la prima vedere, pot părea copleșitoare. Acest ghid îți explică tot ce trebuie să știi ca să extragi maximum din platforma în câteva minute.</p>
@@ -350,6 +357,7 @@ export const BLOG_POSTS: BlogPost[] = [
     date: '2026-04-23',
     readTime: 6,
     category: 'Ghid Piețe',
+    type: 'educational',
     keywords: ['BTTS fotbal ce inseamna', 'ambele echipe marcheaza fotbal', 'both teams to score analiza', 'BTTS statistici fotbal', 'cum se calculeaza BTTS'],
     content: `
 <p>BTTS este abrevierea de la <strong>Both Teams To Score</strong> — în română, „Ambele echipe marchează". E una dintre piețele cu cea mai clară logică statistică și, tocmai de aceea, una dintre cele mai analizable cu un model cantitativ.</p>
