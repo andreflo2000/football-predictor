@@ -1209,9 +1209,13 @@ function Home() {
     setFixtures([]); setSelectedFixture(null); setPrediction(null); setStandings([])
     setLoadingFixtures(true)
     const leagueCode = leagues.find(l => l.id === selectedLeague)?.code || String(selectedLeague)
+    const KNOCKOUT_LEAGUES = [2, 3] // CL, EL — faza eliminatorie, standings irelevante
+    const standingsPromise = KNOCKOUT_LEAGUES.includes(selectedLeague)
+      ? Promise.resolve({ data: { standings: [] } })
+      : axios.get(`${API_BASE}/api/standings/${leagueCode}`).catch(() => ({ data: { standings: [] } }))
     Promise.all([
       axios.get(`${API_BASE}/api/fixtures/${selectedLeague}`).catch(() => ({ data: { fixtures: [] } })),
-      axios.get(`${API_BASE}/api/standings/${leagueCode}`).catch(() => ({ data: { standings: [] } })),
+      standingsPromise,
     ]).then(([fixtRes, standRes]) => {
       const all: Fixture[] = fixtRes.data.fixtures || []
       const todayStr = new Date().toISOString().split('T')[0]
