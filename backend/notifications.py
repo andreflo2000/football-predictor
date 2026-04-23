@@ -49,13 +49,13 @@ def _pick_odd(p: dict) -> float:
     conf = max(0.40, p.get('confidence', 50) / 100)
     return round(1 / conf * 1.08, 2)
 
-def build_daily_combo(picks: list, min_combined_odds: float = 2.0) -> list | None:
+def build_daily_combo(picks: list, min_combined_odds: float = 1.80) -> list | None:
     """
-    Construieste cel mai bun combo de 2-3 picks cu confidence >=65%
+    Construieste cel mai bun combo de 2-3 picks cu confidence >=70%
     si cota combinata >= min_combined_odds.
     Returneaza lista de picks selectati sau None daca nu se poate.
     """
-    high = [p for p in picks if p.get('confidence', 0) >= 65]
+    high = [p for p in picks if p.get('confidence', 0) >= 70]
     if len(high) < 2:
         return None
 
@@ -90,7 +90,7 @@ def send_combo_telegram(picks: list, date_str: str) -> bool:
     if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHANNEL_ID:
         return False
 
-    combo = build_daily_combo(picks, min_combined_odds=2.0)
+    combo = build_daily_combo(picks, min_combined_odds=1.80)
     if not combo:
         logger.info("[telegram] Niciun combo valid gasit pentru %s — nu se trimite mesaj", date_str)
         return False
