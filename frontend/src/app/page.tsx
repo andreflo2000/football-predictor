@@ -1392,8 +1392,7 @@ function Home() {
           {standings.length > 0 && !prediction && !loading && (
             <div className="mt-5 pt-5 border-t border-gray-800">
               <div className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-3 text-center">🏆 Clasament · Selectează un meci pentru predicție</div>
-              <StandingsTable standings={standings.slice(0, 6)} highlightTeams={[]} />
-              {standings.length > 6 && <div className="text-center mt-2 text-xs text-gray-700">... și încă {standings.length - 6} echipe</div>}
+              <StandingsTable standings={standings} highlightTeams={[]} />
             </div>
           )}
         </div>
