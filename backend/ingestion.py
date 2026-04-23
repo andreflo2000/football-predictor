@@ -140,9 +140,9 @@ def compute_and_store_picks(date: str = None) -> dict:
     is_today = actual_date == today
     if picks and is_today and 5 <= hour <= 10:
         try:
-            from notifications import send_telegram, send_email_digest, get_subscribers
+            from notifications import send_combo_telegram, send_email_digest, get_subscribers
             date_fmt = datetime.datetime.strptime(actual_date, "%Y-%m-%d").strftime("%d.%m.%Y")
-            send_telegram(picks, date_fmt)
+            send_combo_telegram(picks, date_fmt)
             subs = get_subscribers()
             if subs:
                 send_email_digest(picks, date_fmt, subs)

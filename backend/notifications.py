@@ -38,6 +38,113 @@ def _pred_label(p: dict) -> tuple[str, str]:
     if pred == 'D':   return 'X', 'Egal'
     return '2', p['away']
 
+def _pick_odd(p: dict) -> float:
+    """Returneaza cota de piata pentru directia prezisa, sau cota implicita din confidence."""
+    pred = p.get('prediction', 'H')
+    if p.get('has_odds'):
+        if pred == 'H' and p.get('odds_home'): return float(p['odds_home'])
+        if pred == 'D' and p.get('odds_draw'): return float(p['odds_draw'])
+        if pred == 'A' and p.get('odds_away'): return float(p['odds_away'])
+    # Cota implicita din confidence cu marja 8%
+    conf = max(0.40, p.get('confidence', 50) / 100)
+    return round(1 / conf * 1.08, 2)
+
+def build_daily_combo(picks: list, min_combined_odds: float = 2.0) -> list | None:
+    """
+    Construieste cel mai bun combo de 2-3 picks cu confidence >=65%
+    si cota combinata >= min_combined_odds.
+    Returneaza lista de picks selectati sau None daca nu se poate.
+    """
+    high = [p for p in picks if p.get('confidence', 0) >= 65]
+    if len(high) < 2:
+        return None
+
+    # Sorteaza descrescator dupa confidence
+    high = sorted(high, key=lambda x: x.get('confidence', 0), reverse=True)
+
+    # Incearca combo de 2
+    from itertools import combinations
+    for combo in combinations(high[:6], 2):
+        combined = 1.0
+        for p in combo:
+            combined *= _pick_odd(p)
+        if combined >= min_combined_odds:
+            return list(combo)
+
+    # Incearca combo de 3
+    for combo in combinations(high[:6], 3):
+        combined = 1.0
+        for p in combo:
+            combined *= _pick_odd(p)
+        if combined >= min_combined_odds:
+            return list(combo)
+
+    return None
+
+
+def send_combo_telegram(picks: list, date_str: str) -> bool:
+    """
+    Trimite un mesaj COMBO ZI pe Telegram cu 2-3 picks selectate.
+    Daca nu se poate construi un combo cu cota >=2.0, nu trimite nimic.
+    """
+    if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHANNEL_ID:
+        return False
+
+    combo = build_daily_combo(picks, min_combined_odds=2.0)
+    if not combo:
+        logger.info("[telegram] Niciun combo valid gasit pentru %s — nu se trimite mesaj", date_str)
+        return False
+
+    combined_odds = round(sum(_pick_odd(p) for p in combo) if False else
+                          __import__('functools').reduce(lambda a, b: a * b, [_pick_odd(p) for p in combo]), 2)
+
+    lines = [
+        f"╔══════════════════════════╗",
+        f"║  🎯 <b>OXIANO COMBO ZI</b>         ║",
+        f"╚══════════════════════════╝",
+        f"",
+        f"📅 <b>{date_str}</b>  ·  Selecție automată model",
+        f"<code>{'─' * 32}</code>",
+        f"",
+        f"🔗 <b>COMBO {len(combo)} PICKS</b>  <code>[cotă combinată ≈ {combined_odds:.2f}]</code>",
+    ]
+
+    for i, p in enumerate(combo, 1):
+        num, label = _pred_label(p)
+        conf = p['confidence']
+        odd = _pick_odd(p)
+        vbet = ' 💎' if p.get('value_bet') else ''
+        lines.append(
+            f"\n<b>{i}.</b> {p.get('flag','⚽')} <b>{p['home']} — {p['away']}</b>\n"
+            f"<code>   {p['league']:<22} {p.get('time','—'):>5}</code>\n"
+            f"<code>   Predicție : {num} · {label:<14}</code>{vbet}\n"
+            f"<code>   Confidence: {_bar(conf, 8)} {conf:.1f}%  cotă ~{odd:.2f}</code>"
+        )
+
+    lines.append(
+        f"\n<code>{'─' * 32}</code>\n"
+        f"<b>Cotă combinată estimată: ~{combined_odds:.2f}</b>\n"
+        f"<i>Analiză statistică. Nu sfat de pariere.</i>\n"
+        f"🌐 <a href=\"https://oxiano.com/daily\">oxiano.com/daily</a>"
+    )
+
+    text = "\n".join(lines)
+    try:
+        r = requests.post(
+            f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage",
+            json={"chat_id": TELEGRAM_CHANNEL_ID, "text": text,
+                  "parse_mode": "HTML", "disable_web_page_preview": True},
+            timeout=10,
+        )
+        if r.status_code == 200:
+            logger.info("[telegram] Combo trimis: %d picks, cotă %.2f", len(combo), combined_odds)
+            return True
+        logger.error("[telegram] Combo error %d: %s", r.status_code, r.text[:200])
+        return False
+    except Exception as e:
+        logger.error("[telegram] Combo exception: %s", e)
+        return False
+
 
 # ─── Telegram ───────────────────────────────────────────────────────────────
 
