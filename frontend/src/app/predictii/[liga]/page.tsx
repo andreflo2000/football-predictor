@@ -1,6 +1,10 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 
+export const revalidate = 3600 // Regenerare ISR la fiecare ora
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://football-predictor-api-n9sl.onrender.com'
+
 const LEAGUES: Record<string, {
   name: string
   flag: string
@@ -11,6 +15,7 @@ const LEAGUES: Record<string, {
   description: string
   keywords: string[]
   teams: string[]
+  apiNames: string[] // variantele de nume din API
 }> = {
   'premier-league': {
     name: 'Premier League',
@@ -22,6 +27,7 @@ const LEAGUES: Record<string, {
     description: 'Predicții Premier League bazate pe model XGBoost cu 110 variabile: Elo, xG, forme recente și inteligență de piață.',
     keywords: ['predicții Premier League', 'pronosticuri Premier League', 'Premier League predictions AI', 'football analysis England'],
     teams: ['Arsenal', 'Manchester City', 'Liverpool', 'Chelsea', 'Tottenham', 'Manchester United', 'Aston Villa', 'Newcastle'],
+    apiNames: ['Premier League', 'England Premier League', 'EPL'],
   },
   'la-liga': {
     name: 'La Liga',
@@ -33,6 +39,7 @@ const LEAGUES: Record<string, {
     description: 'Predicții La Liga cu cea mai ridicată acuratețe: 86.1% la confidence ≥65%. Model AI bazat pe XGBoost, Elo și cote Pinnacle.',
     keywords: ['predicții La Liga', 'pronosticuri La Liga', 'La Liga predictions AI', 'football analysis Spain', 'pronosticos La Liga'],
     teams: ['Real Madrid', 'Barcelona', 'Atletico Madrid', 'Sevilla', 'Real Sociedad', 'Villarreal', 'Athletic Bilbao'],
+    apiNames: ['La Liga', 'Spain La Liga', 'Primera Division'],
   },
   'serie-a': {
     name: 'Serie A',
@@ -44,6 +51,7 @@ const LEAGUES: Record<string, {
     description: 'Predicții Serie A prin analiză cantitativă avansată. Model AI antrenat pe 225.000 meciuri cu integrare cote sharp.',
     keywords: ['predicții Serie A', 'pronosticuri Serie A', 'Serie A predictions AI', 'football analysis Italy', 'pronostici Serie A'],
     teams: ['Inter Milan', 'AC Milan', 'Juventus', 'Napoli', 'Lazio', 'Roma', 'Fiorentina', 'Atalanta'],
+    apiNames: ['Serie A', 'Italy Serie A', 'Serie A TIM'],
   },
   'bundesliga': {
     name: 'Bundesliga',
@@ -55,6 +63,7 @@ const LEAGUES: Record<string, {
     description: 'Predicții Bundesliga cu acuratețe 79.4% la confidence ≥65%. Analiză cantitativă bazată pe modele statistice avansate.',
     keywords: ['predicții Bundesliga', 'pronosticuri Bundesliga', 'Bundesliga predictions AI', 'football analysis Germany', 'Bundesliga Prognosen'],
     teams: ['Bayern Munich', 'Borussia Dortmund', 'Bayer Leverkusen', 'RB Leipzig', 'Wolfsburg', 'Eintracht Frankfurt'],
+    apiNames: ['Bundesliga', 'Germany Bundesliga', '1. Bundesliga'],
   },
   'ligue-1': {
     name: 'Ligue 1',
@@ -66,6 +75,7 @@ const LEAGUES: Record<string, {
     description: 'Predicții Ligue 1 prin model AI XGBoost. Acuratețe 79.4% la picks de înaltă confidență, verificate out-of-sample.',
     keywords: ['predicții Ligue 1', 'pronosticuri Ligue 1', 'Ligue 1 predictions AI', 'football analysis France', 'pronostics Ligue 1'],
     teams: ['Paris Saint-Germain', 'Marseille', 'Monaco', 'Lyon', 'Lille', 'Nice', 'Lens'],
+    apiNames: ['Ligue 1', 'France Ligue 1', 'Ligue 1 Uber Eats'],
   },
   'champions-league': {
     name: 'Champions League',
@@ -76,7 +86,8 @@ const LEAGUES: Record<string, {
     picks65: 28,
     description: 'Predicții Champions League bazate pe model XGBoost cu rating Elo european și statistici avansate pentru toate cluburile din competiție.',
     keywords: ['predicții Champions League', 'pronosticuri Champions League', 'UCL predictions AI', 'Champions League analysis', 'predictii UCL'],
-    teams: ['Real Madrid', 'Manchester City', 'Bayern Munich', 'PSG', 'Arsenal', 'Inter Milan', 'Atletico Madrid', 'Borussia Dortmund'],
+    teams: ['PSG', 'Bayern Munich', 'Arsenal', 'Atletico Madrid'],
+    apiNames: ['UEFA Champions League', 'Champions League', 'UCL'],
   },
   'europa-league': {
     name: 'Europa League',
@@ -87,7 +98,8 @@ const LEAGUES: Record<string, {
     picks65: 24,
     description: 'Predicții Europa League prin analiză cantitativă. Model antrenat pe toate competițiile UEFA cu Elo cross-ligă și forme recente.',
     keywords: ['predicții Europa League', 'pronosticuri Europa League', 'UEL predictions AI', 'Europa League analysis', 'predictii UEL'],
-    teams: ['Manchester United', 'Roma', 'Sevilla', 'Villarreal', 'Lazio', 'Ajax', 'Bayer Leverkusen', 'Atalanta'],
+    teams: ['Nottingham Forest', 'Aston Villa', 'Braga', 'Freiburg'],
+    apiNames: ['UEFA Europa League', 'Europa League', 'UEL'],
   },
   'primeira-liga': {
     name: 'Primeira Liga',
@@ -99,6 +111,7 @@ const LEAGUES: Record<string, {
     description: 'Predicții Primeira Liga portugheză prin model AI. Acuratețe 73.2% la ≥65% confidence pe meciuri din campionatul portughez.',
     keywords: ['predicții Primeira Liga', 'pronosticuri Primeira Liga', 'Liga Portugal predictions', 'football analysis Portugal', 'pronosticos liga portuguesa'],
     teams: ['Benfica', 'Porto', 'Sporting CP', 'Braga', 'Vitoria Guimaraes', 'Famalicao', 'Nacional'],
+    apiNames: ['Primeira Liga', 'Portugal Primeira Liga', 'Liga Portugal'],
   },
   'eredivisie': {
     name: 'Eredivisie',
@@ -110,6 +123,7 @@ const LEAGUES: Record<string, {
     description: 'Predicții Eredivisie olandeză prin analiză statistică avansată. Model XGBoost cu 110 variabile antrenat pe date din campionatul olandez.',
     keywords: ['predicții Eredivisie', 'pronosticuri Eredivisie', 'Eredivisie predictions AI', 'football analysis Netherlands', 'Eredivisie voorspellingen'],
     teams: ['Ajax', 'PSV Eindhoven', 'Feyenoord', 'AZ Alkmaar', 'Utrecht', 'Twente', 'Vitesse'],
+    apiNames: ['Eredivisie', 'Netherlands Eredivisie', 'Dutch Eredivisie'],
   },
   'championship': {
     name: 'Championship',
@@ -121,7 +135,42 @@ const LEAGUES: Record<string, {
     description: 'Predicții Championship (eșalonul 2 englez) prin model AI. Cel mai mare număr de picks per sezon datorită programului dens.',
     keywords: ['predicții Championship', 'pronosticuri Championship England', 'EFL Championship predictions AI', 'football analysis Championship', 'Championship predictions'],
     teams: ['Leeds United', 'Leicester City', 'Sunderland', 'Sheffield United', 'West Brom', 'Middlesbrough', 'Coventry'],
+    apiNames: ['Championship', 'EFL Championship', 'England Championship'],
   },
+}
+
+interface Pick {
+  home: string
+  away: string
+  league: string
+  flag: string
+  prediction: string
+  confidence: number
+  home_win: number
+  draw: number
+  away_win: number
+  time?: string
+  value_bet?: boolean
+  over25?: number
+}
+
+async function fetchLeaguePicks(leagueInfo: typeof LEAGUES[string]): Promise<Pick[]> {
+  try {
+    const res = await fetch(`${API_BASE}/api/daily?min_confidence=0.65`, {
+      next: { revalidate: 3600 },
+    })
+    if (!res.ok) return []
+    const data = await res.json()
+    const picks: Pick[] = data.picks || data || []
+    return picks.filter(p =>
+      leagueInfo.apiNames.some(n =>
+        p.league?.toLowerCase().includes(n.toLowerCase()) ||
+        n.toLowerCase().includes(p.league?.toLowerCase() || '')
+      )
+    )
+  } catch {
+    return []
+  }
 }
 
 export async function generateStaticParams() {
@@ -145,10 +194,24 @@ export async function generateMetadata({ params }: { params: Promise<{ liga: str
   }
 }
 
+function predLabel(prediction: string, home: string, away: string) {
+  if (prediction === 'H') return { short: '1', label: home, color: '#4ade80' }
+  if (prediction === 'D') return { short: 'X', label: 'Egal', color: '#f59e0b' }
+  return { short: '2', label: away, color: '#22d3ee' }
+}
+
+function impliedOdds(confidence: number): string {
+  const p = confidence / 100
+  return (Math.round((1 / (p * 1.08)) * 100) / 100).toFixed(2)
+}
+
 export default async function LeaguePage({ params }: { params: Promise<{ liga: string }> }) {
   const { liga } = await params
   const l = LEAGUES[liga]
   if (!l) notFound()
+
+  const todayPicks = await fetchLeaguePicks(l)
+  const today = new Date().toLocaleDateString('ro-RO', { day: 'numeric', month: 'long', year: 'numeric' })
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -157,6 +220,19 @@ export default async function LeaguePage({ params }: { params: Promise<{ liga: s
     description: l.description,
     url: `https://oxiano.com/predictii/${liga}`,
     author: { '@type': 'Organization', name: 'Oxiano', url: 'https://oxiano.com' },
+    ...(todayPicks.length > 0 && {
+      mainEntity: {
+        '@type': 'ItemList',
+        name: `Predicții ${l.name} azi — ${today}`,
+        numberOfItems: todayPicks.length,
+        itemListElement: todayPicks.map((p, i) => ({
+          '@type': 'ListItem',
+          position: i + 1,
+          name: `${p.home} vs ${p.away}`,
+          description: `Predicție: ${predLabel(p.prediction, p.home, p.away).label} — Confidence: ${p.confidence}%`,
+        })),
+      },
+    }),
   }
 
   return (
@@ -201,6 +277,75 @@ export default async function LeaguePage({ params }: { params: Promise<{ liga: s
             ))}
           </div>
 
+          {/* Picks de azi — sectiune SEO cu date reale */}
+          <div style={{ marginBottom: '40px' }}>
+            <h2 style={{ color: '#fff', fontSize: '20px', fontWeight: 700, marginBottom: '6px' }}>
+              Meciuri {l.name} azi — {today}
+            </h2>
+            <p style={{ color: '#6b7280', fontSize: '13px', marginBottom: '16px', marginTop: 0 }}>
+              Predicții generate automat prin model AI · Actualizate la 07:00
+            </p>
+
+            {todayPicks.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {todayPicks.map((pick, i) => {
+                  const pred = predLabel(pick.prediction, pick.home, pick.away)
+                  const odds = impliedOdds(pick.confidence)
+                  const isValue = pick.value_bet
+                  return (
+                    <div key={i} style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: '12px', padding: '16px 20px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          {pick.time && (
+                            <div style={{ fontSize: '11px', color: '#4b5563', fontFamily: 'monospace', marginBottom: '4px' }}>
+                              {pick.flag} {pick.league} · {pick.time}
+                            </div>
+                          )}
+                          <div style={{ fontSize: '15px', fontWeight: 700, color: '#e5e7eb', marginBottom: '6px' }}>
+                            {pick.home} <span style={{ color: '#4b5563' }}>vs</span> {pick.away}
+                          </div>
+                          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                            <span style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)', color: pred.color, padding: '3px 10px', borderRadius: '20px', fontSize: '13px', fontWeight: 700 }}>
+                              {pred.short} — {pred.label}
+                            </span>
+                            <span style={{ fontSize: '12px', color: '#6b7280', fontFamily: 'monospace' }}>
+                              {pick.confidence}% confidence
+                            </span>
+                            <span style={{ fontSize: '12px', color: '#9ca3af', fontFamily: 'monospace' }}>
+                              cotă ~{odds}
+                            </span>
+                            {isValue && (
+                              <span style={{ fontSize: '11px', color: '#f59e0b' }}>💎 VALUE</span>
+                            )}
+                          </div>
+                        </div>
+                        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                          <div style={{ display: 'flex', gap: '6px', fontSize: '12px', color: '#4b5563', fontFamily: 'monospace' }}>
+                            <span>1: {Math.round(pick.home_win)}%</span>
+                            <span>X: {Math.round(pick.draw)}%</span>
+                            <span>2: {Math.round(pick.away_win)}%</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+                <div style={{ fontSize: '11px', color: '#374151', textAlign: 'center', marginTop: '8px' }}>
+                  Doar picks cu confidence ≥65% · Analiză statistică — nu constituie sfat de pariere · <a href="/terms" style={{ color: '#374151' }}>Termeni</a>
+                </div>
+              </div>
+            ) : (
+              <div style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: '12px', padding: '32px', textAlign: 'center', color: '#4b5563' }}>
+                <div style={{ fontSize: '32px', marginBottom: '8px' }}>🎯</div>
+                <div style={{ fontSize: '14px', color: '#9ca3af', marginBottom: '4px' }}>Niciun pick cu confidence ≥65% pentru {l.name} azi.</div>
+                <div style={{ fontSize: '12px', color: '#4b5563' }}>Modelul filtrează strict — afișăm doar când avem edge real față de piață.</div>
+                <a href="/daily" style={{ display: 'inline-block', marginTop: '20px', background: '#22d3ee', color: '#000', padding: '10px 24px', borderRadius: '8px', fontSize: '13px', fontWeight: 700, textDecoration: 'none' }}>
+                  Vezi toate picks-urile zilei →
+                </a>
+              </div>
+            )}
+          </div>
+
           {/* Metodologie */}
           <div style={{ background: '#111827', border: '1px solid #1f2937', borderRadius: '12px', padding: '28px', marginBottom: '32px' }}>
             <h2 style={{ color: '#fff', fontSize: '18px', fontWeight: 700, marginTop: 0, marginBottom: '16px' }}>
@@ -243,10 +388,10 @@ export default async function LeaguePage({ params }: { params: Promise<{ liga: s
           {/* CTA */}
           <div style={{ background: 'linear-gradient(135deg, #052e16 0%, #0c1a3a 100%)', border: '1px solid #166534', borderRadius: '16px', padding: '32px', textAlign: 'center' }}>
             <h2 style={{ color: '#fff', fontSize: '22px', fontWeight: 700, margin: '0 0 8px' }}>
-              Vezi picks-urile {l.name} de azi
+              Vezi toate picks-urile de azi
             </h2>
             <p style={{ color: '#9ca3af', fontSize: '14px', margin: '0 0 20px' }}>
-              Picks zilnice cu confidence ≥65% · Actualizate la 07:00 și 13:00
+              Picks zilnice din toate ligile cu confidence ≥65% · Actualizate la 07:00 și 13:00
             </p>
             <a href="/daily" style={{ display: 'inline-block', background: '#22d3ee', color: '#000', padding: '12px 32px', borderRadius: '8px', textDecoration: 'none', fontWeight: 700, fontSize: '15px' }}>
               Picks zilnice →
@@ -256,7 +401,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ liga: s
             </div>
           </div>
 
-          {/* Alte ligi */}
+          {/* Alte ligi — internal linking pentru SEO */}
           <div style={{ marginTop: '40px', paddingTop: '32px', borderTop: '1px solid #1f2937' }}>
             <div style={{ color: '#6b7280', fontSize: '13px', marginBottom: '12px' }}>Alte ligi analizate:</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
