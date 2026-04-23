@@ -127,6 +127,232 @@ export const BLOG_POSTS: BlogPost[] = [
   },
 ]
 
+  {
+    slug: 'analiza-1x2-fotbal-ghid-complet',
+    title: 'Analiza 1X2 în fotbal — ghid complet: cum se calculează și ce înseamnă fiecare rezultat',
+    description: 'Analiza 1X2 este fundamentul oricărei predicții statistice de fotbal. Explicăm cum calculează modelul Oxiano probabilitățile pentru victorie gazdă, egal și victorie oaspete, ce factori contează și cum să interpretezi corect scorurile de confidence.',
+    date: '2026-04-23',
+    readTime: 8,
+    category: 'Ghid Piețe',
+    keywords: ['analiza 1X2 fotbal', 'ce inseamna 1X2 la pariuri', 'probabilitati fotbal', 'cum se calculeaza 1X2', 'pronosticuri 1X2 fotbal'],
+    content: `
+<p>Dacă ai deschis vreodată un bilet de pariuri sau ai urmărit o predicție sportivă, ai văzut sigur notația <strong>1X2</strong>. Este cel mai fundamental tip de analiză din fotbal — și, surprinzător, cel mai greșit înțeles.</p>
+
+<h2>Ce înseamnă 1, X și 2</h2>
+<p>Notația vine din tradiția europeană a pariurilor pe fotbal:</p>
+<ul>
+  <li><strong>1</strong> — victorie echipă gazdă (home win)</li>
+  <li><strong>X</strong> — egal (draw)</li>
+  <li><strong>2</strong> — victorie echipă oaspete (away win)</li>
+</ul>
+<p>Suma probabilităților celor trei variante este întotdeauna 100%. Dacă modelul spune că gazda câștigă cu 55% probabilitate, egalul are 27% și oaspetele 18%, suma face exact 100%.</p>
+
+<h2>Cum calculează modelul Oxiano probabilitățile 1X2</h2>
+<p>Modelul XGBoost antrenat pe <strong>225.000 de meciuri</strong> folosește 84 de variabile pentru fiecare predicție. Cele mai importante pentru analiza 1X2:</p>
+<ul>
+  <li><strong>Rating Elo al ambelor echipe</strong> — scorul Elo reflectă forța reală a echipei, ajustat după calitatea adversarilor învinși sau de care a fost învinsă. O diferență Elo de 100 de puncte înseamnă aproximativ 64% șanse de victorie pentru echipa mai bine cotată.</li>
+  <li><strong>Forma recentă acasă vs. deplasare separat</strong> — modelul analizează ultimele 5 și 10 meciuri jucate specific acasă, respectiv în deplasare. O echipă poate fi formidabilă acasă și slabă în deplasare — statisticile globale amestecă această informație.</li>
+  <li><strong>Istoricul direct (head-to-head)</strong> — ultimele 6 confruntări directe între cele două echipe, cu ponderare mai mare pe meciurile recente.</li>
+  <li><strong>xG (Expected Goals)</strong> — golurile așteptate reflectă calitatea reală a ocaziilor create, nu norocul. O echipă care a creat ocazii de 2.1 xG per meci dar a marcat doar 1.2 goluri va reveni statistic la media xG.</li>
+  <li><strong>Semnale din cote sharp</strong> — piețele Pinnacle, cel mai eficient bookmaker din lume, conțin informație valoroasă despre probabilitățile reale. Modelul extrage această informație fără a replica orbește cotele.</li>
+</ul>
+
+<h2>Ce înseamnă „confidence" și de ce contează</h2>
+<p>Oxiano nu afișează pur și simplu „1 câștigă". Afișează probabilitatea modelului și un scor de încredere:</p>
+<ul>
+  <li><strong>Confidence ≥65%</strong> — pick de înaltă calitate, acuratețe istorică 74–86% în funcție de ligă. Aproximativ 1–2 astfel de picks pe zi.</li>
+  <li><strong>Confidence 55–65%</strong> — pick mediu, acuratețe 60–65%. Util pentru context, nu pentru selecții principale.</li>
+  <li><strong>Confidence sub 55%</strong> — meci echilibrat, modelul evită să facă predicții tari. Egalul este cel mai probabil sau cele trei variante sunt aproape egale.</li>
+</ul>
+<p>Un pick cu confidence 49% — cum ar fi un meci echilibrat din Premier League — nu este o predicție slabă. Este onestitate statistică: modelul recunoaște că meciul e greu de prezis.</p>
+
+<h2>De ce egalul (X) este cel mai greu de prezis</h2>
+<p>Egalul are în medie 26–28% probabilitate în ligile europene majore, dar este cel mai imprevizibil rezultat. Motivele:</p>
+<ul>
+  <li>Egalul apare adesea când ambele echipe joacă defensiv sau când un gol marcat târziu schimbă rezultatul</li>
+  <li>Este influențat de factori care nu apar în date: tactici defensive la comanda antrenorului, oboseală acumulată, presiunea clasamentului</li>
+  <li>Modelele de machine learning tind să sub-estimeze egalul față de piețele de pariuri</li>
+</ul>
+<p>Oxiano calibrează probabilitatea de egal per ligă: Seria A și Ligue 1 produc mai multe egaluri decât Bundesliga sau Premier League.</p>
+
+<h2>Performanța historică pe analiza 1X2</h2>
+<p>Pe backtestul out-of-sample (meciuri nevăzute de model la antrenament):</p>
+<ul>
+  <li>La Liga — confidence ≥65%: <strong>86% acuratețe</strong></li>
+  <li>Bundesliga — confidence ≥65%: <strong>79% acuratețe</strong></li>
+  <li>Premier League — confidence ≥65%: <strong>70% acuratețe</strong> (cea mai echilibrată ligă)</li>
+  <li>Champions League — confidence ≥65%: <strong>74% acuratețe</strong></li>
+</ul>
+<p>Referință: un pronostic aleatoriu dă ~33% pe analiza 1X2. Modelul depășește de 2–2.5× performanța la întâmplare pe picks cu confidence ridicată.</p>
+
+<h2>Cum să citești analiza 1X2 pe Oxiano</h2>
+<p>Pe pagina fiecărui meci vei vedea trei bare de probabilitate — una pentru 1, una pentru X, una pentru 2 — plus confidence-ul predicției principale. Bara verde și procentul evidențiat reprezintă predicția modelului. Dacă confidence e sub 55%, cardul afișează avertisment „meci echilibrat" — nu ascundem incertitudinea.</p>
+    `.trim(),
+  },
+  {
+    slug: 'over-under-25-goluri-analiza',
+    title: 'Over/Under 2.5 goluri — cum se calculează, ce înseamnă și cum îl analizează modelul statistic',
+    description: 'Over/Under 2.5 goluri este una dintre cele mai populare piețe de analiză statistică în fotbal. Explicăm ce înseamnă pragul 2.5, cum folosește modelul Oxiano xG și distribuția Poisson pentru a calcula probabilitatea și care ligi produc cel mai des meciuri cu goluri multe.',
+    date: '2026-04-23',
+    readTime: 7,
+    category: 'Ghid Piețe',
+    keywords: ['over under 2.5 goluri fotbal', 'ce inseamna over 2.5', 'analiza over under fotbal', 'probabilitate goluri fotbal', 'over 2.5 statistici'],
+    content: `
+<p>„Over 2.5" sau „Under 2.5" — poate cea mai vizibilă piață de analiză din fotbalul modern. Dar ce se ascunde în spatele acestui prag și cum îl calculează un model statistic?</p>
+
+<h2>Ce înseamnă 2.5 goluri</h2>
+<p>Pragul 2.5 este un număr fracționar ales deliberat pentru a elimina ambiguitatea. Concret:</p>
+<ul>
+  <li><strong>Over 2.5</strong> — meciul se termină cu 3 sau mai multe goluri (1-2, 0-3, 2-1, 3-0 etc.)</li>
+  <li><strong>Under 2.5</strong> — meciul se termină cu 0, 1 sau 2 goluri total (0-0, 1-0, 1-1, 2-0 etc.)</li>
+</ul>
+<p>Nu există egal — nu poți marca exact 2.5 goluri. Asta simplifică analiza: rezultatul e binar.</p>
+
+<h2>De ce 2.5 și nu 3?</h2>
+<p>Statistic, ~52–55% din meciurile ligilor majore europene se termină cu 3+ goluri. Pragul 2.5 creează o piață echilibrată — nici Over, nici Under nu are o probabilitate covârșitoare, ceea ce o face interesantă pentru analiză. Pragul 3.5 ar da Over cu doar ~25% probabilitate medie, prea dezechilibrat.</p>
+
+<h2>Cum calculează modelul Oxiano Over/Under 2.5</h2>
+<p>Procesul are două etape distincte:</p>
+
+<h3>Etapa 1 — Estimarea xG pentru fiecare echipă</h3>
+<p><strong>xG (Expected Goals)</strong> este numărul de goluri pe care o echipă ar trebui să le marcheze, bazat pe calitatea ocaziilor create în meciurile recente. Modelul calculează xG estimat per meci pentru gazda și oaspetele din meciul următor folosind:</p>
+<ul>
+  <li>Media xG din ultimele 5, 10 și 20 de meciuri (cu ponderare mai mare pe recent)</li>
+  <li>xG acasă vs. xG în deplasare (separat — o echipă poate juca diferit pe teren propriu)</li>
+  <li>xG împotriva adversarului — câte ocazii a generat adversarul în meciurile sale recente</li>
+  <li>Ajustare prin rating Elo — joci contra unui adversar mai slab sau mai puternic decât media?</li>
+</ul>
+
+<h3>Etapa 2 — Distribuția Poisson</h3>
+<p>Odată estimate xG Home = λ₁ și xG Away = λ₂, modelul aplică distribuția Poisson bivariată pentru a calcula probabilitatea fiecărui scor posibil: P(0-0), P(1-0), P(0-1), P(1-1), P(2-0) și așa mai departe până la scoruri improbabile.</p>
+<p>Suma probabilităților tuturor scorurilor cu 3+ goluri dă <strong>P(Over 2.5)</strong>. Simplu, elegant, matematic riguros.</p>
+
+<h2>Exemplu concret de calcul</h2>
+<p>Meci: Arsenal vs Wolves. Modelul estimează xG Arsenal = 1.9, xG Wolves = 0.8. xG combinat = 2.7.</p>
+<ul>
+  <li>P(Over 2.5) ≈ <strong>58%</strong> — probabilitate moderată spre ridicată</li>
+  <li>P(Under 2.5) ≈ <strong>42%</strong></li>
+</ul>
+<p>Dacă xG combinat ar fi 1.4, P(Over 2.5) ar scădea la ~30%. Relația dintre xG combinat și probabilitatea Over 2.5 este aproape liniară în intervalul relevant.</p>
+
+<h2>Care ligi produc cel mai des Over 2.5</h2>
+<p>Statistici istorice din sezonul 2024–2025:</p>
+<ul>
+  <li><strong>Bundesliga</strong> — ~60% din meciuri se termină Over 2.5. Stilul ofensiv al ligii germane produce cele mai multe goluri per meci din Europa.</li>
+  <li><strong>Premier League</strong> — ~54% Over 2.5. Ritm ridicat, dar și apărări solide.</li>
+  <li><strong>La Liga</strong> — ~52% Over 2.5. Mai echilibrat, cu mai multe meciuri tactice.</li>
+  <li><strong>Serie A</strong> — ~48% Over 2.5. Cel mai defensiv campionat din top 5.</li>
+  <li><strong>Ligue 1</strong> — ~50% Over 2.5. Variabilitate mare între meciuri.</li>
+</ul>
+
+<h2>Factori care cresc probabilitatea Over 2.5</h2>
+<ul>
+  <li>Ambele echipe cu xG ofensiv ridicat (>1.4 per meci fiecare)</li>
+  <li>Apărări permisive — xG Against ridicat la ambele echipe</li>
+  <li>Meciuri fără miză de clasament (echipe fără presiunea retrogradării sau a titlului)</li>
+  <li>Derby-uri tradițional „deschise" cu mulți goluri în H2H</li>
+</ul>
+
+<h2>Factori care cresc probabilitatea Under 2.5</h2>
+<ul>
+  <li>Una sau ambele echipe cu apărare solidă (xG Against sub 0.9)</li>
+  <li>Meci de mare miză tactică (eliminatorii, derby de titlu)</li>
+  <li>Condiții meteo dificile (vânt, ploaie — reduc precizia șuturilor)</li>
+  <li>Echipe în formă slabă ofensiv în ultimele 5 meciuri</li>
+</ul>
+
+<h2>Over/Under 2.5 pe Oxiano</h2>
+<p>Modelul afișează probabilitatea Over și Under 2.5 pentru fiecare meci analizat, calculat prin Poisson din xG estimat. Planul Analyst oferă accesul complet la toate piețele secundare, inclusiv Over/Under 1.5, 3.5 și piețele de goluri pe reprize.</p>
+    `.trim(),
+  },
+  {
+    slug: 'btts-both-teams-to-score-analiza',
+    title: 'BTTS — Both Teams To Score: ce este, cum se calculează și în ce meciuri apare cel mai des',
+    description: 'BTTS (Both Teams To Score) sau "Ambele echipe marchează" este o piață statistică care măsoară probabilitatea ca ambele echipe să înscrie cel puțin un gol. Explicăm calculul, factorii determinanți și cum identifici meciurile cu BTTS ridicat.',
+    date: '2026-04-23',
+    readTime: 6,
+    category: 'Ghid Piețe',
+    keywords: ['BTTS fotbal ce inseamna', 'ambele echipe marcheaza fotbal', 'both teams to score analiza', 'BTTS statistici fotbal', 'cum se calculeaza BTTS'],
+    content: `
+<p>BTTS este abrevierea de la <strong>Both Teams To Score</strong> — în română, „Ambele echipe marchează". E una dintre piețele cu cea mai clară logică statistică și, tocmai de aceea, una dintre cele mai analizable cu un model cantitativ.</p>
+
+<h2>Ce înseamnă BTTS exact</h2>
+<p>BTTS = Da înseamnă că <strong>ambele echipe</strong> marchează cel puțin un gol pe parcursul meciului, indiferent de scorul final. Exemple de scoruri care satisfac condiția BTTS = Da:</p>
+<ul>
+  <li>1-1 ✓ (ambele au marcat)</li>
+  <li>2-1 ✓</li>
+  <li>3-2 ✓</li>
+  <li>1-0 ✗ (oaspetele nu a marcat)</li>
+  <li>0-0 ✗ (niciuna nu a marcat)</li>
+  <li>2-0 ✗ (oaspetele nu a marcat)</li>
+</ul>
+<p>BTTS = Nu înseamnă că cel puțin una dintre echipe a terminat meciul fără gol marcat.</p>
+
+<h2>Cum calculează modelul Oxiano BTTS</h2>
+<p>BTTS este matematic diferit de Over/Under. Nu depinde de totalul golurilor, ci de dacă <em>fiecare echipă în parte</em> marchează. Calculul:</p>
+
+<h3>Probabilitatea că echipa gazdă marchează cel puțin un gol</h3>
+<p>Folosind distribuția Poisson cu xG Home = λ₁:</p>
+<p>P(gazda marchează) = 1 − P(gazda nu marchează niciun gol) = 1 − e^(−λ₁)</p>
+
+<h3>Probabilitatea că echipa oaspete marchează cel puțin un gol</h3>
+<p>Similar, cu xG Away = λ₂:</p>
+<p>P(oaspetele marchează) = 1 − e^(−λ₂)</p>
+
+<h3>P(BTTS = Da)</h3>
+<p>Presupunând independență statistică (simplificare acceptată în model):</p>
+<p>P(BTTS) = P(gazda marchează) × P(oaspetele marchează)</p>
+
+<p>Exemplu: xG Home = 1.6, xG Away = 1.1</p>
+<ul>
+  <li>P(gazda marchează) = 1 − e^(−1.6) ≈ 79.8%</li>
+  <li>P(oaspetele marchează) = 1 − e^(−1.1) ≈ 66.7%</li>
+  <li>P(BTTS) ≈ 79.8% × 66.7% ≈ <strong>53.2%</strong></li>
+</ul>
+
+<h2>Factori care influențează BTTS</h2>
+
+<h3>Cresc probabilitatea BTTS</h3>
+<ul>
+  <li><strong>Ambele echipe cu xG ofensiv ridicat</strong> — dacă ambele creează multe ocazii de calitate, e probabil că ambele vor marca cel puțin una</li>
+  <li><strong>Apărări permisive la ambele echipe</strong> — un xG Against ridicat (>1.2) la ambele sugerează că adversarul va marca cu ușurință</li>
+  <li><strong>Rata BTTS istorică ridicată</strong> — dacă echipa A a marcat în 8 din ultimele 10 meciuri și echipa B în 7 din 10, probabilitatea compusă e ridicată</li>
+  <li><strong>Meciuri echilibrate</strong> — când forța echipelor e similară (Elo diferit sub 50 puncte), egalul e mai probabil, deci BTTS crește</li>
+  <li><strong>H2H cu multe goluri</strong> — unele rivalități produc sistematic meciuri cu goluri la ambele capete</li>
+</ul>
+
+<h3>Scad probabilitatea BTTS</h3>
+<ul>
+  <li><strong>Apărare solidă la una dintre echipe</strong> — dacă una dintre echipe are Clean Sheet rate >50% în ultimele 10 meciuri, BTTS = Nu devine mai probabil</li>
+  <li><strong>Asimetrie mare de forță</strong> — când favoriții zdrobesc adversarii fără să primească gol (ex: Real Madrid acasă cu echipe de mijloc)</li>
+  <li><strong>Meci defensiv prin natură</strong> — derby-uri de titlu sau meciuri de evitare a retrogradării produc adesea meciuri mai blocate</li>
+</ul>
+
+<h2>BTTS vs. Over 2.5 — care e diferența</h2>
+<p>O confuzie frecventă: BTTS și Over 2.5 nu sunt același lucru.</p>
+<ul>
+  <li>Un meci 1-0 e <strong>Under 2.5</strong> și <strong>BTTS = Nu</strong></li>
+  <li>Un meci 1-1 e <strong>Under 2.5</strong> și <strong>BTTS = Da</strong> — surprinzător pentru mulți</li>
+  <li>Un meci 3-0 e <strong>Over 2.5</strong> și <strong>BTTS = Nu</strong></li>
+  <li>Un meci 2-1 e <strong>Over 2.5</strong> și <strong>BTTS = Da</strong></li>
+</ul>
+<p>Corelația dintre Over 2.5 și BTTS = Da există dar e departe de a fi perfectă. Modelul le calculează independent prin Poisson.</p>
+
+<h2>Statistici BTTS pe ligi europene</h2>
+<ul>
+  <li><strong>Bundesliga</strong> — ~55% din meciuri se termină BTTS = Da. Liga cu cel mai ridicat ritm ofensiv.</li>
+  <li><strong>Premier League</strong> — ~52% BTTS = Da. Ritm ridicat, dar și apărări solid organizate.</li>
+  <li><strong>La Liga</strong> — ~48% BTTS = Da. Mai mult control și mai puțin verticalism.</li>
+  <li><strong>Serie A</strong> — ~44% BTTS = Da. Cel mai defensiv campionat din top 5 european.</li>
+  <li><strong>Champions League</strong> — ~50% BTTS = Da, cu variabilitate ridicată în funcție de faza competiției.</li>
+</ul>
+
+<h2>Cum citești BTTS pe Oxiano</h2>
+<p>Fiecare fișă de meci afișează probabilitatea BTTS calculată prin modelul Poisson din xG estimat. Planul Analyst oferă acces la probabilitățile exacte pentru toate piețele secundare, inclusiv BTTS pe prima repriză, BTTS + Over 2.5 și alte combinații derivate.</p>
+    `.trim(),
+  },
+]
+
 export function getPostBySlug(slug: string): BlogPost | undefined {
   return BLOG_POSTS.find(p => p.slug === slug)
 }

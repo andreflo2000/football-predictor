@@ -10,6 +10,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   'Bundesliga': '#34d399',
   'Serie A': '#f87171',
   'Educație': '#22d3ee',
+  'Ghid Piețe': '#4ade80',
 }
 
 export default function BlogPage() {
@@ -30,6 +31,46 @@ export default function BlogPage() {
               : 'Statistici fotbal, metodologie model și analiză cantitativă'}
           </p>
         </div>
+
+        {/* Ghid Complet — featured card */}
+        <Link href="/ghid-piete" style={{ textDecoration: 'none' }} className="fade-in">
+          <div className="mb-8 p-6 rounded-2xl cursor-pointer transition-all hover:scale-[1.01]"
+            style={{
+              background: 'linear-gradient(135deg, rgba(34,197,94,0.08) 0%, rgba(34,211,238,0.06) 100%)',
+              border: '1px solid rgba(34,197,94,0.25)',
+            }}>
+            <div className="flex items-center gap-3 mb-4">
+              <span style={{ fontSize: 28 }}>📋</span>
+              <div>
+                <div className="text-[10px] font-bold font-mono uppercase tracking-widest mb-1"
+                  style={{ color: '#4ade80' }}>
+                  {lang === 'en' ? 'Complete Reference Guide' : 'Ghid de referință complet'}
+                </div>
+                <h2 className="text-white font-bold text-lg leading-tight">
+                  {lang === 'en'
+                    ? 'Statistical Markets Guide — All 10 Analysis Types'
+                    : 'Ghid Piețe Statistice — Toate cele 10 tipuri de analize'}
+                </h2>
+              </div>
+            </div>
+            <p className="text-gray-400 text-sm leading-relaxed mb-4">
+              {lang === 'en'
+                ? 'Complete reference for all statistical market types analyzed by the Oxiano model: 1X2, Over/Under, BTTS, Asian Handicap, Correct Score, Clean Sheet and more. With complexity ratings, calculation factors and model insights for each.'
+                : 'Referință completă pentru toate tipurile de piețe statistice analizate de modelul Oxiano: 1X2, Over/Under, BTTS, Handicap Asiatic, Scor Exact, Clean Sheet și altele. Cu nivel de complexitate, factori de calcul și insight model pentru fiecare.'}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {['1X2', 'Over/Under 2.5', 'BTTS', 'Handicap Asiatic', 'Scor Exact', 'Clean Sheet'].map(tag => (
+                <span key={tag} className="text-[10px] font-mono font-bold px-2 py-1 rounded"
+                  style={{ background: 'rgba(34,197,94,0.1)', color: '#4ade80', border: '1px solid rgba(34,197,94,0.2)' }}>
+                  {tag}
+                </span>
+              ))}
+              <span className="text-[10px] font-mono text-gray-600 px-2 py-1">
+                {lang === 'en' ? '+ 4 more →' : '+ 4 altele →'}
+              </span>
+            </div>
+          </div>
+        </Link>
 
         <div className="space-y-4 fade-in">
           {BLOG_POSTS.map(post => {
