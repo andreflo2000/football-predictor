@@ -1093,9 +1093,13 @@ def admin_auto_results(
 
 
 
-@app.post("/api/admin/cache/clear-odds")
-def admin_clear_odds_cache(user: dict = Depends(require_admin)):
+@app.api_route("/api/admin/cache/clear-odds", methods=["GET", "POST"])
+def admin_clear_odds_cache(secret: str = Query(default=""), user: dict = Depends(get_current_user)):
     """Sterge cache-ul de odds si picks, recompute picks de azi cu cotele noi."""
+    admin_secret = os.getenv("ADMIN_SECRET", "")
+    if not (secret and admin_secret and secret == admin_secret):
+        if not (user and user.get("role") in ("owner", "admin")):
+            raise HTTPException(403, "Unauthorized")
     import datetime as _dt
     today = _dt.date.today().isoformat()
     import cache as redis_cache
