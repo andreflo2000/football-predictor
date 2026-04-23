@@ -1,8 +1,8 @@
 'use client'
 import { useLang } from '@/lib/LangContext'
 
-const LAST_UPDATED = 'April 10, 2026'
-const LAST_UPDATED_RO = '10 aprilie 2026'
+const LAST_UPDATED = 'April 23, 2026'
+const LAST_UPDATED_RO = '23 aprilie 2026'
 
 const Section = ({ id, title, children }: { id: string; title: string; children: React.ReactNode }) => (
   <div className="card p-6 mb-4">
@@ -108,6 +108,7 @@ export default function Privacy() {
                   <Bullet><strong className="text-gray-300">Sentry.io</strong> — monitorizare erori tehnice, date anonimizate (sentry.io/privacy)</Bullet>
                   <Bullet><strong className="text-gray-300">Render.com</strong> — infrastructură server (render.com/privacy)</Bullet>
                   <Bullet><strong className="text-gray-300">Football-data.org / The Odds API</strong> — furnizori de date sportive terțe, nu primesc date personale</Bullet>
+                  <Bullet><strong className="text-gray-300">Gumroad Inc.</strong> (SUA) — procesator de plăți pentru abonamentele Analyst și Pro. Gumroad colectează și prelucrează datele de plată (card bancar, adresă de facturare) direct, conform propriei politici de confidențialitate disponibile la <span className="text-blue-400 font-mono">gumroad.com/privacy</span>. Oxiano nu are acces la datele financiare complete ale cardului dumneavoastră.</Bullet>
                 </ul>
                 <p className="mt-3">Toți furnizorii terți sunt legați contractual să prelucreze datele exclusiv conform instrucțiunilor noastre și să implementeze măsuri adecvate de securitate.</p>
               </Section>
@@ -216,6 +217,7 @@ export default function Privacy() {
                   <Bullet><strong className="text-gray-300">Sentry.io</strong> — technical error monitoring, anonymised data (sentry.io/privacy)</Bullet>
                   <Bullet><strong className="text-gray-300">Render.com</strong> — server infrastructure (render.com/privacy)</Bullet>
                   <Bullet><strong className="text-gray-300">Football-data.org / The Odds API</strong> — third-party sports data providers, do not receive personal data</Bullet>
+                  <Bullet><strong className="text-gray-300">Gumroad Inc.</strong> (USA) — payment processor for Analyst and Pro subscriptions. Gumroad collects and processes payment data (bank card, billing address) directly, under its own privacy policy available at <span className="text-blue-400 font-mono">gumroad.com/privacy</span>. Oxiano does not have access to your full card financial data.</Bullet>
                 </ul>
                 <p className="mt-3">All third-party providers are contractually bound to process data solely in accordance with our instructions and to implement appropriate security measures.</p>
               </Section>

@@ -261,13 +261,18 @@ def send_email_digest(picks: list, date_str: str, subscribers: list[str]) -> int
 
 
 def get_subscribers() -> list[str]:
-    """Returneaza emailurile userilor care au acceptat notificari."""
+    """Returneaza emailurile userilor care au dat consimtamant explicit GDPR pentru notificari."""
     from db import get_client
     client = get_client()
     if client is None:
         return []
     try:
-        rows = client.table("users").select("email").execute()
+        rows = (
+            client.table("users")
+            .select("email")
+            .eq("notifications_consent", True)
+            .execute()
+        )
         return [r["email"] for r in rows.data if r.get("email")]
     except Exception:
         return []

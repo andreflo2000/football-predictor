@@ -78,9 +78,12 @@ export default function UpgradePage() {
   const [user, setUser] = useState<AuthUser | null>(null)
   const [loading, setLoading] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [isNative, setIsNative] = useState(false)
 
   useEffect(() => {
     setUser(getUser())
+    const cap = (window as any).Capacitor
+    setIsNative(cap?.isNativePlatform?.() === true)
   }, [])
 
   async function handleUpgrade(plan: 'analyst' | 'pro') {
@@ -100,6 +103,46 @@ export default function UpgradePage() {
   }
 
   const alreadyPaid = isPaid()
+
+  // Pe native (Android/iOS) nu afisam checkout — Google Play policy
+  if (isNative) {
+    return (
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', color: '#f1f5f9', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px 24px', textAlign: 'center' }}>
+        <div style={{ fontSize: 48, marginBottom: 24 }}>🌐</div>
+        <h1 style={{ fontSize: 22, fontWeight: 800, marginBottom: 12, color: '#f1f5f9' }}>
+          {lang === 'en' ? 'Manage your subscription on the web' : 'Gestionează abonamentul pe web'}
+        </h1>
+        <p style={{ color: '#94a3b8', fontSize: 14, lineHeight: 1.7, maxWidth: 320, marginBottom: 32 }}>
+          {lang === 'en'
+            ? 'Subscriptions for Oxiano are managed exclusively on oxiano.com. Tap below to open the website in your browser.'
+            : 'Abonamentele Oxiano se gestionează exclusiv pe oxiano.com. Apasă mai jos pentru a deschide site-ul în browser.'}
+        </p>
+        <a
+          href="https://oxiano.com/upgrade"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            display: 'inline-block',
+            padding: '16px 32px',
+            borderRadius: 14,
+            background: 'linear-gradient(90deg, #3b82f6, #1d4ed8)',
+            color: '#fff',
+            fontWeight: 700,
+            fontSize: 15,
+            textDecoration: 'none',
+            marginBottom: 16,
+          }}
+        >
+          {lang === 'en' ? 'Open oxiano.com →' : 'Deschide oxiano.com →'}
+        </a>
+        <p style={{ color: '#475569', fontSize: 11, marginTop: 16 }}>
+          {lang === 'en'
+            ? 'Analyst — $8/mo · Pro — $20/mo · Cancel anytime'
+            : 'Analyst — 39 RON/lună · Pro — 99 RON/lună · Anulezi oricând'}
+        </p>
+      </div>
+    )
+  }
 
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', color: '#f1f5f9' }}>
