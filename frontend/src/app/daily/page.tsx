@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { getUser, logout, isVip, type AuthUser } from '@/lib/auth'
+import { getUser, logout, isVip, getToken, type AuthUser } from '@/lib/auth'
 import PickSkeleton from '@/components/PickSkeleton'
 import { getBetBuilder, saveBetBuilder } from '@/lib/betBuilder'
 import { useLang } from '@/lib/LangContext'
@@ -1087,10 +1087,11 @@ export default function DailyPage() {
   useEffect(() => {
     setLoading(true)
     setData(null)
+    const authHeaders = getToken() ? { Authorization: `Bearer ${getToken()}` } : {}
     Promise.all([
-      fetch(`${API_BASE}/api/daily?min_confidence=0.55`).then(r => r.json()).then(d => {
+      fetch(`${API_BASE}/api/daily?min_confidence=0.55`, { headers: authHeaders }).then(r => r.json()).then(d => {
         // Daca nu sunt picks la 55%, cade la 45%
-        if (!d?.picks?.length) return fetch(`${API_BASE}/api/daily?min_confidence=0.45`).then(r => r.json())
+        if (!d?.picks?.length) return fetch(`${API_BASE}/api/daily?min_confidence=0.45`, { headers: authHeaders }).then(r => r.json())
         return d
       }),
       fetch(`${API_BASE}/api/track-record/vip`).then(r => r.json()).catch(() => null),
