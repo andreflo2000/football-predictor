@@ -593,7 +593,7 @@ function PickCard({ pick, rank, userTier }: { pick: Pick; rank: number; userTier
             }}>
             <div className="text-[10px] font-mono text-gray-500 uppercase">{label}</div>
             <div className="text-lg font-bold font-mono" style={{ color: active ? c.text : '#6b7280' }}>
-              {val}%
+              {val != null ? `${val}%` : '—'}
             </div>
           </div>
         ))}
