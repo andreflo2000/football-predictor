@@ -1087,7 +1087,8 @@ export default function DailyPage() {
   useEffect(() => {
     setLoading(true)
     setData(null)
-    const authHeaders = getToken() ? { Authorization: `Bearer ${getToken()}` } : {}
+    const token = getToken()
+    const authHeaders: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {}
     Promise.all([
       fetch(`${API_BASE}/api/daily?min_confidence=0.55`, { headers: authHeaders }).then(r => r.json()).then(d => {
         // Daca nu sunt picks la 55%, cade la 45%
