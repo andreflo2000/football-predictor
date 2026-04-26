@@ -535,7 +535,7 @@ function PickCard({ pick, rank, userTier }: { pick: Pick; rank: number; userTier
   const { lang } = useLang()
   const c    = confColor(pick.confidence_level, lang)
   const pred = predLabel(pick, lang)
-  const isLocked = (pick as any).vip_only && userTier !== 'vip' && userTier !== 'pro'
+  const isLocked = (pick as any).vip_only && userTier !== 'vip' && userTier !== 'pro' && userTier !== 'owner'
 
   if (isLocked) {
     return (
@@ -761,7 +761,7 @@ function PickCard({ pick, rank, userTier }: { pick: Pick; rank: number; userTier
 
 // ── 3 Ponturi Gratuite ───────────────────────────────────────────────────────
 
-function FreePicks({ picks }: { picks: Pick[] }) {
+function FreePicks({ picks, userTier }: { picks: Pick[], userTier?: string }) {
   const { lang } = useLang()
   const [mode, setMode] = useState<'result' | 'goals'>('result')
   if (picks.length === 0) return null
@@ -770,38 +770,36 @@ function FreePicks({ picks }: { picks: Pick[] }) {
 
   // Top 3 picks valide (non-VIP, cu probabilitati reale)
   const seen = new Set<string>()
+  const isPrivileged = userTier === 'vip' || userTier === 'pro' || userTier === 'owner'
   const validPicks: Pick[] = []
   for (const p of picks) {
     if (p.home_win === null || p.home_win === undefined) continue
-    if ((p as any).vip_only) continue
+    if ((p as any).vip_only && !isPrivileged) continue
     const key = `${p.home}-${p.away}`
     if (!seen.has(key)) { seen.add(key); validPicks.push(p) }
   }
 
   const top3Result = validPicks.slice(0, 3)
 
-  // Varianta goluri — selecteaza cea mai clara piata de goluri per meci
+  // Varianta goluri — Top 3 BTTS Yes (btts_rate direct din model, cote 1.55–1.85)
   interface GoalPick { pick: Pick; label: string; prob: number }
   const goalCandidates: GoalPick[] = []
   const seenGoals = new Set<string>()
   for (const p of validPicks) {
     const key = `${p.home}-${p.away}`
     if (seenGoals.has(key)) continue
-    const over25 = p.over25_rate ?? 50
-    const btts   = p.btts_rate   ?? 50
-    let best: GoalPick | null = null
-    const candidates: GoalPick[] = []
-    if (over25 >= 58) candidates.push({ pick: p, label: lang === 'en' ? 'Over 2.5' : 'Peste 2.5 goluri', prob: over25 })
-    if (over25 <= 38) candidates.push({ pick: p, label: lang === 'en' ? 'Under 2.5' : 'Sub 2.5 goluri', prob: 100 - over25 })
-    if (btts >= 58)   candidates.push({ pick: p, label: lang === 'en' ? 'BTTS — Yes' : 'Ambele marchează', prob: btts })
-    if (btts <= 33)   candidates.push({ pick: p, label: lang === 'en' ? 'BTTS — No' : 'Clean sheet posibil', prob: 100 - btts })
-    if (candidates.length > 0) {
-      best = candidates.sort((a, b) => b.prob - a.prob)[0]
-      goalCandidates.push(best)
+    const btts = p.btts_rate ?? 50
+    if (btts >= 50) {
+      goalCandidates.push({
+        pick: p,
+        label: lang === 'en' ? 'BTTS — Yes' : 'Ambele marchează',
+        prob: btts,
+      })
       seenGoals.add(key)
     }
-    if (goalCandidates.length === 3) break
   }
+  goalCandidates.sort((a, b) => b.prob - a.prob)
+  goalCandidates.splice(3)
 
   const top3 = mode === 'result' ? top3Result : goalCandidates.map(g => g.pick)
   if (top3.length < 1) return null
@@ -1299,13 +1297,13 @@ export default function DailyPage() {
             </a>
 
             {/* 3 Ponturi Gratuite */}
-            <FreePicks picks={picks} />
+            <FreePicks picks={picks} userTier={user?.tier} />
 
             {/* Banker of the Week */}
             <BankerCard picks={picks} />
 
             {/* Buton Telegram manual — doar owner/pro */}
-            {(user?.tier === 'pro' || user?.tier === 'vip') && (
+            {(user?.tier === 'pro' || user?.tier === 'vip' || user?.tier === 'owner') && (
               <TelegramSendButton picks={picks} />
             )}
 

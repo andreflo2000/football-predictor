@@ -3,7 +3,7 @@ const API = process.env.NEXT_PUBLIC_API_URL || 'https://football-predictor-api-n
 export interface AuthUser {
   id: string
   email: string
-  tier: 'free' | 'analyst' | 'pro' | 'vip'
+  tier: 'free' | 'analyst' | 'pro' | 'vip' | 'owner'
   role?: string
 }
 
@@ -26,12 +26,12 @@ export function getUser(): AuthUser | null {
 
 export function isVip(): boolean {
   const tier = getUser()?.tier
-  return tier === 'vip' || tier === 'pro'
+  return tier === 'vip' || tier === 'pro' || tier === 'owner'
 }
 
 export function isPaid(): boolean {
   const tier = getUser()?.tier
-  return tier === 'analyst' || tier === 'pro' || tier === 'vip'
+  return tier === 'analyst' || tier === 'pro' || tier === 'vip' || tier === 'owner'
 }
 
 export async function createCheckoutSession(plan: 'analyst' | 'pro'): Promise<string> {
