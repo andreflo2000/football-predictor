@@ -108,6 +108,14 @@ async def startup_event():
         from predictor import refresh_clubelo
         import cache as _cache_mod
         scheduler.add_job(lambda: refresh_clubelo(_cache_mod), CronTrigger(hour=6, minute=0))
+        # Bet signals: pipeline la 09:00 (cote disponibile), update rezultate la 23:45
+        try:
+            from bet_signal import run_pipeline, update_results as _update_results
+            scheduler.add_job(run_pipeline, CronTrigger(hour=9, minute=0))
+            scheduler.add_job(_update_results, CronTrigger(hour=23, minute=45))
+            logger.info("Bet signal scheduler: pipeline 09:00, results 23:45")
+        except RuntimeError as _bse:
+            logger.warning("Bet signal dezactivat: %s", _bse)
 
         scheduler.start()
         logger.info("Scheduler pornit: pre-calcul picks la 07:00 si 13:00")
@@ -776,6 +784,72 @@ def debug_odds(secret: str = Query(default="")):
         }
     except Exception as e:
         return {"error": str(e)}
+
+
+# ─────────────────────────────────────────────
+# BET SIGNALS — admin endpoints
+# ─────────────────────────────────────────────
+
+@app.post("/api/admin/bet-signals/run")
+def admin_bet_signals_run(secret: str = Query(default="")):
+    """Triggereaza manual pipeline-ul de semnale BET (fetch + analiza + insert Supabase)."""
+    if not (secret and ADMIN_SECRET and secret == ADMIN_SECRET):
+        raise HTTPException(403, "Unauthorized")
+    try:
+        from bet_signal import run_pipeline
+        import threading
+        threading.Thread(target=run_pipeline, daemon=True).start()
+        return {"status": "started", "message": "Pipeline bet_signal pornit in background"}
+    except RuntimeError as e:
+        raise HTTPException(503, str(e))
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+
+@app.post("/api/admin/bet-signals/update-results")
+def admin_bet_signals_results(secret: str = Query(default="")):
+    """Triggereaza manual update-ul rezultatelor pendente (W/L/P)."""
+    if not (secret and ADMIN_SECRET and secret == ADMIN_SECRET):
+        raise HTTPException(403, "Unauthorized")
+    try:
+        from bet_signal import update_results
+        import threading
+        threading.Thread(target=update_results, daemon=True).start()
+        return {"status": "started", "message": "Update rezultate pornit in background"}
+    except RuntimeError as e:
+        raise HTTPException(503, str(e))
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+
+@app.get("/api/admin/bet-signals")
+def admin_bet_signals_list(secret: str = Query(default=""), limit: int = 50):
+    """Returneaza ultimele semnale BET din Supabase."""
+    if not (secret and ADMIN_SECRET and secret == ADMIN_SECRET):
+        raise HTTPException(403, "Unauthorized")
+    client = get_client()
+    if not client:
+        raise HTTPException(503, "Supabase indisponibil")
+    try:
+        resp = (
+            client.table("bet_signals")
+            .select("*")
+            .order("created_at", desc=True)
+            .limit(limit)
+            .execute()
+        )
+        rows = resp.data or []
+        total_w = sum(1 for r in rows if r.get("result") == "W")
+        total_l = sum(1 for r in rows if r.get("result") == "L")
+        total_p = sum(1 for r in rows if r.get("result") == "P" or r.get("result") is None)
+        profit  = sum(r.get("profit_loss") or 0 for r in rows)
+        return {
+            "count": len(rows),
+            "summary": {"W": total_w, "L": total_l, "P": total_p, "profit_loss": round(profit, 4)},
+            "signals": rows,
+        }
+    except Exception as e:
+        raise HTTPException(500, str(e))
 
 
 # ─────────────────────────────────────────────
