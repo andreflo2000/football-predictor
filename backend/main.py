@@ -282,7 +282,8 @@ def api_leagues():
 def _mask_vip_picks(picks: list, user: Optional[dict]) -> list:
     """Mascheaza datele vip_only pentru useri non-pro/vip."""
     tier = (user or {}).get("tier", "free")
-    if tier in ("pro", "vip", "owner"):
+    role = (user or {}).get("role", "user")
+    if tier in ("pro", "vip", "owner") or role in ("owner", "admin"):
         return picks
     result = []
     for p in picks:
