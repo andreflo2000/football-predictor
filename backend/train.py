@@ -723,69 +723,150 @@ def assemble(data, team_df, h2h_df, elo_df, odds_df, market_df):
 # ─────────────────────────────────────────────────────────
 # 7. ANTRENARE
 # ─────────────────────────────────────────────────────────
+from calibrator import CalibratedXGB
+
+
 def train_model(X, y):
-    print(">>> Antrenez XGBoost...")
+    import optuna
+    from sklearn.utils.class_weight import compute_sample_weight
+    from sklearn.isotonic import IsotonicRegression
+    from sklearn.metrics import brier_score_loss
+
+    optuna.logging.set_verbosity(optuna.logging.WARNING)
+
+    print(">>> Antrenez XGBoost cu temporal split + Optuna + calibrare...")
     le = LabelEncoder()
     y_enc = le.fit_transform(y)
 
-    # Antrenam EXCLUSIV pe meciuri cu cote — fara zgomot din imputation
+    # Antrenam EXCLUSIV pe meciuri cu cote
     has_odds_mask = X["has_odds"] == 1
-    X_odds = X[has_odds_mask]
+    X_odds = X[has_odds_mask].reset_index(drop=True)
     y_odds = y_enc[has_odds_mask.values]
     print(f"    Meciuri cu cote: {len(X_odds):,} / {len(X):,} ({has_odds_mask.mean()*100:.1f}%)")
 
-    # Random split stratificat pe setul cu cote
-    X_train, X_test, y_train, y_test = train_test_split(
-        X_odds, y_odds, test_size=0.20, random_state=42, stratify=y_odds
-    )
+    # ── FIX 1: Temporal split (nu random) ─────────────────────────────────
+    # X_odds e deja sortat cronologic (data.sort_values("Date") in preprocess)
+    n = len(X_odds)
+    train_end  = int(n * 0.80)   # 80% train
+    val_start  = int(n * 0.70)   # ultimele 10% din train = validare Optuna + calibrare
 
-    dist = {le.classes_[i]: int((y_train == i).sum()) for i in range(3)}
-    print(f"    Train: {len(X_train)} | Test: {len(X_test)}")
-    print(f"    Distributie: {dist}")
+    X_train    = X_odds.iloc[:val_start]
+    y_train    = y_odds[:val_start]
 
+    X_val      = X_odds.iloc[val_start:train_end]
+    y_val      = y_odds[val_start:train_end]
+
+    X_test     = X_odds.iloc[train_end:]
+    y_test     = y_odds[train_end:]
+
+    print(f"    Temporal split: Train={len(X_train)} | Val={len(X_val)} | Test={len(X_test)}")
+    print(f"    (Train 0-70% | Val 70-80% | Test 80-100% cronologic)")
+
+    # ── FIX 2: Optuna hyperparameter tuning ───────────────────────────────
+    print(f"\n>>> Optuna tuning (50 trials)...")
+
+    def objective(trial):
+        params = dict(
+            n_estimators      = trial.suggest_int("n_estimators", 300, 1500),
+            max_depth         = trial.suggest_int("max_depth", 3, 8),
+            learning_rate     = trial.suggest_float("learning_rate", 0.01, 0.3, log=True),
+            subsample         = trial.suggest_float("subsample", 0.6, 1.0),
+            colsample_bytree  = trial.suggest_float("colsample_bytree", 0.5, 1.0),
+            min_child_weight  = trial.suggest_int("min_child_weight", 1, 10),
+            gamma             = trial.suggest_float("gamma", 0.0, 5.0),
+            eval_metric       = "mlogloss",
+            early_stopping_rounds = 50,
+            random_state      = 42,
+            n_jobs            = -1,
+            tree_method       = "hist",
+        )
+        m = XGBClassifier(**params)
+        sw = compute_sample_weight("balanced", y_train)
+        m.fit(X_train, y_train,
+              eval_set=[(X_val, y_val)],
+              sample_weight=sw,
+              verbose=False)
+        return accuracy_score(y_val, m.predict(X_val))
+
+    study = optuna.create_study(direction="maximize")
+    study.optimize(objective, n_trials=50, show_progress_bar=True)
+
+    best = study.best_params
+    print(f"    Best params: {best}")
+    print(f"    Best val accuracy: {study.best_value*100:.2f}%")
+
+    # ── FIX 3: Antrenare finala cu best params + class weights ─────────────
+    print("\n>>> Antrenez modelul final cu best params + sample weights...")
     model = XGBClassifier(
-        n_estimators=1000,
-        max_depth=5,
-        learning_rate=0.03,
-        subsample=0.80,
-        colsample_bytree=0.75,
-        colsample_bylevel=0.75,
-        min_child_weight=6,
-        gamma=0.05,
-        reg_alpha=0.1,
-        reg_lambda=1.5,
-        eval_metric="mlogloss",
-        early_stopping_rounds=80,
-        random_state=42,
-        n_jobs=-1,
-        tree_method="hist",
+        **best,
+        eval_metric           = "mlogloss",
+        early_stopping_rounds = 50,
+        random_state          = 42,
+        n_jobs                = -1,
+        tree_method           = "hist",
     )
+    sw_train = compute_sample_weight("balanced", y_train)
+    model.fit(X_train, y_train,
+              eval_set=[(X_val, y_val)],
+              sample_weight=sw_train,
+              verbose=100)
 
-    model.fit(
-        X_train, y_train,
-        eval_set=[(X_test, y_test)],
-        verbose=100,
-    )
+    # ── FIX 4: Calibrare probabilitati pe X_val ───────────────────────────
+    print("\n>>> Calibrez probabilitatile (isotonic regression pe X_val)...")
+    proba_val  = model.predict_proba(X_val)
+    n_classes  = len(le.classes_)
+    calibrators = []
+    for i in range(n_classes):
+        ir = IsotonicRegression(out_of_bounds="clip")
+        ir.fit(proba_val[:, i], (y_val == i).astype(int))
+        calibrators.append(ir)
+    calibrated = CalibratedXGB(model, calibrators, n_classes)
 
-    preds = model.predict(X_test)
-    acc = accuracy_score(y_test, preds)
-    print(f"\n>>> Acuratete: {acc * 100:.2f}%")
-    print(classification_report(y_test, preds, target_names=le.classes_))
+    # ── FIX 5: Raport complet pe test temporal ────────────────────────────
+    preds = calibrated.predict(X_test)
+    proba = calibrated.predict_proba(X_test)
+
+    acc      = accuracy_score(y_test, preds)
+    baseline = (y_test == np.bincount(y_test).argmax()).mean()
+    edge     = acc - baseline
+
+    print(f"\n{'='*55}")
+    print(f"  RAPORT FINAL — Test temporal (ultimele 20%)")
+    print(f"{'='*55}")
+    print(f"  Acuratete test:        {acc*100:.2f}%")
+    print(f"  Baseline majority:     {baseline*100:.2f}%")
+    print(f"  Edge real vs baseline: {edge*100:+.2f}%")
+    print(f"\n{classification_report(y_test, preds, target_names=le.classes_)}")
+
+    # Brier score multiclass (medie OvR)
+    brier = np.mean([
+        brier_score_loss((y_test == i).astype(int), proba[:, i])
+        for i in range(len(le.classes_))
+    ])
+    print(f"  Brier score:           {brier:.4f}  ({'bun' if brier < 0.20 else 'acceptabil' if brier < 0.25 else 'slab'})")
+
+    # Top 15 features
+    importances = model.feature_importances_
+    feat_names  = list(X_odds.columns)
+    top15_idx   = np.argsort(importances)[::-1][:15]
+    print(f"\n  Top 15 features:")
+    for rank, i in enumerate(top15_idx, 1):
+        print(f"    {rank:2d}. {feat_names[i]:<35} {importances[i]:.4f}")
 
     # Confidence threshold analysis
-    proba = model.predict_proba(X_test)
     max_conf = proba.max(axis=1)
-    print("\n>>> Acuratete per prag de incredere:")
+    print(f"\n  Acuratete per prag de incredere (test temporal):")
     for thr in [0.45, 0.50, 0.55, 0.60, 0.65, 0.70]:
         mask = max_conf >= thr
         if mask.sum() > 0:
             acc_thr = accuracy_score(y_test[mask], preds[mask])
             print(f"    >= {thr:.0%}  ->  {acc_thr*100:.2f}%  ({mask.sum():,} meciuri, {mask.mean()*100:.1f}%)")
+    print(f"{'='*55}\n")
 
-    # Salvam mediile pentru completarea features lipsă în predictor live
-    feature_means = X_odds.mean().to_dict()
+    # feature_means calculat DOAR pe train+val (fara test)
+    feature_means = X_odds.iloc[:train_end].mean().to_dict()
 
-    return model, le, feature_means
+    return calibrated, le, feature_means
 
 
 # ─────────────────────────────────────────────────────────

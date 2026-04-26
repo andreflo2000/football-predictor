@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 import pickle
 import os
+from calibrator import CalibratedXGB  # noqa: F401 — necesar pentru deserializare pkl
 
 
 def _poisson_over25(lam: float) -> float:
