@@ -12,6 +12,7 @@ const TIER_LABELS: Record<string, { label: string; color: string; bg: string; bo
   analyst: { label: 'Analyst', color: '#22d3ee', bg: 'rgba(34,211,238,0.1)', border: 'rgba(34,211,238,0.25)' },
   pro:     { label: 'Pro',     color: '#f59e0b', bg: 'rgba(245,158,11,0.1)', border: 'rgba(245,158,11,0.25)' },
   vip:     { label: 'VIP',     color: '#a78bfa', bg: 'rgba(167,139,250,0.1)', border: 'rgba(167,139,250,0.25)' },
+  owner:   { label: 'Owner',   color: '#f43f5e', bg: 'rgba(244,63,94,0.1)',  border: 'rgba(244,63,94,0.25)' },
 }
 
 export default function LoginPage() {
