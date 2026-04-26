@@ -135,10 +135,12 @@ def compute_and_store_picks(date: str = None) -> dict:
     logger.info("[ingestion] Complet: %d picks pentru %s", len(picks), actual_date)
 
     # Trimite notificari (Telegram + Email) doar pentru picks de AZI, la rularea de dimineata
+    # Folosim ora Bucuresti (EEST=UTC+3, EET=UTC+2) ca scheduler-ul ruleaza la 07:00 Bucuresti
+    import zoneinfo
+    bucharest_hour = datetime.datetime.now(zoneinfo.ZoneInfo("Europe/Bucharest")).hour
     today = datetime.date.today().isoformat()
-    hour = datetime.datetime.utcnow().hour
     is_today = actual_date == today
-    if picks and is_today and 5 <= hour <= 10:
+    if picks and is_today and 5 <= bucharest_hour <= 14:
         try:
             from notifications import send_combo_telegram, send_email_digest, get_subscribers
             date_fmt = datetime.datetime.strptime(actual_date, "%Y-%m-%d").strftime("%d.%m.%Y")
