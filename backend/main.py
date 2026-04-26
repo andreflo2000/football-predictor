@@ -1144,6 +1144,30 @@ def admin_clear_odds_cache(secret: str = Query(default=""), user: dict = Depends
     return {"cleared": True, "date": today, "picks_recomputed": result.get("total_picks", 0)}
 
 
+@app.get("/api/admin/send-telegram")
+def admin_send_telegram(secret: str = Query(default=""), user: dict = Depends(get_current_user)):
+    """Trimite manual combo Telegram pentru picks de azi. Protejat cu ADMIN_SECRET sau owner."""
+    admin_secret = os.getenv("ADMIN_SECRET", "")
+    is_authorized = (secret and admin_secret and secret == admin_secret) or \
+                    (user and user.get("tier") in ("owner", "pro", "vip"))
+    if not is_authorized:
+        raise HTTPException(403, "Unauthorized")
+
+    import datetime as _dt
+    from ingestion import load_picks_from_db
+    from notifications import send_combo_telegram
+
+    today = _dt.date.today().isoformat()
+    db_data = load_picks_from_db(today)
+    if not db_data or not db_data.get("picks"):
+        return {"sent": False, "reason": "no picks for today"}
+
+    picks = db_data["picks"]
+    date_fmt = _dt.datetime.strptime(today, "%Y-%m-%d").strftime("%d.%m.%Y")
+    sent = send_combo_telegram(picks, date_fmt)
+    return {"sent": sent, "date": today, "picks_count": len(picks)}
+
+
 @app.post("/api/admin/picks/backfill")
 def admin_backfill_results(
     background_tasks: BackgroundTasks,

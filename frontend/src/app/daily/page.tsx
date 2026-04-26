@@ -475,6 +475,60 @@ function AddToBetBuilder({ pick }: { pick: Pick }) {
   )
 }
 
+// ── TelegramSendButton ───────────────────────────────────────────────────────
+
+function TelegramSendButton({ picks }: { picks: Pick[] }) {
+  const { lang } = useLang()
+  const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
+
+  const send = async () => {
+    setStatus('sending')
+    try {
+      const token = getToken()
+      const r = await fetch(`${API_BASE}/api/admin/send-telegram`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
+      const data = await r.json()
+      setStatus(data.sent ? 'sent' : 'error')
+      setTimeout(() => setStatus('idle'), 4000)
+    } catch {
+      setStatus('error')
+      setTimeout(() => setStatus('idle'), 4000)
+    }
+  }
+
+  const label = {
+    idle:    '✈️ Trimite pe Telegram',
+    sending: '⏳ Se trimite...',
+    sent:    '✅ Trimis!',
+    error:   '❌ Eroare — no combo valid',
+  }[status]
+
+  return (
+    <div className="mb-4 fade-in">
+      <button
+        onClick={send}
+        disabled={status === 'sending'}
+        style={{
+          width: '100%',
+          padding: '10px 16px',
+          borderRadius: 12,
+          border: `1px solid ${status === 'sent' ? 'rgba(34,197,94,0.4)' : status === 'error' ? 'rgba(239,68,68,0.4)' : 'rgba(34,211,238,0.3)'}`,
+          background: status === 'sent' ? 'rgba(34,197,94,0.1)' : status === 'error' ? 'rgba(239,68,68,0.08)' : 'rgba(34,211,238,0.08)',
+          color: status === 'sent' ? '#4ade80' : status === 'error' ? '#f87171' : '#22d3ee',
+          fontSize: 13,
+          fontWeight: 700,
+          fontFamily: 'monospace',
+          cursor: status === 'sending' ? 'wait' : 'pointer',
+          transition: 'all 0.2s',
+        }}
+      >
+        {label}
+      </button>
+    </div>
+  )
+}
+
 // ── PickCard ─────────────────────────────────────────────────────────────────
 
 function PickCard({ pick, rank, userTier }: { pick: Pick; rank: number; userTier?: string }) {
@@ -1249,6 +1303,11 @@ export default function DailyPage() {
 
             {/* Banker of the Week */}
             <BankerCard picks={picks} />
+
+            {/* Buton Telegram manual — doar owner/pro */}
+            {(user?.tier === 'pro' || user?.tier === 'vip') && (
+              <TelegramSendButton picks={picks} />
+            )}
 
             {/* Filter tabs */}
             <div className="flex gap-2 mb-5">
