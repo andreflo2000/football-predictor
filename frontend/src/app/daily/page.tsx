@@ -499,10 +499,10 @@ function TelegramSendButton({ picks }: { picks: Pick[] }) {
   }
 
   const label = {
-    idle:    '✈️ Trimite pe Telegram',
-    sending: '⏳ Se trimite...',
-    sent:    '✅ Trimis!',
-    error:   '❌ Eroare — no combo valid',
+    idle:    lang === 'en' ? '✈️ Send on Telegram' : '✈️ Trimite pe Telegram',
+    sending: lang === 'en' ? '⏳ Sending...' : '⏳ Se trimite...',
+    sent:    lang === 'en' ? '✅ Sent!' : '✅ Trimis!',
+    error:   lang === 'en' ? '❌ Error — no combo valid' : '❌ Eroare — no combo valid',
   }[status]
 
   return (
@@ -934,7 +934,7 @@ function FreePicks({ picks, userTier }: { picks: Pick[], userTier?: string }) {
               onClick={() => {
                 const dateStr = formatDate(new Date().toISOString().split('T')[0])
                 const text = buildAccumulatorCard(top3Result, dateStr)
-                navigator.clipboard?.writeText(text).then(() => alert('Copiat! Lipește în Telegram.'))
+                navigator.clipboard?.writeText(text).then(() => alert(lang === 'en' ? 'Copied! Paste in Telegram.' : 'Copiat! Lipește în Telegram.'))
               }}
               className="text-[10px] font-bold px-3 py-1.5 rounded-lg"
               style={{ background: 'rgba(38,120,188,0.15)', color: '#2678bc', border: '1px solid rgba(38,120,188,0.3)' }}>
@@ -1051,7 +1051,7 @@ function LoadingState() {
     <div className="card p-10 text-center">
       <div className="spinner mx-auto mb-6" />
       <div className="text-green-400 text-sm font-mono mb-1">{steps[step]}</div>
-      <div className="text-gray-600 text-[11px] font-mono">Model XGBoost · 225K meciuri antrenament</div>
+      <div className="text-gray-600 text-[11px] font-mono">{lang === 'en' ? 'XGBoost model · 225K matches trained' : 'Model XGBoost · 225K meciuri antrenament'}</div>
     </div>
   )
 }
@@ -1204,7 +1204,7 @@ export default function DailyPage() {
             )}
           </div>
           <p className="text-gray-500 text-xs font-mono">
-            XGBoost + Elo · 225K meciuri antrenament · Sorted by confidence
+            {lang === 'en' ? 'XGBoost + Elo · 225K matches trained · Sorted by confidence' : 'XGBoost + Elo · 225K meciuri antrenament · Sortat după confidence'}
           </p>
 
           {/* VIP accuracy pill */}
@@ -1215,8 +1215,8 @@ export default function DailyPage() {
               <span className="text-[11px] font-bold font-mono text-amber-400">VIP Picks</span>
               <span className="text-[11px] font-mono text-gray-400">
                 {vipStats && vipStats.this_month_total > 0
-                  ? `${vipStats.this_month_wins}/${vipStats.this_month_total} · ${vipStats.this_month_accuracy}% luna aceasta`
-                  : `~78.5% acuratețe (backtest)`}
+                  ? `${vipStats.this_month_wins}/${vipStats.this_month_total} · ${vipStats.this_month_accuracy}% ${lang === 'en' ? 'this month' : 'luna aceasta'}`
+                  : lang === 'en' ? '~78.5% accuracy (backtest)' : '~78.5% acuratețe (backtest)'}
               </span>
               <a href="/upgrade" className="text-[10px] font-bold px-2 py-0.5 rounded-full ml-1"
                 style={{ background: 'rgba(234,179,8,0.2)', color: '#fbbf24' }}>
@@ -1430,24 +1430,24 @@ export default function DailyPage() {
             {/* Model info */}
             <div className="card p-5 mt-6">
               <div className="text-[10px] font-bold text-green-500 uppercase tracking-widest mb-3 text-center">
-                ℹ️ Cum funcționează
+                {lang === 'en' ? 'ℹ️ How it works' : 'ℹ️ Cum funcționează'}
               </div>
               <div className="space-y-2 text-xs text-gray-500 font-mono">
                 <div className="flex items-start gap-2">
                   <span className="text-green-400 shrink-0">🤖</span>
-                  <span>Model XGBoost antrenat pe 225,000 meciuri din 20+ ligi europene</span>
+                  <span>{lang === 'en' ? 'XGBoost model trained on 225,000 matches from 20+ European leagues' : 'Model XGBoost antrenat pe 225,000 meciuri din 20+ ligi europene'}</span>
                 </div>
                 <div className="flex items-start gap-2">
                   <span className="text-green-400 shrink-0">📊</span>
-                  <span>84 features: cote bookmakers, Elo per ligă, formă recentă, H2H, xG</span>
+                  <span>{lang === 'en' ? '84 features: bookmaker odds, Elo per league, recent form, H2H, xG' : '84 features: cote bookmakers, Elo per ligă, formă recentă, H2H, xG'}</span>
                 </div>
                 <div className="flex items-start gap-2">
                   <span className="text-green-400 shrink-0">⚡</span>
-                  <span>High Confidence (&gt;=60%): ~70% acuratețe pe backtesting 33,572 meciuri</span>
+                  <span>{lang === 'en' ? 'High Confidence (≥60%): ~70% accuracy on 33,572 match backtest' : 'High Confidence (≥60%): ~70% acuratețe pe backtesting 33,572 meciuri'}</span>
                 </div>
                 <div className="flex items-start gap-2">
                   <span className="text-gray-600 shrink-0">⚠️</span>
-                  <span>Scop educațional. Nu reprezintă sfaturi financiare sau de pariuri.</span>
+                  <span>{lang === 'en' ? 'Educational purpose only. Not financial or betting advice.' : 'Scop educațional. Nu reprezintă sfaturi financiare sau de pariuri.'}</span>
                 </div>
               </div>
             </div>
@@ -1458,10 +1458,10 @@ export default function DailyPage() {
       <footer className="border-t border-green-900/30 mt-12 py-6">
         <div className="max-w-4xl mx-auto px-4 text-center">
           <p className="text-xs font-mono text-gray-700">
-            Oxiano — Scop educațional. Nu reprezintă sfaturi de pariuri.
+            {lang === 'en' ? 'Oxiano — Educational purpose only. Not betting advice.' : 'Oxiano — Scop educațional. Nu reprezintă sfaturi de pariuri.'}
           </p>
           <a href="/privacy" className="text-xs font-mono text-green-600 hover:text-green-400 mt-1 block">
-            Politică de confidențialitate
+            {lang === 'en' ? 'Privacy Policy' : 'Politică de confidențialitate'}
           </a>
         </div>
       </footer>
