@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { getUser, logout, isVip, getToken, type AuthUser } from '@/lib/auth'
 import PickSkeleton from '@/components/PickSkeleton'
 import { getBetBuilder, saveBetBuilder } from '@/lib/betBuilder'
@@ -789,7 +790,8 @@ function FreePicks({ picks, userTier }: { picks: Pick[], userTier?: string }) {
     const key = `${p.home}-${p.away}`
     if (seenGoals.has(key)) continue
     const btts = p.btts_rate ?? 50
-    if (btts >= 50) {
+    const bttsOdd = parseFloat((100 / (Math.max(btts, 1) * 1.08)).toFixed(2))
+    if (btts >= 50 && bttsOdd >= 1.30) {
       goalCandidates.push({
         pick: p,
         label: lang === 'en' ? 'BTTS — Yes' : 'Ambele marchează',
@@ -1133,6 +1135,7 @@ export default function DailyPage() {
   const [vipStats, setVipStats]       = useState<VipStats | null>(null)
   const [streakResults, setStreakResults] = useState<PickResult[]>([])
   const { lang }                      = useLang()
+  const router                        = useRouter()
 
   useEffect(() => { setUser(getUser()) }, [])
 
@@ -1278,7 +1281,7 @@ export default function DailyPage() {
             </div>
 
             {/* Track Record Banner */}
-            <a href="/track-record" className="block mb-5 fade-in" style={{ textDecoration: 'none' }}>
+            <div className="block mb-5 fade-in cursor-pointer" onClick={() => router.push('/track-record')}>
               <div className="rounded-2xl px-4 py-3 flex items-center justify-between"
                 style={{ background: 'linear-gradient(135deg, rgba(34,197,94,0.08), rgba(16,185,129,0.04))', border: '1px solid rgba(34,197,94,0.2)' }}>
                 <div className="flex items-center gap-3">
@@ -1294,7 +1297,7 @@ export default function DailyPage() {
                 </div>
                 <span className="text-green-400 font-mono text-sm font-bold shrink-0">→</span>
               </div>
-            </a>
+            </div>
 
             {/* 3 Ponturi Gratuite */}
             <FreePicks picks={picks} userTier={user?.tier} />
