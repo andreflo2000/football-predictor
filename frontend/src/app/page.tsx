@@ -673,7 +673,7 @@ function PredictionDisplay({ prediction, fixture, standings, user }: {
   prediction: Prediction; fixture: Fixture; standings: StandingRow[]; user: AuthUser | null
 }) {
   const isFree = !user || user.tier === 'free'
-  const isProOrOwner = user?.tier === 'pro' || user?.tier === 'vip'
+  const isProOrOwner = user?.tier === 'pro' || user?.tier === 'vip' || user?.tier === 'owner'
   const { lang } = useLang()
   const [activeTab, setActiveTab] = useState('markets')
   const pred = prediction.prediction || {}
