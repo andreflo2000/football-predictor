@@ -542,7 +542,7 @@ export default function TrackRecord() {
         {betStats && (
           <div className="mb-6 fade-in">
             <div className="text-[10px] font-bold text-amber-500 uppercase tracking-widest mb-3 text-center">
-              {lang === 'en' ? 'Bet Signals — Live ROI' : 'Semnale Value Bet — ROI Live'}
+              {lang === 'en' ? 'AI Value Signals — Live ROI' : 'Semnale AI — ROI Live'}
             </div>
 
             {/* 4 carduri hero */}

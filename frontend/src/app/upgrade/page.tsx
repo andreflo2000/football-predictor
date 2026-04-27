@@ -27,13 +27,13 @@ const PLANS = (lang: 'ro' | 'en') => [
     ],
     notIncluded: lang === 'en' ? [
       'xG + Elo + Model breakdown',
-      'Value Bet with edge vs. market',
+      'Value Signal with edge vs. market',
       'Full track record + personal ROI',
       'Exclusive VIP picks',
       'Priority support',
     ] : [
       'xG + Elo + Model breakdown',
-      'Value Bet cu avantaj față de piață',
+      'Semnal Valoare cu avantaj față de piață',
       'Track record complet + ROI personal',
       'Picks VIP exclusive',
       'Suport prioritar',

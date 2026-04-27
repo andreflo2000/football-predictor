@@ -135,7 +135,7 @@ export default function BetBuilderPage() {
             {/* Summary card */}
             <div style={{ background: 'linear-gradient(135deg, rgba(15,55,25,0.95), rgba(7,26,12,0.98))', border: '1px solid rgba(34,197,94,0.35)', borderRadius: 16, padding: '24px', marginBottom: 20 }}>
               <div style={{ fontSize: 11, color: '#4ade80', letterSpacing: '0.12em', textTransform: 'uppercase', fontFamily: 'monospace', marginBottom: 16 }}>
-                {lang === 'en' ? 'Bet summary' : 'Sumar bilet'} · {picks.length} {lang === 'en' ? (picks.length === 1 ? 'selection' : 'selections') : (picks.length === 1 ? 'selecție' : 'selecții')}
+                {lang === 'en' ? 'Analysis summary' : 'Sumar analiză'} · {picks.length} {lang === 'en' ? (picks.length === 1 ? 'selection' : 'selections') : (picks.length === 1 ? 'selecție' : 'selecții')}
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
@@ -167,7 +167,7 @@ export default function BetBuilderPage() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
                       <div style={{ fontSize: 12, color: '#a5b4fc', fontWeight: 700, fontFamily: 'monospace' }}>Kelly Criterion</div>
-                      <div style={{ fontSize: 11, color: '#6b7280', marginTop: 2 }}>{lang === 'en' ? 'Optimal stake for ticket' : 'Miza optimă pentru bilet'}</div>
+                      <div style={{ fontSize: 11, color: '#6b7280', marginTop: 2 }}>{lang === 'en' ? 'Optimal allocation (Kelly)' : 'Alocare optimă (Kelly)'}</div>
                     </div>
                     <div style={{ textAlign: 'right' }}>
                       <div style={{ fontSize: 22, fontWeight: 800, color: '#818cf8', fontFamily: 'monospace' }}>{kellyStake} <span style={{ fontSize: 13 }}>RON</span></div>
@@ -183,7 +183,7 @@ export default function BetBuilderPage() {
 
               {hasValueBets && (
                 <div style={{ fontSize: 11, color: '#f59e0b', fontFamily: 'monospace', textAlign: 'center' }}>
-                  💎 {lang === 'en' ? 'Ticket contains VALUE BET selections' : 'Biletul conține selecții VALUE BET'}
+                  💎 {lang === 'en' ? 'Contains HIGH-EDGE VALUE SIGNALS' : 'Conține SEMNALE CU EDGE RIDICAT'}
                 </div>
               )}
             </div>

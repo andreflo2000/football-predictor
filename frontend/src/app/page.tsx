@@ -912,8 +912,8 @@ function PredictionDisplay({ prediction, fixture, standings, user }: {
       {activeTab === 'value' && !isProOrOwner && (
         <div className="card p-6 fade-in text-center" style={{ overflow: 'hidden' }}>
           <div className="text-3xl mb-3">💎</div>
-          <div className="text-sm font-bold text-white mb-2">{lang === 'en' ? 'Value Bet — Pro feature' : 'Value Bet — funcție Pro'}</div>
-          <div className="text-xs text-gray-500 mb-4 px-4">{lang === 'en' ? 'See exactly which bets have positive expected value vs. the bookmaker margin. Exclusive to Pro.' : 'Vezi exact ce pariuri au valoare așteptată pozitivă față de marja bookmaker-ului. Exclusiv Pro.'}</div>
+          <div className="text-sm font-bold text-white mb-2">{lang === 'en' ? 'Value Signal — Pro feature' : 'Semnal Valoare — funcție Pro'}</div>
+          <div className="text-xs text-gray-500 mb-4 px-4">{lang === 'en' ? 'See exactly which selections have positive expected value vs. the market. Exclusive to Pro.' : 'Vezi exact ce selecții au valoare așteptată pozitivă față de piață. Exclusiv Pro.'}</div>
           <a href="/upgrade" className="inline-block px-6 py-2.5 rounded-full text-sm font-bold"
             style={{ background: 'linear-gradient(135deg,#f59e0b,#ef4444)', color: 'white' }}>
             {lang === 'en' ? 'Upgrade to Pro — $20/mo' : 'Upgrade la Pro — 99 RON/lună'}
