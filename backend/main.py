@@ -852,6 +852,36 @@ def admin_bet_signals_list(secret: str = Query(default=""), limit: int = 50):
         raise HTTPException(500, str(e))
 
 
+@app.get("/api/bet-signals/stats")
+def bet_signals_stats():
+    """Statistici publice bet_signals: win rate, ROI, ultimele 10 semnale finalizate."""
+    client = get_client()
+    if not client:
+        return {"total": 0, "wins": 0, "losses": 0, "win_rate": 0, "roi_total": 0, "avg_odds": 0, "recent": []}
+    try:
+        resp = client.table("bet_signals").select("*").order("match_date", desc=True).execute()
+        rows = resp.data or []
+        completed = [r for r in rows if r.get("result") in ("W", "L")]
+        wins = sum(1 for r in completed if r.get("result") == "W")
+        losses = len(completed) - wins
+        roi = round(sum(r.get("profit_loss") or 0 for r in completed), 2)
+        odds_vals = [r["odds_at_signal"] for r in completed if r.get("odds_at_signal")]
+        avg_odds = round(sum(odds_vals) / len(odds_vals), 2) if odds_vals else 0
+        win_rate = round(wins / len(completed) * 100, 1) if completed else 0
+        recent = completed[:10]
+        return {
+            "total": len(completed),
+            "wins": wins,
+            "losses": losses,
+            "win_rate": win_rate,
+            "roi_total": roi,
+            "avg_odds": avg_odds,
+            "recent": recent,
+        }
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+
 # ─────────────────────────────────────────────
 # TRACK RECORD
 # ─────────────────────────────────────────────

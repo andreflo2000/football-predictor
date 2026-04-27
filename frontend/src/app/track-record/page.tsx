@@ -77,6 +77,7 @@ export default function TrackRecord() {
   const [stats, setStats]       = useState<Stats | null>(null)
   const [history, setHistory]   = useState<History | null>(null)
   const [vipStats, setVipStats] = useState<VipStats | null>(null)
+  const [betStats, setBetStats] = useState<any>(null)
   const [loading, setLoading]   = useState(true)
   const [filter, setFilter]     = useState<'all' | 'high' | 'med'>('all')
   const [period, setPeriod]     = useState<'all' | 'week' | 'month' | 'year'>('all')
@@ -87,10 +88,12 @@ export default function TrackRecord() {
       fetch(`${API}/api/track-record`).then(r => r.json()),
       fetch(`${API}/api/track-record/history?limit=200`).then(r => r.json()),
       fetch(`${API}/api/track-record/vip`).then(r => r.json()).catch(() => null),
-    ]).then(([s, h, v]) => {
+      fetch(`${API}/api/bet-signals/stats`).then(r => r.json()).catch(() => null),
+    ]).then(([s, h, v, bs]) => {
       setStats(s)
       setHistory(h)
       if (v) setVipStats(v)
+      if (bs && bs.total > 0) setBetStats(bs)
       setLoading(false)
     }).catch(() => setLoading(false))
   }, [])
@@ -534,6 +537,89 @@ export default function TrackRecord() {
           // Nicio data live înca — nu afisam tabelul cu valori false
           return null
         })()}
+
+        {/* Bet Signals — Live ROI */}
+        {betStats && (
+          <div className="mb-6 fade-in">
+            <div className="text-[10px] font-bold text-amber-500 uppercase tracking-widest mb-3 text-center">
+              {lang === 'en' ? 'Bet Signals — Live ROI' : 'Semnale Value Bet — ROI Live'}
+            </div>
+
+            {/* 4 carduri hero */}
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <div className="card p-4 text-center">
+                <div className="text-[10px] text-gray-500 font-mono uppercase mb-1">Win Rate</div>
+                <div className="text-3xl font-bold font-mono" style={{ color: betStats.win_rate >= 50 ? '#22c55e' : '#ef4444' }}>
+                  {betStats.win_rate}%
+                </div>
+                <div className="text-[10px] text-gray-600 font-mono mt-1">{betStats.wins}W · {betStats.losses}L</div>
+              </div>
+              <div className="card p-4 text-center">
+                <div className="text-[10px] text-gray-500 font-mono uppercase mb-1">ROI Total</div>
+                <div className="text-3xl font-bold font-mono" style={{ color: betStats.roi_total >= 0 ? '#22c55e' : '#ef4444' }}>
+                  {betStats.roi_total >= 0 ? '+' : ''}{betStats.roi_total}u
+                </div>
+                <div className="text-[10px] text-gray-600 font-mono mt-1">{lang === 'en' ? 'units · 1u/signal' : 'unități · 1u/semnal'}</div>
+              </div>
+              <div className="card p-4 text-center">
+                <div className="text-[10px] text-gray-500 font-mono uppercase mb-1">{lang === 'en' ? 'Total Signals' : 'Total Semnale'}</div>
+                <div className="text-3xl font-bold font-mono text-white">{betStats.total}</div>
+                <div className="text-[10px] text-gray-600 font-mono mt-1">{lang === 'en' ? 'finalized' : 'finalizate'}</div>
+              </div>
+              <div className="card p-4 text-center">
+                <div className="text-[10px] text-gray-500 font-mono uppercase mb-1">{lang === 'en' ? 'Avg Odds' : 'Cotă Medie'}</div>
+                <div className="text-3xl font-bold font-mono text-white">{betStats.avg_odds}</div>
+                <div className="text-[10px] text-gray-600 font-mono mt-1">{lang === 'en' ? 'european format' : 'format european'}</div>
+              </div>
+            </div>
+
+            {/* Tabel ultimele 10 semnale */}
+            {betStats.recent?.length > 0 && (
+              <div className="card overflow-hidden mb-3">
+                <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-4 pt-4 pb-2">
+                  {lang === 'en' ? 'Last signals' : 'Ultimele semnale'}
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs font-mono">
+                    <thead>
+                      <tr className="border-b border-white/5">
+                        <th className="text-left px-4 py-2 text-[10px] text-gray-500 font-normal">{lang === 'en' ? 'Match' : 'Meci'}</th>
+                        <th className="text-right px-2 py-2 text-[10px] text-gray-500 font-normal">{lang === 'en' ? 'Odds' : 'Cotă'}</th>
+                        <th className="text-right px-4 py-2 text-[10px] text-gray-500 font-normal">P/L</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {betStats.recent.map((r: any, i: number) => {
+                        const isWin = r.result === 'W'
+                        const color = isWin ? '#22c55e' : '#ef4444'
+                        const matchDate = r.match_date ? new Date(r.match_date).toLocaleDateString('ro-RO', { day: '2-digit', month: '2-digit' }) : '—'
+                        return (
+                          <tr key={i} className="border-b border-white/5 hover:bg-white/2">
+                            <td className="px-4 py-2">
+                              <div className="text-white text-[11px]">{r.home_team} – {r.away_team}</div>
+                              <div className="text-gray-600 text-[10px]">{matchDate} · {r.signal}</div>
+                            </td>
+                            <td className="px-2 py-2 text-right text-gray-400">{r.odds_at_signal ?? '—'}</td>
+                            <td className="px-4 py-2 text-right font-bold" style={{ color }}>
+                              {r.result} {r.profit_loss != null ? `${r.profit_loss >= 0 ? '+' : ''}${r.profit_loss}u` : ''}
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Footer transparenta */}
+            <div className="text-center text-[10px] text-gray-600 font-mono">
+              {lang === 'en'
+                ? 'Track record recorded live with timestamp before each match. No retroactive predictions.'
+                : 'Track record înregistrat live cu timestamp înainte de fiecare meci. Fără predicții retroactive.'}
+            </div>
+          </div>
+        )}
 
         {/* Metodologie */}
         <div className="card p-5 fade-in">
