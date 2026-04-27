@@ -406,7 +406,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ liga: s
           © 2026 Oxiano · Quantitative Football Analysis ·{' '}
           <a href="/despre" style={{ color: '#4b5563' }}>Despre</a> ·{' '}
           <a href="/terms" style={{ color: '#4b5563' }}>Termeni</a> ·{' '}
-          <a href="/privacy" style={{ color: '#4b5563' }}>Confidențialitate</a>
+          <a href="/privacy" style={{ color: '#4b5563' }}>Privacy Policy</a>
         </footer>
       </div>
     </>
