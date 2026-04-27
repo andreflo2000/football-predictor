@@ -1,32 +1,58 @@
 'use client'
 import { useState, useEffect } from 'react'
+import { useLang } from '@/lib/LangContext'
 
-const STEPS = [
-  {
-    icon: '🤖',
-    title: 'Analiză AI în timp real',
-    desc: 'Modelul XGBoost analizează 84 de variabile per meci: formă, Elo, xG, H2H și cote. Antrenat pe 225.000+ meciuri.',
-  },
-  {
-    icon: '📊',
-    title: 'Probabilități, nu certitudini',
-    desc: 'Afișăm probabilități matematice. La confidence ≥65%, acuratețea istorică este ~75% pe piața 1X2. Performanțele trecute nu garantează viitorul.',
-  },
-  {
-    icon: '⚠️',
-    title: 'Scop educațional',
-    desc: 'Oxiano este un instrument de business intelligence și analiză statistică. Nu reprezintă sfat de pariere sau recomandare financiară.',
-  },
-  {
-    icon: '🎯',
-    title: 'Gata de explorat',
-    desc: 'Descoperă predicțiile zilei, generează analize complete pentru orice meci și urmărește performanța ta în Personal Tracker.',
-  },
-]
+const STEPS = {
+  ro: [
+    {
+      icon: '🤖',
+      title: 'Analiză AI în timp real',
+      desc: 'Modelul XGBoost analizează 84 de variabile per meci: formă, Elo, xG, H2H și cote. Antrenat pe 225.000+ meciuri.',
+    },
+    {
+      icon: '📊',
+      title: 'Probabilități, nu certitudini',
+      desc: 'Afișăm probabilități matematice. La confidence ≥65%, acuratețea istorică este ~75% pe piața 1X2. Performanțele trecute nu garantează viitorul.',
+    },
+    {
+      icon: '⚠️',
+      title: 'Scop educațional',
+      desc: 'Oxiano este un instrument de business intelligence și analiză statistică. Nu reprezintă sfat de pariere sau recomandare financiară.',
+    },
+    {
+      icon: '🎯',
+      title: 'Gata de explorat',
+      desc: 'Descoperă predicțiile zilei, generează analize complete pentru orice meci și urmărește performanța ta în Personal Tracker.',
+    },
+  ],
+  en: [
+    {
+      icon: '🤖',
+      title: 'Real-time AI Analysis',
+      desc: 'The XGBoost model analyses 84 variables per match: form, Elo, xG, H2H and odds. Trained on 225,000+ matches.',
+    },
+    {
+      icon: '📊',
+      title: 'Probabilities, not certainties',
+      desc: 'We display mathematical probabilities. At confidence ≥65%, historical accuracy is ~75% on the 1X2 market. Past performance does not guarantee future results.',
+    },
+    {
+      icon: '⚠️',
+      title: 'Educational purpose only',
+      desc: 'Oxiano is a business intelligence and statistical analysis tool. It does not constitute betting advice or financial recommendation.',
+    },
+    {
+      icon: '🎯',
+      title: 'Ready to explore',
+      desc: 'Discover today\'s predictions, generate full analysis for any match and track your performance in the Personal Tracker.',
+    },
+  ],
+}
 
 export default function Onboarding() {
   const [visible, setVisible] = useState(false)
   const [step, setStep]       = useState(0)
+  const { lang }              = useLang()
 
   useEffect(() => {
     const seen = localStorage.getItem('flopi_onboarded')
@@ -40,8 +66,9 @@ export default function Onboarding() {
 
   if (!visible) return null
 
-  const s = STEPS[step]
-  const isLast = step === STEPS.length - 1
+  const steps = STEPS[lang]
+  const s = steps[step]
+  const isLast = step === steps.length - 1
 
   return (
     <div style={{
@@ -59,7 +86,7 @@ export default function Onboarding() {
       }}>
         {/* Progress dots */}
         <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', marginBottom: '24px' }}>
-          {STEPS.map((_, i) => (
+          {steps.map((_, i) => (
             <div key={i} style={{
               width: i === step ? '20px' : '6px', height: '6px',
               borderRadius: '3px', transition: 'all 0.3s',
@@ -98,7 +125,7 @@ export default function Onboarding() {
                 fontSize: '13px', cursor: 'pointer', fontFamily: 'monospace',
               }}
             >
-              Înapoi
+              {lang === 'en' ? 'Back' : 'Înapoi'}
             </button>
           )}
           <button
@@ -111,7 +138,7 @@ export default function Onboarding() {
               cursor: 'pointer', fontFamily: 'monospace',
             }}
           >
-            {isLast ? '🚀 Explorează' : 'Continuă →'}
+            {isLast ? (lang === 'en' ? '🚀 Explore' : '🚀 Explorează') : (lang === 'en' ? 'Continue →' : 'Continuă →')}
           </button>
         </div>
 
@@ -124,7 +151,7 @@ export default function Onboarding() {
             cursor: 'pointer', fontFamily: 'monospace',
           }}
         >
-          Sari peste
+          {lang === 'en' ? 'Skip' : 'Sari peste'}
         </button>
       </div>
     </div>
