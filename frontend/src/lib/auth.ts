@@ -1,4 +1,4 @@
-const API = process.env.NEXT_PUBLIC_API_URL || 'https://football-predictor-api-n9sl.onrender.com'
+const API = process.env.NEXT_PUBLIC_API_URL || 'https://football-predictor-vlpp.onrender.com'
 
 export interface AuthUser {
   id: string
@@ -77,7 +77,7 @@ export async function login(email: string, password: string): Promise<AuthUser> 
 export function logout() {
   localStorage.removeItem('flopi_token')
   localStorage.removeItem('flopi_user')
-  window.location.reload()
+  window.location.href = '/'
 }
 
 export async function refreshTier(): Promise<void> {

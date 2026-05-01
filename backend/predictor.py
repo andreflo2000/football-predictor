@@ -39,7 +39,8 @@ def load_model():
             f"Modelul nu exista! Ruleaza mai intai: python train.py (cautat la: {MODEL_PATH})"
         )
 
-    data = pickle.load(open(MODEL_PATH, "rb"))
+    with open(MODEL_PATH, "rb") as f:
+        data = pickle.load(f)
     _model         = data["model"]
     _features      = data["features"]
     _team_stats    = data.get("team_stats", {})
@@ -137,9 +138,7 @@ def _build_feature_vector(home_team: str, away_team: str,
     elo_prob_h = 1 / (1 + 10 ** (-elo_diff_adj / 400))
     # Draw probability: aproximare empirica
     diff_abs = abs(elo_diff_adj)
-    draw_base = 0.28 * (1 - diff_abs / 1000)
-    draw_base = max(0.05, min(draw_base, 0.32))
-    elo_prob_d = draw_base
+    elo_prob_d = max(0.15, min(0.35, 0.27 * math.exp(-diff_abs / 500)))
 
     # xG proxy
     xg_h = (h["atk_venue5"] + a["def_venue5"]) / 2

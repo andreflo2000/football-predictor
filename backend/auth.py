@@ -16,7 +16,9 @@ from db import get_client
 
 logger = logging.getLogger(__name__)
 
-SECRET_KEY   = os.getenv("JWT_SECRET", "flopi-dev-secret-CHANGE-IN-PROD")
+SECRET_KEY = os.getenv("JWT_SECRET")
+if not SECRET_KEY:
+    raise RuntimeError("JWT_SECRET env var not set — nu porni fara ea")
 ALGORITHM    = "HS256"
 ACCESS_TTL   = 60 * 24 * 7   # 7 zile in minute
 
@@ -106,8 +108,22 @@ def login_user(email: str, password: str) -> dict:
         raise HTTPException(401, "Email sau parola incorecta")
 
     role = user.get("role", "user") or "user"
-    token = _create_token(user["id"], user["email"], user["tier"], role)
-    return {"access_token": token, "token_type": "bearer", "tier": user["tier"], "role": role}
+    tier = user.get("tier", "free") or "free"
+
+    # Downgrade automat daca tier_expires a trecut
+    expires = user.get("tier_expires")
+    if expires and tier not in ("free", "owner"):
+        try:
+            exp_dt = datetime.fromisoformat(expires.replace("Z", "+00:00"))
+            if datetime.now(timezone.utc) > exp_dt:
+                tier = "free"
+                get_client().table("users").update({"tier": "free"}).eq("id", user["id"]).execute()
+                logger.info("login_user: tier downgradat la free pentru %s (expirat %s)", email, expires)
+        except Exception as e:
+            logger.warning("login_user: verificare tier_expires failed: %s", e)
+
+    token = _create_token(user["id"], user["email"], tier, role)
+    return {"access_token": token, "token_type": "bearer", "tier": tier, "role": role}
 
 
 # ─── dependency injection ───────────────────────────────────
@@ -145,8 +161,8 @@ def require_user(user: Optional[dict] = Depends(get_current_user)) -> dict:
 
 
 def require_vip(user: dict = Depends(require_user)) -> dict:
-    """Dependency — arunca 403 daca nu e tier VIP."""
-    if user.get("tier") != "vip":
+    """Dependency — arunca 403 daca nu e tier VIP/Pro/Owner."""
+    if user.get("tier") not in ("vip", "pro", "owner") and user.get("role") not in ("owner", "admin"):
         raise HTTPException(403, "Acces rezervat utilizatorilor VIP")
     return user
 

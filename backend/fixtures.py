@@ -517,7 +517,7 @@ def _fetch_fixtures_per_competition(date_str: str, known_teams: list) -> list:
     TIER_ONE_CODES = ["PL", "BL1", "SA", "PD", "FL1", "DED", "PPL", "CL", "ELC", "BL2"]
     for i, code in enumerate(TIER_ONE_CODES):
         if i > 0:
-            time.sleep(7)  # 10 req/min = 1 req la 6s, 7s pentru siguranta
+            time.sleep(6)  # 10 req/min = 1 req la 6s
         try:
             resp = requests.get(
                 f"{BASE_URL}/competitions/{code}/matches",
