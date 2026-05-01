@@ -3,6 +3,7 @@ OXIANO — Backend API
 """
 
 import os
+import math
 import datetime
 import time
 import logging
@@ -529,8 +530,6 @@ def predict_get(
         result = predict_match(home_team=home_team, away_team=away_team, league_id=league_id)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-    import math
 
     hw = round(result["home_win"] * 100, 1)
     dr = round(result["draw"] * 100, 1)
