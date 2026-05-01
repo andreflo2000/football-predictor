@@ -738,29 +738,34 @@ def train_model(X, y):
     le = LabelEncoder()
     y_enc = le.fit_transform(y)
 
-    # Antrenam EXCLUSIV pe meciuri cu cote
+    # Antrenam pe TOT setul — has_odds e feature explicit, modelul invata ambele populatii
     has_odds_mask = X["has_odds"] == 1
-    X_odds = X[has_odds_mask].reset_index(drop=True)
-    y_odds = y_enc[has_odds_mask.values]
-    print(f"    Meciuri cu cote: {len(X_odds):,} / {len(X):,} ({has_odds_mask.mean()*100:.1f}%)")
+    X_all = X.reset_index(drop=True)
+    y_all = y_enc
+    print(f"    Meciuri cu cote: {has_odds_mask.sum():,} / {len(X):,} ({has_odds_mask.mean()*100:.1f}%)")
+    print(f"    Antrenam pe TOT setul ({len(X_all):,} meciuri) — has_odds ca feature")
 
-    # ── FIX 1: Temporal split (nu random) ─────────────────────────────────
-    # X_odds e deja sortat cronologic (data.sort_values("Date") in preprocess)
-    n = len(X_odds)
-    train_end  = int(n * 0.80)   # 80% train
-    val_start  = int(n * 0.70)   # ultimele 10% din train = validare Optuna + calibrare
+    # ── Temporal split cu set separat de calibrare ─────────────────────────
+    # Train 0-65% | Val 65-75% (Optuna) | Cal 75-80% (calibrare) | Test 80-100%
+    n = len(X_all)
+    val_start  = int(n * 0.65)
+    cal_start  = int(n * 0.75)
+    test_start = int(n * 0.80)
 
-    X_train    = X_odds.iloc[:val_start]
-    y_train    = y_odds[:val_start]
+    X_train    = X_all.iloc[:val_start]
+    y_train    = y_all[:val_start]
 
-    X_val      = X_odds.iloc[val_start:train_end]
-    y_val      = y_odds[val_start:train_end]
+    X_val      = X_all.iloc[val_start:cal_start]
+    y_val      = y_all[val_start:cal_start]
 
-    X_test     = X_odds.iloc[train_end:]
-    y_test     = y_odds[train_end:]
+    X_cal      = X_all.iloc[cal_start:test_start]
+    y_cal      = y_all[cal_start:test_start]
 
-    print(f"    Temporal split: Train={len(X_train)} | Val={len(X_val)} | Test={len(X_test)}")
-    print(f"    (Train 0-70% | Val 70-80% | Test 80-100% cronologic)")
+    X_test     = X_all.iloc[test_start:]
+    y_test     = y_all[test_start:]
+
+    print(f"    Temporal split: Train={len(X_train)} | Val={len(X_val)} | Cal={len(X_cal)} | Test={len(X_test)}")
+    print(f"    (Train 0-65% | Val 65-75% | Cal 75-80% | Test 80-100% cronologic)")
 
     # ── FIX 2: Optuna hyperparameter tuning ───────────────────────────────
     print(f"\n>>> Optuna tuning (50 trials)...")
@@ -811,14 +816,14 @@ def train_model(X, y):
               sample_weight=sw_train,
               verbose=100)
 
-    # ── FIX 4: Calibrare probabilitati pe X_val ───────────────────────────
-    print("\n>>> Calibrez probabilitatile (isotonic regression pe X_val)...")
-    proba_val  = model.predict_proba(X_val)
+    # ── FIX 4: Calibrare probabilitati pe X_cal (set separat!) ──────────────
+    print("\n>>> Calibrez probabilitatile (isotonic regression pe X_cal — set separat de val)...")
+    proba_cal  = model.predict_proba(X_cal)
     n_classes  = len(le.classes_)
     calibrators = []
     for i in range(n_classes):
         ir = IsotonicRegression(out_of_bounds="clip")
-        ir.fit(proba_val[:, i], (y_val == i).astype(int))
+        ir.fit(proba_cal[:, i], (y_cal == i).astype(int))
         calibrators.append(ir)
     calibrated = CalibratedXGB(model, calibrators, n_classes)
 
@@ -847,7 +852,7 @@ def train_model(X, y):
 
     # Top 15 features
     importances = model.feature_importances_
-    feat_names  = list(X_odds.columns)
+    feat_names  = list(X_all.columns)
     top15_idx   = np.argsort(importances)[::-1][:15]
     print(f"\n  Top 15 features:")
     for rank, i in enumerate(top15_idx, 1):
@@ -863,8 +868,8 @@ def train_model(X, y):
             print(f"    >= {thr:.0%}  ->  {acc_thr*100:.2f}%  ({mask.sum():,} meciuri, {mask.mean()*100:.1f}%)")
     print(f"{'='*55}\n")
 
-    # feature_means calculat DOAR pe train+val (fara test)
-    feature_means = X_odds.iloc[:train_end].mean().to_dict()
+    # feature_means calculat DOAR pe train (fara val/cal/test)
+    feature_means = X_all.iloc[:val_start].mean().to_dict()
 
     return calibrated, le, feature_means
 
