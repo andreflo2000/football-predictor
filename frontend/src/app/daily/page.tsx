@@ -7,7 +7,7 @@ import PickSkeleton from '@/components/PickSkeleton'
 import { getBetBuilder, saveBetBuilder } from '@/lib/betBuilder'
 import { useLang } from '@/lib/LangContext'
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://football-predictor-vlpp.onrender.com'
 
 function today() {
   return new Date().toISOString().split('T')[0]
@@ -774,8 +774,10 @@ function FreePicks({ picks, userTier }: { picks: Pick[], userTier?: string }) {
   const isPrivileged = userTier === 'vip' || userTier === 'pro' || userTier === 'owner'
   const validPicks: Pick[] = []
   for (const p of picks) {
-    if (p.home_win === null || p.home_win === undefined) continue
-    if ((p as any).vip_only && !isPrivileged) continue
+    const hasData = p.home_win !== null && p.home_win !== undefined
+    const isVip = (p as any).vip_only
+    if (!hasData && !(isVip && isPrivileged)) continue
+    if (isVip && !isPrivileged) continue
     const key = `${p.home}-${p.away}`
     if (!seen.has(key)) { seen.add(key); validPicks.push(p) }
   }

@@ -293,7 +293,30 @@ def _mask_vip_picks(picks: list, user: Optional[dict]) -> list:
     tier = (user or {}).get("tier", "free")
     role = (user or {}).get("role", "user")
     if tier in ("pro", "vip", "owner") or role in ("owner", "admin"):
-        return picks
+        result = []
+        for p in picks:
+            if p.get("vip_only") and p.get("home_win") is None:
+                # Calculeaza predicția on-the-fly dacă lipseste din DB
+                try:
+                    pred = predict_match(p["home"], p["away"])
+                    p = {**p,
+                         "home_win":         round(pred["home_win"] * 100, 1),
+                         "draw":             round(pred["draw"] * 100, 1),
+                         "away_win":         round(pred["away_win"] * 100, 1),
+                         "prediction":       pred["prediction"],
+                         "prediction_label": {"H": "Victorie gazda", "D": "Egal", "A": "Victorie oaspete"}.get(pred["prediction"], pred["prediction"]),
+                         "confidence":       round(pred["confidence"] * 100, 1),
+                         "confidence_level": pred["confidence_level"],
+                         "high_confidence":  pred["confidence"] >= 0.65,
+                         "home_elo":         pred.get("home_elo"),
+                         "away_elo":         pred.get("away_elo"),
+                         "home_form":        round(pred.get("home_form", 0.4) * 100, 1),
+                         "away_form":        round(pred.get("away_form", 0.4) * 100, 1),
+                    }
+                except Exception as e:
+                    logger.warning("[mask_vip] predict_match failed pentru %s vs %s: %s", p.get("home"), p.get("away"), e)
+            result.append(p)
+        return result
     result = []
     for p in picks:
         if p.get("vip_only"):
