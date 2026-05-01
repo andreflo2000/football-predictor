@@ -1,5 +1,5 @@
 """
-OXIANO — Backend API
+OXIANO — Backend API v2
 """
 
 import os
