@@ -1,10 +1,10 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect } from 'react'
 import { detectLang, t } from '../i18n'
 import { getUser, getToken, authHeaders, login, register, logout as logoutAuth } from '@/lib/auth'
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'https://football-predictor-api-n9sl.onrender.com'
+const API = process.env.NEXT_PUBLIC_API_URL || 'https://football-predictor-vlpp.onrender.com'
 
 interface TrackedMatch {
   id: string; home: string; away: string; league: string; flag: string
@@ -28,15 +28,15 @@ function dateLabel(d: string) {
   const tm = `${tmDate.getFullYear()}-${String(tmDate.getMonth()+1).padStart(2,'0')}-${String(tmDate.getDate()).padStart(2,'0')}`
   const ydDate = new Date(); ydDate.setDate(ydDate.getDate() - 1)
   const yd = `${ydDate.getFullYear()}-${String(ydDate.getMonth()+1).padStart(2,'0')}-${String(ydDate.getDate()).padStart(2,'0')}`
-  if (d === todayStr) return '📅 Azi'
-  if (d === tm) return '📅 Mâine'
-  if (d === yd) return '📅 Ieri'
-  return `📅 ${fmtDate(d)}`
+  if (d === todayStr) return 'ðŸ“… Azi'
+  if (d === tm) return 'ðŸ“… MÃ¢ine'
+  if (d === yd) return 'ðŸ“… Ieri'
+  return `ðŸ“… ${fmtDate(d)}`
 }
 function groupByDate(matches: TrackedMatch[]) {
   const groups: Record<string, TrackedMatch[]> = {}
   for (const m of matches) {
-    const d = m.date || 'fără dată'
+    const d = m.date || 'fÄƒrÄƒ datÄƒ'
     if (!groups[d]) groups[d] = []
     groups[d].push(m)
   }
@@ -57,7 +57,7 @@ function rateColor(rate: number | null) {
   return rate >= 60 ? '#10b981' : rate >= 45 ? '#f59e0b' : '#ef4444'
 }
 
-// ── Auth Form ─────────────────────────────────────────────────────────────────
+// â”€â”€ Auth Form â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function AuthForm({ onAuth }: { onAuth: () => void }) {
   const [mode, setMode] = useState<'login' | 'register'>('login')
   const [email, setEmail] = useState('')
@@ -68,20 +68,20 @@ function AuthForm({ onAuth }: { onAuth: () => void }) {
   const [showPassword, setShowPassword] = useState(false)
 
   async function handleSubmit() {
-    if (!email || !password) { setError('Completează email și parola!'); return }
-    if (password.length < 6) { setError('Parola trebuie să aibă minim 6 caractere!'); return }
+    if (!email || !password) { setError('CompleteazÄƒ email È™i parola!'); return }
+    if (password.length < 6) { setError('Parola trebuie sÄƒ aibÄƒ minim 6 caractere!'); return }
     setLoading(true); setError(''); setSuccess('')
     try {
       if (mode === 'register') {
         await register(email, password)
-        setSuccess('Cont creat! Ești conectat automat.')
+        setSuccess('Cont creat! EÈ™ti conectat automat.')
         onAuth()
       } else {
         await login(email, password)
         onAuth()
       }
     } catch (e: any) {
-      setError(e.message || 'Eroare. Încearcă din nou.')
+      setError(e.message || 'Eroare. ÃŽncearcÄƒ din nou.')
     } finally {
       setLoading(false)
     }
@@ -92,12 +92,12 @@ function AuthForm({ onAuth }: { onAuth: () => void }) {
 
       <main className="max-w-sm mx-auto px-4 py-12">
         <div className="text-center mb-8 fade-in">
-          <div className="text-5xl mb-3">🔐</div>
+          <div className="text-5xl mb-3">ðŸ”</div>
           <h1 className="font-display text-3xl text-white tracking-widest mb-2">
             {mode === 'login' ? 'CONECTARE' : 'CONT NOU'}
           </h1>
           <p className="text-gray-500 text-xs font-mono uppercase tracking-widest">
-            {mode === 'login' ? 'Intră în contul tău personal' : 'Creează-ți contul gratuit'}
+            {mode === 'login' ? 'IntrÄƒ Ã®n contul tÄƒu personal' : 'CreeazÄƒ-È›i contul gratuit'}
           </p>
         </div>
 
@@ -128,7 +128,7 @@ function AuthForm({ onAuth }: { onAuth: () => void }) {
               />
             </div>
 <div>
-              <label className="block text-[10px] text-gray-500 uppercase tracking-widest mb-1">Parolă</label>
+              <label className="block text-[10px] text-gray-500 uppercase tracking-widest mb-1">ParolÄƒ</label>
               <div className="relative">
                 <input
                   className="input-styled"
@@ -142,19 +142,19 @@ function AuthForm({ onAuth }: { onAuth: () => void }) {
                   type="button"
                   onClick={() => setShowPassword(v => !v)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 text-sm">
-                  {showPassword ? '🙈' : '👁️'}
+                  {showPassword ? 'ðŸ™ˆ' : 'ðŸ‘ï¸'}
                 </button>
               </div>
             </div>
 
             {error && (
               <div className="px-3 py-2 rounded-lg bg-red-900/20 border border-red-700/40 text-red-400 text-xs font-mono">
-                ❌ {error}
+                âŒ {error}
               </div>
             )}
             {success && (
               <div className="px-3 py-2 rounded-lg bg-emerald-900/20 border border-emerald-700/40 text-emerald-400 text-xs font-mono">
-                ✅ {success}
+                âœ… {success}
               </div>
             )}
 
@@ -162,27 +162,27 @@ function AuthForm({ onAuth }: { onAuth: () => void }) {
               onClick={handleSubmit}
               disabled={loading}
               className="btn-accent w-full disabled:opacity-50">
-              {loading ? '⏳ Se procesează...' : mode === 'login' ? '🔐 Conectare' : '✅ Creare cont'}
+              {loading ? 'â³ Se proceseazÄƒ...' : mode === 'login' ? 'ðŸ” Conectare' : 'âœ… Creare cont'}
             </button>
           </div>
 
           <div className="mt-4 text-center text-[10px] text-gray-600 font-mono">
-            Contul tău e gratuit și îți păstrează pronosticurile pe orice dispozitiv
+            Contul tÄƒu e gratuit È™i Ã®È›i pÄƒstreazÄƒ pronosticurile pe orice dispozitiv
           </div>
         </div>
       </main>
 
       <footer className="border-t border-blue-900/40 mt-12 py-6">
         <div className="max-w-4xl mx-auto px-4 text-center">
-          <p className="text-xs font-mono text-gray-700">Oxiano — Scop educațional.</p>
-          <a href="/privacy" className="text-xs font-mono text-blue-600 hover:text-blue-400 mt-1 block">Politică de confidențialitate</a>
+          <p className="text-xs font-mono text-gray-700">Oxiano â€” Scop educaÈ›ional.</p>
+          <a href="/privacy" className="text-xs font-mono text-blue-600 hover:text-blue-400 mt-1 block">PoliticÄƒ de confidenÈ›ialitate</a>
         </div>
       </footer>
     </div>
   )
 }
 
-// ── Backend API helpers ───────────────────────────────────────────────────────
+// â”€â”€ Backend API helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function dbLoad(_userId: string): Promise<TrackedMatch[]> {
   try {
     const res = await fetch(`${API}/api/tracked-matches`, { headers: authHeaders() })
@@ -237,7 +237,7 @@ function RateBar({ label, correct, total, highlight }: { label: string; correct:
       <div className="flex justify-between items-center mb-2">
         <span className={`text-xs font-bold uppercase tracking-widest ${highlight ? 'text-blue-300' : 'text-gray-400'}`}>{label}</span>
         <span className="text-2xl font-bold font-mono" style={{ color: rate !== null ? color : '#4b5563' }}>
-          {rate !== null ? `${rate}%` : '—'}
+          {rate !== null ? `${rate}%` : 'â€”'}
         </span>
       </div>
       <div className="h-2 bg-gray-800 rounded-full overflow-hidden mb-1">
@@ -264,7 +264,7 @@ function LeagueStats({ matches }: { matches: TrackedMatch[] }) {
     .sort((a, b) => b.total - a.total).slice(0, 6)
   return (
     <div className="card p-5 mt-4">
-      <div className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-4 text-center">🌍 Performanță pe ligă</div>
+      <div className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-4 text-center">ðŸŒ PerformanÈ›Äƒ pe ligÄƒ</div>
       <div className="space-y-2">
         {sorted.map(({ league, flag, correct, total, rate }) => (
           <div key={league} className="flex items-center gap-3">
@@ -300,7 +300,7 @@ function WeeklyChart({ matches }: { matches: TrackedMatch[] }) {
   const maxTotal = Math.max(...weeks.map(w => w.total), 1)
   return (
     <div className="card p-5 mt-4">
-      <div className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-4 text-center">📈 Performanță săptămânală</div>
+      <div className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-4 text-center">ðŸ“ˆ PerformanÈ›Äƒ sÄƒptÄƒmÃ¢nalÄƒ</div>
       <div className="flex items-end justify-around gap-2" style={{ height: '80px' }}>
         {weeks.map((w, i) => {
           const rate = w.total > 0 ? Math.round((w.correct / w.total) * 100) : null
@@ -309,11 +309,11 @@ function WeeklyChart({ matches }: { matches: TrackedMatch[] }) {
           return (
             <div key={i} className="flex flex-col items-center gap-1 flex-1">
               <div className="text-[9px] font-mono font-bold" style={{ color: rate !== null ? color : '#4b5563' }}>
-                {rate !== null ? `${rate}%` : '—'}
+                {rate !== null ? `${rate}%` : 'â€”'}
               </div>
               <div className="w-full rounded-t-md" style={{ height: `${height}px`, backgroundColor: rate !== null ? color : '#374151', opacity: 0.8 }} />
               <div className="text-[9px] text-gray-600 font-mono">{w.label}</div>
-              <div className="text-[8px] text-gray-700 font-mono">{w.total > 0 ? `${w.correct}/${w.total}` : '—'}</div>
+              <div className="text-[8px] text-gray-700 font-mono">{w.total > 0 ? `${w.correct}/${w.total}` : 'â€”'}</div>
             </div>
           )
         })}
@@ -338,13 +338,13 @@ function StatsPanel({ matches }: { matches: TrackedMatch[] }) {
   return (
     <div className="space-y-4 mb-6">
       <div className="card p-5">
-        <div className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-3 text-center">📊 Statistici generale</div>
+        <div className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-3 text-center">ðŸ“Š Statistici generale</div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
           {[
             { label: 'Total', value: matches.length, color: '#60a5fa' },
-            { label: '✅ Corecte', value: correct, color: '#10b981' },
-            { label: '❌ Greșite', value: wrong, color: '#ef4444' },
-            { label: '⏳ Așteptare', value: pending, color: '#f59e0b' },
+            { label: 'âœ… Corecte', value: correct, color: '#10b981' },
+            { label: 'âŒ GreÈ™ite', value: wrong, color: '#ef4444' },
+            { label: 'â³ AÈ™teptare', value: pending, color: '#f59e0b' },
           ].map(s => (
             <div key={s.label} className="bg-gray-800/50 rounded-xl p-3 text-center">
               <div className="text-2xl font-bold font-mono" style={{ color: s.color }}>{s.value}</div>
@@ -353,9 +353,9 @@ function StatsPanel({ matches }: { matches: TrackedMatch[] }) {
           ))}
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <RateBar label="🏆 Rată totală" correct={correct} total={resolved.length} highlight />
-          <RateBar label={`📅 Ieri (${fmtDate(yesterday)})`} correct={ydResolved.filter(m=>m.result==='correct').length} total={ydResolved.length} />
-          <RateBar label={`📅 Azi (${fmtDate(todayStr)})`} correct={tdResolved.filter(m=>m.result==='correct').length} total={tdResolved.length} />
+          <RateBar label="ðŸ† RatÄƒ totalÄƒ" correct={correct} total={resolved.length} highlight />
+          <RateBar label={`ðŸ“… Ieri (${fmtDate(yesterday)})`} correct={ydResolved.filter(m=>m.result==='correct').length} total={ydResolved.length} />
+          <RateBar label={`ðŸ“… Azi (${fmtDate(todayStr)})`} correct={tdResolved.filter(m=>m.result==='correct').length} total={tdResolved.length} />
         </div>
         {resolved.length >= 2 && (
           <div className="flex items-center gap-2 mt-4 pt-4 border-t border-gray-800">
@@ -363,7 +363,7 @@ function StatsPanel({ matches }: { matches: TrackedMatch[] }) {
             <div className="flex gap-1">
               {[...resolved].slice(-7).map((m, i) => (
                 <div key={i} className={`w-6 h-6 rounded text-xs flex items-center justify-center font-bold ${m.result==='correct' ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'}`}>
-                  {m.result==='correct' ? '✓' : '✗'}
+                  {m.result==='correct' ? 'âœ“' : 'âœ—'}
                 </div>
               ))}
             </div>
@@ -392,8 +392,8 @@ function MatchCard({ match, onResult, onDelete }: {
           <span className="text-[10px] text-gray-500 uppercase tracking-widest">{match.league}</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-[10px] font-mono text-gray-600">{fmtDate(match.date)}{match.time ? ` · ${match.time}` : ''}</span>
-          <button onClick={() => onDelete(match.id)} className="text-gray-700 hover:text-red-500 transition-colors text-xs">✕</button>
+          <span className="text-[10px] font-mono text-gray-600">{fmtDate(match.date)}{match.time ? ` Â· ${match.time}` : ''}</span>
+          <button onClick={() => onDelete(match.id)} className="text-gray-700 hover:text-red-500 transition-colors text-xs">âœ•</button>
         </div>
       </div>
       <div className="flex items-center justify-center gap-3 mb-3">
@@ -409,16 +409,16 @@ function MatchCard({ match, onResult, onDelete }: {
       <div className="flex gap-2">
         <button onClick={() => onResult(match.id, isCorrect ? 'pending' : 'correct')}
           className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${isCorrect ? 'bg-emerald-600 text-white' : 'bg-gray-800 text-gray-500 hover:bg-emerald-900/40 hover:text-emerald-400 border border-gray-700'}`}>
-          ✅ Corect
+          âœ… Corect
         </button>
         <button onClick={() => onResult(match.id, isWrong ? 'pending' : 'wrong')}
           className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${isWrong ? 'bg-red-600 text-white' : 'bg-gray-800 text-gray-500 hover:bg-red-900/40 hover:text-red-400 border border-gray-700'}`}>
-          ❌ Greșit
+          âŒ GreÈ™it
         </button>
         {!isPending && (
           <button onClick={() => onResult(match.id, 'pending')}
             className="px-3 py-2 rounded-lg text-xs text-gray-600 hover:text-gray-400 bg-gray-800/50 border border-gray-800 transition-all"
-            title="Resetează">↩</button>
+            title="ReseteazÄƒ">â†©</button>
         )}
       </div>
     </div>
@@ -440,16 +440,16 @@ function ArchiveSection({ matches, onResult, onDelete }: {
     <div className="mt-10 fade-in">
       <div className="flex items-center gap-3 mb-4">
         <div className="h-px flex-1 bg-gray-800" />
-        <span className="text-[10px] font-bold text-gray-600 uppercase tracking-widest">Arhivă</span>
+        <span className="text-[10px] font-bold text-gray-600 uppercase tracking-widest">ArhivÄƒ</span>
         <div className="h-px flex-1 bg-gray-800" />
       </div>
       <button onClick={() => setOpen(v => !v)}
         className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-gray-800/40 border border-gray-700/40 hover:border-gray-600/60 transition-all group">
         <div className="flex items-center gap-3">
-          <span className="text-lg">🗄️</span>
+          <span className="text-lg">ðŸ—„ï¸</span>
           <div className="text-left">
-            <div className="text-sm font-bold text-gray-300 group-hover:text-white">Arhivă meciuri finalizate</div>
-            <div className="text-[10px] text-gray-600 font-mono mt-0.5">{matches.length} meciuri · {correct} ✅ · {matches.length - correct} ❌</div>
+            <div className="text-sm font-bold text-gray-300 group-hover:text-white">ArhivÄƒ meciuri finalizate</div>
+            <div className="text-[10px] text-gray-600 font-mono mt-0.5">{matches.length} meciuri Â· {correct} âœ… Â· {matches.length - correct} âŒ</div>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -457,7 +457,7 @@ function ArchiveSection({ matches, onResult, onDelete }: {
             style={{ backgroundColor: `${rateColor(rate)}20`, color: rateColor(rate), border: `1px solid ${rateColor(rate)}40` }}>
             {rate}%
           </span>
-          <span className={`text-gray-500 text-sm transition-transform duration-300 ${open ? 'rotate-180' : ''}`}>▼</span>
+          <span className={`text-gray-500 text-sm transition-transform duration-300 ${open ? 'rotate-180' : ''}`}>â–¼</span>
         </div>
       </button>
       {open && (
@@ -485,23 +485,23 @@ function ArchiveSection({ matches, onResult, onDelete }: {
 
 function AddModal({ onAdd, onClose }: { onAdd: (m: TrackedMatch) => void; onClose: () => void }) {
   const [form, setForm] = useState({
-    home: '', away: '', league: '', flag: '⚽',
+    home: '', away: '', league: '', flag: 'âš½',
     date: today(), time: '', prediction: '', market: '1X2',
   })
   const flagOptions: Record<string, string> = {
-    '🏴󠁧󠁢󠁥󠁮󠁧󠁿': 'Premier League', '🇪🇸': 'La Liga', '🇩🇪': 'Bundesliga',
-    '🇮🇹': 'Serie A', '🇫🇷': 'Ligue 1', '🏆': 'Champions League',
-    '🥈': 'Europa League', '🥉': 'Conference League', '🇷🇴': 'Superliga',
-    '🇵🇹': 'Primeira Liga', '🇳🇱': 'Eredivisie', '⚽': 'Altă ligă',
+    'ðŸ´ó §ó ¢ó ¥ó ®ó §ó ¿': 'Premier League', 'ðŸ‡ªðŸ‡¸': 'La Liga', 'ðŸ‡©ðŸ‡ª': 'Bundesliga',
+    'ðŸ‡®ðŸ‡¹': 'Serie A', 'ðŸ‡«ðŸ‡·': 'Ligue 1', 'ðŸ†': 'Champions League',
+    'ðŸ¥ˆ': 'Europa League', 'ðŸ¥‰': 'Conference League', 'ðŸ‡·ðŸ‡´': 'Superliga',
+    'ðŸ‡µðŸ‡¹': 'Primeira Liga', 'ðŸ‡³ðŸ‡±': 'Eredivisie', 'âš½': 'AltÄƒ ligÄƒ',
   }
   const markets = ['1X2','Over 2.5','Under 2.5','BTTS Da','BTTS Nu',
-    'Șansă dublă 1X','Șansă dublă X2','Over 1.5','Over 3.5','Cornere +9.5','Alt pariu']
+    'È˜ansÄƒ dublÄƒ 1X','È˜ansÄƒ dublÄƒ X2','Over 1.5','Over 3.5','Cornere +9.5','Alt pariu']
   function submit() {
     if (!form.home || !form.away || !form.prediction) return
     onAdd({
       id: Date.now().toString(),
       home: form.home, away: form.away,
-      league: form.league || flagOptions[form.flag] || 'Ligă',
+      league: form.league || flagOptions[form.flag] || 'LigÄƒ',
       flag: form.flag, date: form.date, time: form.time,
       prediction: form.prediction, market: form.market,
       home_win: 45, draw: 27, away_win: 28,
@@ -513,30 +513,30 @@ function AddModal({ onAdd, onClose }: { onAdd: (m: TrackedMatch) => void; onClos
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="card p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-5">
-          <h3 className="font-display text-lg text-white tracking-wide">➕ Adaugă pronostic</h3>
-          <button onClick={onClose} className="text-gray-600 hover:text-white text-xl">✕</button>
+          <h3 className="font-display text-lg text-white tracking-wide">âž• AdaugÄƒ pronostic</h3>
+          <button onClick={onClose} className="text-gray-600 hover:text-white text-xl">âœ•</button>
         </div>
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-[10px] text-gray-500 uppercase tracking-widest mb-1">Ligă</label>
+              <label className="block text-[10px] text-gray-500 uppercase tracking-widest mb-1">LigÄƒ</label>
               <select className="select-styled text-sm" value={form.flag}
                 onChange={e => setForm({...form, flag: e.target.value, league: flagOptions[e.target.value]||''})}>
                 {Object.entries(flagOptions).map(([f,l]) => <option key={f} value={f}>{f} {l}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-[10px] text-gray-500 uppercase tracking-widest mb-1">Ligă (custom)</label>
+              <label className="block text-[10px] text-gray-500 uppercase tracking-widest mb-1">LigÄƒ (custom)</label>
               <input className="input-styled text-sm" value={form.league}
                 onChange={e => setForm({...form, league: e.target.value})} placeholder="Premier League..." />
             </div>
           </div>
           <div>
-            <label className="block text-[10px] text-gray-500 uppercase tracking-widest mb-1">Echipă gazdă</label>
+            <label className="block text-[10px] text-gray-500 uppercase tracking-widest mb-1">EchipÄƒ gazdÄƒ</label>
             <input className="input-styled" value={form.home} onChange={e => setForm({...form, home: e.target.value})} placeholder="Arsenal" />
           </div>
           <div>
-            <label className="block text-[10px] text-gray-500 uppercase tracking-widest mb-1">Echipă oaspete</label>
+            <label className="block text-[10px] text-gray-500 uppercase tracking-widest mb-1">EchipÄƒ oaspete</label>
             <input className="input-styled" value={form.away} onChange={e => setForm({...form, away: e.target.value})} placeholder="Chelsea" />
           </div>
           <div className="grid grid-cols-2 gap-2">
@@ -559,14 +559,14 @@ function AddModal({ onAdd, onClose }: { onAdd: (m: TrackedMatch) => void; onClos
             </select>
           </div>
           <div>
-            <label className="block text-[10px] text-gray-500 uppercase tracking-widest mb-1">Pronosticul tău</label>
+            <label className="block text-[10px] text-gray-500 uppercase tracking-widest mb-1">Pronosticul tÄƒu</label>
             <input className="input-styled" value={form.prediction} onChange={e => setForm({...form, prediction: e.target.value})}
-              placeholder="ex: Arsenal câștigă 58% | Over 2.5 — 67%" />
+              placeholder="ex: Arsenal cÃ¢È™tigÄƒ 58% | Over 2.5 â€” 67%" />
           </div>
         </div>
         <button onClick={submit} disabled={!form.home || !form.away || !form.prediction}
           className="btn-accent w-full mt-5 disabled:opacity-40 disabled:cursor-not-allowed">
-          ✅ Adaugă pronostic
+          âœ… AdaugÄƒ pronostic
         </button>
       </div>
     </div>
@@ -612,12 +612,12 @@ export default function Weekly() {
     setMatches(prev => prev.map(m => m.id===id ? {...m, result} : m))
   }
   async function deleteMatch(id: string) {
-    if (!confirm('Ștergi acest pronostic?')) return
+    if (!confirm('È˜tergi acest pronostic?')) return
     await dbDelete(id)
     setMatches(prev => prev.filter(m => m.id!==id))
   }
   async function clearAll() {
-    if (!confirm('Ștergi toate pronosticurile?')) return
+    if (!confirm('È˜tergi toate pronosticurile?')) return
     await fetch(`${API}/api/tracked-matches`, { method: 'DELETE', headers: authHeaders() })
     setMatches([])
   }
@@ -627,7 +627,7 @@ export default function Weekly() {
 
   if (!mounted) return null
 
-  // Dacă nu e logat, arătăm formularul de autentificare
+  // DacÄƒ nu e logat, arÄƒtÄƒm formularul de autentificare
   if (!user) return <AuthForm onAuth={() => {
     const currentUser = getUser()
     setUser(currentUser)
@@ -652,14 +652,14 @@ export default function Weekly() {
             <img src="/logo.png" alt="Oxiano" className="w-20 h-20" />
           </div>
           <h1 className="font-display text-4xl sm:text-5xl text-white tracking-widest mb-1">{tr.weekly_title}</h1>
-          <div className="text-blue-400 text-xs font-mono uppercase tracking-[0.25em] mb-1">Oxiano · Quantitative Analysis</div>
+          <div className="text-blue-400 text-xs font-mono uppercase tracking-[0.25em] mb-1">Oxiano Â· Quantitative Analysis</div>
         </div>
 
         <StatsPanel matches={matches} />
 
         {loading && (
           <div className="text-center py-10">
-            <div className="text-blue-500 text-xs font-mono animate-pulse">⏳ Se încarcă pronosticurile...</div>
+            <div className="text-blue-500 text-xs font-mono animate-pulse">â³ Se Ã®ncarcÄƒ pronosticurile...</div>
           </div>
         )}
 
@@ -687,7 +687,7 @@ export default function Weekly() {
                 {matches.length>0 && (
                   <button onClick={clearAll}
                     className="px-3 py-1.5 rounded-lg text-xs text-gray-600 hover:text-red-400 bg-gray-800/50 border border-gray-800 transition-all">
-                    🗑 Șterge tot
+                    ðŸ—‘ È˜terge tot
                   </button>
                 )}
                 <button onClick={() => setShowAdd(true)} className="btn-accent px-4 py-1.5 text-sm">
@@ -712,7 +712,7 @@ export default function Weekly() {
               ))
             ) : (
               <div className="text-center py-20 fade-in">
-                <div className="text-6xl opacity-10 mb-4">📊</div>
+                <div className="text-6xl opacity-10 mb-4">ðŸ“Š</div>
                 <p className="font-display text-xl text-gray-600 tracking-widest mb-2">{tr.no_predictions}</p>
                 <p className="text-gray-700 text-sm font-mono mb-6">{filter==='all' ? tr.no_predictions_sub : tr.filter_all}</p>
                 {filter==='all' && (
@@ -729,7 +729,7 @@ export default function Weekly() {
       <footer className="border-t border-blue-900/40 mt-12 py-6">
         <div className="max-w-4xl mx-auto px-4 text-center">
           <p className="text-xs font-mono text-gray-700">{tr.footer}</p>
-          <a href="/privacy" className="text-xs font-mono text-blue-600 hover:text-blue-400 mt-1 block">Politică de confidențialitate</a>
+          <a href="/privacy" className="text-xs font-mono text-blue-600 hover:text-blue-400 mt-1 block">PoliticÄƒ de confidenÈ›ialitate</a>
         </div>
       </footer>
 
@@ -737,3 +737,4 @@ export default function Weekly() {
     </div>
   )
 }
+

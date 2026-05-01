@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 
 export const revalidate = 3600 // Regenerare ISR la fiecare ora
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://football-predictor-api-n9sl.onrender.com'
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://football-predictor-vlpp.onrender.com'
 
 const LEAGUES: Record<string, {
   name: string

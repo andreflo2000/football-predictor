@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import { login, getToken, getUser, isAdmin } from '@/lib/auth'
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'https://football-predictor-api-n9sl.onrender.com'
+const API = process.env.NEXT_PUBLIC_API_URL || 'https://football-predictor-vlpp.onrender.com'
 
 interface UserRow {
   id: number
