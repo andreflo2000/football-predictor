@@ -7,7 +7,7 @@ import axios from 'axios'
 import { useLang } from '@/lib/LangContext'
 import { getUser, logout, refreshTier, type AuthUser } from '@/lib/auth'
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://football-predictor-vlpp.onrender.com'
 
 function getNextDays(n: number): string[] {
   const days = []
@@ -1187,6 +1187,7 @@ function Home() {
   const [standings, setStandings] = useState<StandingRow[]>([])
   const [loading, setLoading] = useState(false)
   const [loadingFixtures, setLoadingFixtures] = useState(false)
+  const [predError, setPredError] = useState<string | null>(null)
 
   const nextDays = getNextDays(10)
 
@@ -1230,21 +1231,25 @@ function Home() {
     }).finally(() => setLoadingFixtures(false))
   }, [selectedLeague])
 
-  const predict = async () => {
-    if (!selectedFixture) return
-    setLoading(true); setPrediction(null)
+  const predict = async (fix?: Fixture) => {
+    const fixture = fix || selectedFixture
+    if (!fixture) return
+    setLoading(true); setPrediction(null); setPredError(null)
     try {
       const r = await axios.get(`${API_BASE}/api/predict`, {
         params: {
-          home_team: selectedFixture.home,
-          away_team: selectedFixture.away,
+          home_team: fixture.home,
+          away_team: fixture.away,
           league_id: selectedLeague || 39,
-          home_team_id: selectedFixture.home_id,
-          away_team_id: selectedFixture.away_id,
+          home_team_id: fixture.home_id,
+          away_team_id: fixture.away_id,
         }
       })
       setPrediction(r.data)
-    } catch { } finally { setLoading(false) }
+    } catch (e: any) {
+      const detail = e?.response?.data?.detail || e?.message || 'Eroare la generarea predicției'
+      setPredError(detail)
+    } finally { setLoading(false) }
   }
 
   const confGroups = ['UEFA', 'CONMEBOL', 'CONCACAF', 'AFC', 'CAF', 'OFC']
@@ -1352,6 +1357,8 @@ function Home() {
                     const f = val !== '' ? fixtures[Number(val)] : null
                     setSelectedFixture(f || null)
                     setPrediction(null)
+                    setPredError(null)
+                    if (f) predict(f)
                   }}
                   disabled={fixtures.length === 0}>
                   <option value="">{fixtures.length === 0 ? tr.select_match_placeholder : tr.select_match_placeholder2}</option>
@@ -1385,7 +1392,7 @@ function Home() {
               )}
             </div>
             <div>
-              <button className="btn-accent w-full" onClick={predict} disabled={!selectedFixture || loading}>
+              <button className="btn-accent w-full" onClick={() => predict()} disabled={!selectedFixture || loading}>
                 {loading ? '⏳ ...' : tr.predict_btn}
               </button>
               {selectedFixture && (
@@ -1394,12 +1401,17 @@ function Home() {
                   {selectedFixture.time && ` · 🕐 ${selectedFixture.time}`}
                 </p>
               )}
+              {predError && (
+                <div style={{ marginTop: 10, padding: '10px 14px', borderRadius: 8, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', color: '#f87171', fontSize: 12, fontFamily: 'monospace', textAlign: 'center' }}>
+                  ⚠️ {predError}
+                </div>
+              )}
             </div>
           </div>
 
           {standings.length > 0 && !prediction && !loading && (
             <div className="mt-5 pt-5 border-t border-gray-800">
-              <div className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-3 text-center">🏆 Clasament · Selectează un meci pentru predicție</div>
+              <div className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-3 text-center">🏆 Clasament · Selectează un meci din lista de sus</div>
               <StandingsTable standings={standings} highlightTeams={[]} />
             </div>
           )}
