@@ -28,6 +28,17 @@ def compute_and_store_picks(date: str = None) -> dict:
 
     known    = get_known_teams()
     fixtures = get_today_fixtures(date=target, known_teams=known)
+
+    # Daca nu sunt meciuri pentru data ceruta si e AZI, fa look-ahead pana la 4 zile
+    if not fixtures and target == datetime.date.today().isoformat():
+        for _offset in range(1, 5):
+            _lookahead = (datetime.date.today() + datetime.timedelta(days=_offset)).isoformat()
+            fixtures = get_today_fixtures(date=_lookahead, known_teams=known)
+            if fixtures:
+                logger.info("[ingestion] Look-ahead: %d meciuri gasite pentru %s", len(fixtures), _lookahead)
+                target = _lookahead
+                break
+
     actual_date = fixtures[0].get("date", target) if fixtures else target
     # Trimite doar ligile cu meciuri azi — reduce consumul de quota The-Odds-API
     active_comps = list({f.get("competition_code") for f in fixtures if f.get("competition_code")})
@@ -114,9 +125,9 @@ def compute_and_store_picks(date: str = None) -> dict:
         "computed_at":    datetime.datetime.utcnow().isoformat(),
     }
 
-    # Salveaza in Supabase daily_picks (upsert pe pick_date)
+    # Salveaza in Supabase daily_picks (upsert pe pick_date) — doar daca exista picks reale
     client = get_client()
-    if client:
+    if client and picks:
         try:
             client.table("daily_picks").upsert({
                 "pick_date":     actual_date,
@@ -128,9 +139,10 @@ def compute_and_store_picks(date: str = None) -> dict:
         except Exception as e:
             logger.error("[ingestion] Supabase upsert failed: %s", e)
 
-    # Invalideaza cache Redis ca sa serveasca datele noi
-    redis_cache.delete("daily", f"{target}:0.5")
-    redis_cache.delete("daily", f"{actual_date}:0.5")
+    # Invalideaza cache Redis pentru toate pragurile de confidence folosite
+    for _mc in ("0.5", "0.45", "0.55", "0.6", "0.65"):
+        redis_cache.delete("daily", f"{target}:{_mc}")
+        redis_cache.delete("daily", f"{actual_date}:{_mc}")
 
     logger.info("[ingestion] Complet: %d picks pentru %s", len(picks), actual_date)
 

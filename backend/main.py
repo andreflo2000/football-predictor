@@ -330,21 +330,33 @@ def daily_picks(
     - >= 0.55  →  MEDIUM  (acuratete reala ~65%)
     - < 0.55   →  LOW     (acuratete reala ~57%)
     """
-    target = date or datetime.date.today().isoformat()
+    target    = date or datetime.date.today().isoformat()
+    today_str = datetime.date.today().isoformat()
 
     cache_key = f"{target}:{min_confidence}"
 
-    # 1. Redis cache (cel mai rapid)
+    # 1. Redis cache (cel mai rapid) — ignora intrari goale
     cached = redis_cache.get("daily", cache_key)
-    if cached:
+    if cached and cached.get("total_picks", 0) > 0:
         return {**cached, "picks": _mask_vip_picks(cached["picks"], user)}
 
-    # 2. Supabase daily_picks (pre-calculat de scheduler)
-    db_data = load_picks_from_db(target)
-    if db_data:
-        # Aplica filtrul de confidence
+    # 2. Supabase daily_picks — look-ahead pana la 4 zile cand nu e data explicita
+    # Daca azi nu are meciuri (sfarsit de etapa, zi libera), servim urmatoarea zi cu meciuri
+    search_dates = [target]
+    if not date:
+        for i in range(1, 5):
+            search_dates.append(
+                (datetime.date.today() + datetime.timedelta(days=i)).isoformat()
+            )
+
+    for search_date in search_dates:
+        db_data = load_picks_from_db(search_date)
+        if not db_data or db_data.get("total_picks", 0) == 0:
+            continue
         all_picks = db_data["picks"]
         filtered  = [p for p in all_picks if p["confidence"] >= min_confidence * 100]
+        if not filtered and search_date != target:
+            continue  # confidence filter elimina tot — incearca urmatoarea data
         db_data["picks"]       = filtered
         db_data["total_picks"] = len(filtered)
         db_data["high_conf"]   = len([p for p in filtered if p["confidence"] >= 65])
@@ -353,8 +365,7 @@ def daily_picks(
         redis_cache.set("daily", cache_key, db_data, ttl=CACHE_TTL_DAILY)
         return {**db_data, "picks": _mask_vip_picks(db_data["picks"], user)}
 
-    # 3. Calcul live pentru azi si date viitoare (daca scheduleru nu a rulat inca)
-    today_str = datetime.date.today().isoformat()
+    # 3. Calcul live (daca scheduleru nu a rulat inca) — cu look-ahead intern in ingestion
     if target >= today_str:
         try:
             live_data = compute_and_store_picks(target)
