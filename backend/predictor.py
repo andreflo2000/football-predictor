@@ -315,7 +315,6 @@ def _build_feature_vector(home_team: str, away_team: str,
     feat["season_progress"] = season_month / 11.0
 
     # Draw-specific features
-    import math
     feat["balanced"]    = math.exp(-abs(elo_diff) / 150)
     feat["low_scoring"] = 1.0 / (xg_h + xg_a + 0.5)
     feat["xg_sim"]      = math.exp(-abs(xg_diff) * 2)
