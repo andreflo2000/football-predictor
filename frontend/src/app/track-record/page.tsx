@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 import { useState, useEffect } from 'react'
 import { useLang } from '@/lib/LangContext'
 
@@ -56,12 +56,12 @@ interface History {
   }
 }
 
-// Backtesting referinÈ›Äƒ (out-of-sample Â· afiÈ™at cÃ¢nd nu avem suficiente date live)
+// Backtesting referință (out-of-sample · afișat când nu avem suficiente date live)
 const BACKTEST_REF = [
-  { label: 'Confidence > 70%',     accuracy: 78.5, sampleRo: '~0.8 picks/zi Â· backtest', sampleEn: '~0.8 picks/day Â· backtest', color: '#22c55e' },
-  { label: 'Confidence â‰¥ 65%',     accuracy: 74.1, sampleRo: '~1.1 picks/zi Â· backtest', sampleEn: '~1.1 picks/day Â· backtest', color: '#4ade80' },
-  { label: 'Confidence â‰¥ 60%',     accuracy: 66.4, sampleRo: '~1.5 picks/zi Â· backtest', sampleEn: '~1.5 picks/day Â· backtest', color: '#f59e0b' },
-  { label_ro: 'Toate predicÈ›iile', label_en: 'All predictions', accuracy: 54.6, sampleRo: '1.105 meciuri Â· Oct 2025â€“Mar 2026', sampleEn: '1,105 matches Â· Oct 2025â€“Mar 2026', color: '#818cf8' },
+  { label: 'Confidence > 70%',     accuracy: 78.5, sampleRo: '~0.8 picks/zi · backtest', sampleEn: '~0.8 picks/day · backtest', color: '#22c55e' },
+  { label: 'Confidence ≥ 65%',     accuracy: 74.1, sampleRo: '~1.1 picks/zi · backtest', sampleEn: '~1.1 picks/day · backtest', color: '#4ade80' },
+  { label: 'Confidence ≥ 60%',     accuracy: 66.4, sampleRo: '~1.5 picks/zi · backtest', sampleEn: '~1.5 picks/day · backtest', color: '#f59e0b' },
+  { label_ro: 'Toate predicțiile', label_en: 'All predictions', accuracy: 54.6, sampleRo: '1.105 meciuri · Oct 2025–Mar 2026', sampleEn: '1,105 matches · Oct 2025–Mar 2026', color: '#818cf8' },
 ]
 
 interface VipStats {
@@ -136,18 +136,18 @@ export default function TrackRecord() {
 
         {/* Header */}
         <div className="text-center mb-8 fade-in">
-          <div className="text-4xl mb-2">ðŸ“Š</div>
+          <div className="text-4xl mb-2">📊</div>
           <h1 className="font-display text-4xl text-white mb-1" style={{ letterSpacing: '0.05em' }}>
-            {lang === 'en' ? 'HISTORY & PERFORMANCE' : 'ISTORIC & PERFORMANÈšÄ‚'}
+            {lang === 'en' ? 'HISTORY & PERFORMANCE' : 'ISTORIC & PERFORMANȚĂ'}
           </h1>
           <div className="text-green-400 text-xs font-mono uppercase tracking-widest mb-1">
-            {lang === 'en' ? 'Full transparency Â· Real data Â· Updated daily' : 'TransparenÈ›Äƒ totalÄƒ Â· Date reale Â· Actualizat zilnic'}
+            {lang === 'en' ? 'Full transparency · Real data · Updated daily' : 'Transparență totală · Date reale · Actualizat zilnic'}
           </div>
 
           <p className="text-gray-600 text-xs font-mono">
             {lang === 'en'
-              ? `Out-of-sample backtest 1,105 matches Â· Oct 2025â€“Mar 2026 Â· Live tracking since ${stats?.tracking_since || 'April 2026'}`
-              : `Backtest out-of-sample 1.105 meciuri Â· Oct 2025â€“Mar 2026 Â· Tracking live din ${stats?.tracking_since || 'Aprilie 2026'}`}
+              ? `Out-of-sample backtest 1,105 matches · Oct 2025–Mar 2026 · Live tracking since ${stats?.tracking_since || 'April 2026'}`
+              : `Backtest out-of-sample 1.105 meciuri · Oct 2025–Mar 2026 · Tracking live din ${stats?.tracking_since || 'Aprilie 2026'}`}
           </p>
         </div>
 
@@ -155,7 +155,7 @@ export default function TrackRecord() {
         {hasLiveData && (
           <div className="flex flex-wrap gap-2 mb-5 fade-in">
             <div className="flex gap-1 flex-1">
-              {([['all', lang === 'en' ? 'All time' : 'Toate'], ['week', lang === 'en' ? 'Week' : 'SÄƒptÄƒmÃ¢nÄƒ'], ['month', lang === 'en' ? 'Month' : 'LunÄƒ'], ['year', lang === 'en' ? 'Year' : 'An']] as [typeof period, string][]).map(([key, label]) => (
+              {([['all', lang === 'en' ? 'All time' : 'Toate'], ['week', lang === 'en' ? 'Week' : 'Săptămână'], ['month', lang === 'en' ? 'Month' : 'Lună'], ['year', lang === 'en' ? 'Year' : 'An']] as [typeof period, string][]).map(([key, label]) => (
                 <button key={key} onClick={() => setPeriod(key)}
                   className="px-3 py-1.5 rounded-lg text-[11px] font-bold font-mono transition-all"
                   style={{
@@ -176,14 +176,14 @@ export default function TrackRecord() {
           </div>
         )}
 
-        {/* ðŸ‘‘ VIP Picks â€” secÈ›iune prominentÄƒ */}
+        {/* 👑 VIP Picks — secțiune prominentă */}
         <div className="card p-5 mb-6 fade-in" style={{ border: '1px solid rgba(234,179,8,0.35)', background: 'rgba(234,179,8,0.04)' }}>
           <div className="flex items-center gap-2 mb-4">
-            <span className="text-xl">ðŸ‘‘</span>
+            <span className="text-xl">👑</span>
             <div>
               <div className="text-sm font-bold text-amber-400 uppercase tracking-widest">VIP Picks Performance</div>
               <div className="text-[10px] text-gray-500 font-mono">
-                {lang === 'en' ? 'Confidence â‰¥75% Â· Top-tier selections Â· Pro plan exclusive' : 'Confidence â‰¥75% Â· SelecÈ›ii de top Â· Exclusiv plan Pro'}
+                {lang === 'en' ? 'Confidence ≥75% · Top-tier selections · Pro plan exclusive' : 'Confidence ≥75% · Selecții de top · Exclusiv plan Pro'}
               </div>
             </div>
           </div>
@@ -193,24 +193,24 @@ export default function TrackRecord() {
             <div className="rounded-xl p-3 text-center" style={{ background: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.2)' }}>
               <div className="text-2xl font-bold font-mono text-amber-400">78.5%</div>
               <div className="text-[10px] text-gray-500 font-mono mt-1">
-                {lang === 'en' ? 'Accuracy (conf >70%)' : 'AcurateÈ›e (conf >70%)'}
+                {lang === 'en' ? 'Accuracy (conf >70%)' : 'Acuratețe (conf >70%)'}
               </div>
               <div className="text-[9px] text-gray-700 font-mono mt-0.5">backtest 1.105 meciuri</div>
             </div>
             <div className="rounded-xl p-3 text-center" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
               <div className="text-2xl font-bold font-mono text-emerald-400">
-                {vipStats && vipStats.total > 0 ? `${vipStats.accuracy}%` : 'â€”'}
+                {vipStats && vipStats.total > 0 ? `${vipStats.accuracy}%` : '—'}
               </div>
               <div className="text-[10px] text-gray-500 font-mono mt-1">
-                {lang === 'en' ? 'Live accuracy (all time)' : 'AcurateÈ›e live (total)'}
+                {lang === 'en' ? 'Live accuracy (all time)' : 'Acuratețe live (total)'}
               </div>
               <div className="text-[9px] text-gray-700 font-mono mt-0.5">
-                {vipStats && vipStats.total > 0 ? `${vipStats.wins}/${vipStats.total} picks` : lang === 'en' ? 'collecting data...' : 'se colecteazÄƒ date...'}
+                {vipStats && vipStats.total > 0 ? `${vipStats.wins}/${vipStats.total} picks` : lang === 'en' ? 'collecting data...' : 'se colectează date...'}
               </div>
             </div>
             <div className="rounded-xl p-3 text-center" style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)' }}>
               <div className="text-2xl font-bold font-mono text-blue-400">
-                {vipStats && vipStats.this_month_total > 0 ? `${vipStats.this_month_accuracy}%` : 'â€”'}
+                {vipStats && vipStats.this_month_total > 0 ? `${vipStats.this_month_accuracy}%` : '—'}
               </div>
               <div className="text-[10px] text-gray-500 font-mono mt-1">
                 {lang === 'en' ? 'This month' : 'Luna aceasta'}
@@ -218,7 +218,7 @@ export default function TrackRecord() {
               <div className="text-[9px] text-gray-700 font-mono mt-0.5">
                 {vipStats && vipStats.this_month_total > 0
                   ? `${vipStats.this_month_wins}/${vipStats.this_month_total} picks`
-                  : lang === 'en' ? 'no results yet' : 'fÄƒrÄƒ rezultate Ã®ncÄƒ'}
+                  : lang === 'en' ? 'no results yet' : 'fără rezultate încă'}
               </div>
             </div>
           </div>
@@ -226,12 +226,12 @@ export default function TrackRecord() {
           <div className="flex items-center justify-between">
             <div className="text-[10px] text-gray-600 font-mono">
               {lang === 'en'
-                ? '~0.8 VIP picks/day Â· highest-confidence model output'
-                : '~0.8 picks VIP/zi Â· output model cu cea mai mare certitudine'}
+                ? '~0.8 VIP picks/day · highest-confidence model output'
+                : '~0.8 picks VIP/zi · output model cu cea mai mare certitudine'}
             </div>
             <a href="/upgrade" className="px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest"
               style={{ background: 'linear-gradient(90deg,#f59e0b,#ef4444)', color: 'white' }}>
-              {lang === 'en' ? 'Pro $20 â†’' : 'Pro 99 RON â†’'}
+              {lang === 'en' ? 'Pro $20 →' : 'Pro 99 RON →'}
             </a>
           </div>
         </div>
@@ -266,11 +266,11 @@ export default function TrackRecord() {
           <div className="grid grid-cols-2 gap-3 mb-6 fade-in">
             <div className="card p-4 text-center">
               <div className="text-3xl font-bold font-mono text-green-400">{history.summary.high_conf_accuracy}%</div>
-              <div className="text-[10px] font-mono text-gray-500 mt-1">{lang === 'en' ? 'Accuracy â‰¥65% conf (live)' : 'AcurateÈ›e â‰¥65% conf (live)'}</div>
+              <div className="text-[10px] font-mono text-gray-500 mt-1">{lang === 'en' ? 'Accuracy ≥65% conf (live)' : 'Acuratețe ≥65% conf (live)'}</div>
             </div>
             <div className="card p-4 text-center">
               <div className="text-3xl font-bold font-mono text-amber-400">{history.summary.accuracy}%</div>
-              <div className="text-[10px] font-mono text-gray-500 mt-1">{lang === 'en' ? 'Overall accuracy (live)' : 'AcurateÈ›e generalÄƒ (live)'}</div>
+              <div className="text-[10px] font-mono text-gray-500 mt-1">{lang === 'en' ? 'Overall accuracy (live)' : 'Acuratețe generală (live)'}</div>
             </div>
           </div>
         )}
@@ -294,7 +294,7 @@ export default function TrackRecord() {
           return (
             <div className="card mb-6 fade-in" style={{ padding: '16px 12px 8px' }}>
               <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3 text-center">
-                {lang === 'en' ? 'Equity Curve (1u stake)' : 'CurbÄƒ Equity (stake 1u)'}
+                {lang === 'en' ? 'Equity Curve (1u stake)' : 'Curbă Equity (stake 1u)'}
               </div>
               <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto', display: 'block' }}>
                 <defs>
@@ -328,7 +328,7 @@ export default function TrackRecord() {
           )
         })()}
 
-        {/* Acuratete per prag confidence â€” live dacÄƒ avem date, backtest ca referinÈ›Äƒ */}
+        {/* Acuratete per prag confidence — live dacă avem date, backtest ca referință */}
         {(() => {
           const liveBreakdown = stats?.confidence_breakdown
           const hasLiveBreakdown = liveBreakdown && liveBreakdown.some(b => b.total >= 5)
@@ -338,7 +338,7 @@ export default function TrackRecord() {
             return (
               <div className="mb-6 fade-in">
                 <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3 text-center">
-                  {lang === 'en' ? 'Live accuracy Â· Real results from DB' : 'AcurateÈ›e live Â· Rezultate reale din DB'}
+                  {lang === 'en' ? 'Live accuracy · Real results from DB' : 'Acuratețe live · Rezultate reale din DB'}
                 </div>
                 <div className="space-y-3">
                   {liveBreakdown!.map((b, i) => {
@@ -350,11 +350,11 @@ export default function TrackRecord() {
                           <div>
                             <div className="text-sm font-bold text-white">{label}</div>
                             <div className="text-[10px] text-gray-600 font-mono">
-                              {b.wins}/{b.total} {lang === 'en' ? 'wins Â· live data' : 'victorii Â· date live'}
+                              {b.wins}/{b.total} {lang === 'en' ? 'wins · live data' : 'victorii · date live'}
                             </div>
                           </div>
                           <div className="text-3xl font-bold font-mono" style={{ color }}>
-                            {b.total >= 5 ? `${b.accuracy}%` : 'â€”'}
+                            {b.total >= 5 ? `${b.accuracy}%` : '—'}
                           </div>
                         </div>
                         <div className="h-2 bg-white/5 rounded-full overflow-hidden">
@@ -366,7 +366,7 @@ export default function TrackRecord() {
                   })}
                 </div>
                 <div className="text-center mt-2 text-[10px] text-gray-700 font-mono">
-                  {lang === 'en' ? '* Random baseline = 33.3% Â· Updated daily at 23:30' : '* Baseline hazard = 33.3% Â· Actualizat zilnic la 23:30'}
+                  {lang === 'en' ? '* Random baseline = 33.3% · Updated daily at 23:30' : '* Baseline hazard = 33.3% · Actualizat zilnic la 23:30'}
                 </div>
               </div>
             )
@@ -376,10 +376,10 @@ export default function TrackRecord() {
           return (
             <div className="mb-6 fade-in">
               <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3 text-center">
-                {lang === 'en' ? 'Reference backtest Â· 225,000 matches Â· 2010â€“2025' : 'Backtest referinÈ›Äƒ Â· 225.000 meciuri Â· 2010â€“2025'}
+                {lang === 'en' ? 'Reference backtest · 225,000 matches · 2010–2025' : 'Backtest referință · 225.000 meciuri · 2010–2025'}
               </div>
               <div className="text-[10px] text-amber-600 font-mono text-center mb-3">
-                {lang === 'en' ? 'â³ Live data accumulating â€” shown when â‰¥5 real results per tier' : 'â³ Date live Ã®n acumulare â€” afiÈ™ate cÃ¢nd â‰¥5 rezultate reale per nivel'}
+                {lang === 'en' ? '⏳ Live data accumulating — shown when ≥5 real results per tier' : '⏳ Date live în acumulare — afișate când ≥5 rezultate reale per nivel'}
               </div>
               <div className="space-y-3">
                 {BACKTEST_REF.map((b: any) => (
@@ -401,7 +401,7 @@ export default function TrackRecord() {
                 ))}
               </div>
               <div className="text-center mt-2 text-[10px] text-gray-700 font-mono">
-                {lang === 'en' ? '* Random baseline = 33.3% Â· Model outperforms chance by +50%' : '* Random baseline = 33.3% Â· Modelul depÄƒÈ™eÈ™te cu +50% faÈ›Äƒ de hazard'}
+                {lang === 'en' ? '* Random baseline = 33.3% · Model outperforms chance by +50%' : '* Random baseline = 33.3% · Modelul depășește cu +50% față de hazard'}
               </div>
             </div>
           )
@@ -422,7 +422,7 @@ export default function TrackRecord() {
                     color: filter === f ? '#22c55e' : '#6b7280',
                     border: `1px solid ${filter === f ? '#22c55e44' : '#1f2937'}`,
                   }}>
-                  {f === 'all' ? (lang === 'en' ? 'All' : 'Toate') : f === 'high' ? 'â‰¥65%' : '55-65%'}
+                  {f === 'all' ? (lang === 'en' ? 'All' : 'Toate') : f === 'high' ? '≥65%' : '55-65%'}
                 </button>
               ))}
             </div>
@@ -431,7 +431,7 @@ export default function TrackRecord() {
           {loading && (
             <div className="card p-8 text-center">
               <div className="spinner mx-auto mb-3" />
-              <div className="text-gray-600 text-xs font-mono">{lang === 'en' ? 'Loading history...' : 'Se Ã®ncarcÄƒ istoricul...'}</div>
+              <div className="text-gray-600 text-xs font-mono">{lang === 'en' ? 'Loading history...' : 'Se încarcă istoricul...'}</div>
             </div>
           )}
 
@@ -454,13 +454,13 @@ export default function TrackRecord() {
                       <tr key={i} style={{ borderBottom: '1px solid #111827' }}
                         className="hover:bg-white/[0.02] transition-colors">
                         <td className="p-3 text-gray-500">{r.date}</td>
-                        <td className="p-3 text-gray-300">{r.home} â€“ {r.away}</td>
+                        <td className="p-3 text-gray-300">{r.home} – {r.away}</td>
                         <td className="p-3 text-center">
                           <span style={{
                             color: r.confidence >= 65 ? '#22c55e' : r.confidence >= 55 ? '#f59e0b' : '#818cf8'
                           }}>{r.confidence}%</span>
                         </td>
-                        <td className="p-3 text-center text-gray-500">{r.actual_score || 'â€”'}</td>
+                        <td className="p-3 text-center text-gray-500">{r.actual_score || '—'}</td>
                         <td className="p-3 text-center">
                           <span className="px-2 py-0.5 rounded text-[10px] font-bold" style={{
                             background: r.result === 'win' ? '#16a34a22' : r.result === 'loss' ? '#dc262622' : '#37415122',
@@ -484,31 +484,31 @@ export default function TrackRecord() {
 
           {!loading && filtered.length === 0 && (
             <div className="card p-8 text-center">
-              <div className="text-3xl mb-3 opacity-40">ðŸ•</div>
+              <div className="text-3xl mb-3 opacity-40">🕐</div>
               <div className="text-gray-500 text-sm font-mono mb-1">{lang === 'en' ? 'Live tracking since April 2026' : 'Tracking activ din Aprilie 2026'}</div>
               <div className="text-gray-700 text-xs font-mono">
-                {lang === 'en' ? 'Results appear after matches finish and are auto-marked at 23:30.' : 'Rezultatele apar dupÄƒ finalizarea meciurilor È™i marcarea automatÄƒ la 23:30.'}
+                {lang === 'en' ? 'Results appear after matches finish and are auto-marked at 23:30.' : 'Rezultatele apar după finalizarea meciurilor și marcarea automată la 23:30.'}
               </div>
             </div>
           )}
         </div>
 
-        {/* Per ligÄƒ â€” live dacÄƒ avem date */}
+        {/* Per ligă — live dacă avem date */}
         {(() => {
           const liveleagues = stats?.league_stats
           if (liveleagues && liveleagues.length > 0) {
             return (
               <div className="mb-6 fade-in">
                 <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3 text-center">
-                  {lang === 'en' ? 'Accuracy per league Â· Live data' : 'AcurateÈ›e per ligÄƒ Â· Date live'}
+                  {lang === 'en' ? 'Accuracy per league · Live data' : 'Acuratețe per ligă · Date live'}
                 </div>
                 <div className="card overflow-hidden">
                   <table className="w-full text-xs font-mono">
                     <thead>
                       <tr style={{ borderBottom: '1px solid #1f2937' }}>
-                        <th className="text-left p-3 text-gray-600">{lang === 'en' ? 'League' : 'LigÄƒ'}</th>
+                        <th className="text-left p-3 text-gray-600">{lang === 'en' ? 'League' : 'Ligă'}</th>
                         <th className="text-center p-3 text-gray-600">{lang === 'en' ? 'Overall' : 'General'}</th>
-                        <th className="text-center p-3 text-gray-600">Conf â‰¥65%</th>
+                        <th className="text-center p-3 text-gray-600">Conf ≥65%</th>
                         <th className="text-right p-3 text-gray-600">{lang === 'en' ? 'Total picks' : 'Total picks'}</th>
                       </tr>
                     </thead>
@@ -517,10 +517,10 @@ export default function TrackRecord() {
                         <tr key={i} style={{ borderBottom: '1px solid #111827' }}>
                           <td className="p-3 text-gray-300">{l.league}</td>
                           <td className="p-3 text-center font-bold" style={{ color: l.accuracy >= 70 ? '#4ade80' : l.accuracy >= 55 ? '#f59e0b' : '#818cf8' }}>
-                            {l.total >= 3 ? `${l.accuracy}%` : 'â€”'}
+                            {l.total >= 3 ? `${l.accuracy}%` : '—'}
                           </td>
                           <td className="p-3 text-center font-bold" style={{ color: l.acc65 >= 70 ? '#4ade80' : '#f59e0b' }}>
-                            {l.total65 >= 3 ? `${l.acc65}%` : 'â€”'}
+                            {l.total65 >= 3 ? `${l.acc65}%` : '—'}
                           </td>
                           <td className="p-3 text-right text-gray-500">{l.total}</td>
                         </tr>
@@ -529,20 +529,20 @@ export default function TrackRecord() {
                   </table>
                 </div>
                 <div className="text-center mt-2 text-[10px] text-gray-700 font-mono">
-                  {lang === 'en' ? '* Updated daily Â· â€” shown when fewer than 3 picks per league' : '* Actualizat zilnic Â· â€” afiÈ™at cÃ¢nd sub 3 picks per ligÄƒ'}
+                  {lang === 'en' ? '* Updated daily · — shown when fewer than 3 picks per league' : '* Actualizat zilnic · — afișat când sub 3 picks per ligă'}
                 </div>
               </div>
             )
           }
-          // Nicio data live Ã®nca â€” nu afisam tabelul cu valori false
+          // Nicio data live înca — nu afisam tabelul cu valori false
           return null
         })()}
 
-        {/* Bet Signals â€” Live ROI */}
+        {/* Bet Signals — Live ROI */}
         {betStats && (
           <div className="mb-6 fade-in">
             <div className="text-[10px] font-bold text-amber-500 uppercase tracking-widest mb-3 text-center">
-              {lang === 'en' ? 'AI Value Signals â€” Live ROI' : 'Semnale AI â€” ROI Live'}
+              {lang === 'en' ? 'AI Value Signals — Live ROI' : 'Semnale AI — ROI Live'}
             </div>
 
             {/* 4 carduri hero */}
@@ -552,14 +552,14 @@ export default function TrackRecord() {
                 <div className="text-3xl font-bold font-mono" style={{ color: betStats.win_rate >= 50 ? '#22c55e' : '#ef4444' }}>
                   {betStats.win_rate}%
                 </div>
-                <div className="text-[10px] text-gray-600 font-mono mt-1">{betStats.wins}W Â· {betStats.losses}L</div>
+                <div className="text-[10px] text-gray-600 font-mono mt-1">{betStats.wins}W · {betStats.losses}L</div>
               </div>
               <div className="card p-4 text-center">
                 <div className="text-[10px] text-gray-500 font-mono uppercase mb-1">ROI Total</div>
                 <div className="text-3xl font-bold font-mono" style={{ color: betStats.roi_total >= 0 ? '#22c55e' : '#ef4444' }}>
                   {betStats.roi_total >= 0 ? '+' : ''}{betStats.roi_total}u
                 </div>
-                <div className="text-[10px] text-gray-600 font-mono mt-1">{lang === 'en' ? 'units Â· 1u/signal' : 'unitÄƒÈ›i Â· 1u/semnal'}</div>
+                <div className="text-[10px] text-gray-600 font-mono mt-1">{lang === 'en' ? 'units · 1u/signal' : 'unități · 1u/semnal'}</div>
               </div>
               <div className="card p-4 text-center">
                 <div className="text-[10px] text-gray-500 font-mono uppercase mb-1">{lang === 'en' ? 'Total Signals' : 'Total Semnale'}</div>
@@ -567,7 +567,7 @@ export default function TrackRecord() {
                 <div className="text-[10px] text-gray-600 font-mono mt-1">{lang === 'en' ? 'finalized' : 'finalizate'}</div>
               </div>
               <div className="card p-4 text-center">
-                <div className="text-[10px] text-gray-500 font-mono uppercase mb-1">{lang === 'en' ? 'Avg Odds' : 'CotÄƒ Medie'}</div>
+                <div className="text-[10px] text-gray-500 font-mono uppercase mb-1">{lang === 'en' ? 'Avg Odds' : 'Cotă Medie'}</div>
                 <div className="text-3xl font-bold font-mono text-white">{betStats.avg_odds}</div>
                 <div className="text-[10px] text-gray-600 font-mono mt-1">{lang === 'en' ? 'european format' : 'format european'}</div>
               </div>
@@ -584,7 +584,7 @@ export default function TrackRecord() {
                     <thead>
                       <tr className="border-b border-white/5">
                         <th className="text-left px-4 py-2 text-[10px] text-gray-500 font-normal">{lang === 'en' ? 'Match' : 'Meci'}</th>
-                        <th className="text-right px-2 py-2 text-[10px] text-gray-500 font-normal">{lang === 'en' ? 'Odds' : 'CotÄƒ'}</th>
+                        <th className="text-right px-2 py-2 text-[10px] text-gray-500 font-normal">{lang === 'en' ? 'Odds' : 'Cotă'}</th>
                         <th className="text-right px-4 py-2 text-[10px] text-gray-500 font-normal">P/L</th>
                       </tr>
                     </thead>
@@ -592,14 +592,14 @@ export default function TrackRecord() {
                       {betStats.recent.map((r: any, i: number) => {
                         const isWin = r.result === 'W'
                         const color = isWin ? '#22c55e' : '#ef4444'
-                        const matchDate = r.match_date ? new Date(r.match_date).toLocaleDateString('ro-RO', { day: '2-digit', month: '2-digit' }) : 'â€”'
+                        const matchDate = r.match_date ? new Date(r.match_date).toLocaleDateString('ro-RO', { day: '2-digit', month: '2-digit' }) : '—'
                         return (
                           <tr key={i} className="border-b border-white/5 hover:bg-white/2">
                             <td className="px-4 py-2">
-                              <div className="text-white text-[11px]">{r.home_team} â€“ {r.away_team}</div>
-                              <div className="text-gray-600 text-[10px]">{matchDate} Â· {r.signal}</div>
+                              <div className="text-white text-[11px]">{r.home_team} – {r.away_team}</div>
+                              <div className="text-gray-600 text-[10px]">{matchDate} · {r.signal}</div>
                             </td>
-                            <td className="px-2 py-2 text-right text-gray-400">{r.odds_at_signal ?? 'â€”'}</td>
+                            <td className="px-2 py-2 text-right text-gray-400">{r.odds_at_signal ?? '—'}</td>
                             <td className="px-4 py-2 text-right font-bold" style={{ color }}>
                               {r.result} {r.profit_loss != null ? `${r.profit_loss >= 0 ? '+' : ''}${r.profit_loss}u` : ''}
                             </td>
@@ -616,7 +616,7 @@ export default function TrackRecord() {
             <div className="text-center text-[10px] text-gray-600 font-mono">
               {lang === 'en'
                 ? 'Track record recorded live with timestamp before each match. No retroactive predictions.'
-                : 'Track record Ã®nregistrat live cu timestamp Ã®nainte de fiecare meci. FÄƒrÄƒ predicÈ›ii retroactive.'}
+                : 'Track record înregistrat live cu timestamp înainte de fiecare meci. Fără predicții retroactive.'}
             </div>
           </div>
         )}
@@ -625,19 +625,19 @@ export default function TrackRecord() {
         <div className="card p-5 fade-in">
           <div className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-3">{lang === 'en' ? 'Methodology' : 'Metodologie'}</div>
           <div className="space-y-2 text-xs text-gray-400 leading-relaxed">
-            <p>Â· <strong className="text-gray-300">Model:</strong> {lang === 'en' ? 'XGBoost gradient boosting â€” ensemble of decision trees trained on structured football data' : 'XGBoost gradient boosting â€” ansamblu de arbori de decizie antrenaÈ›i pe date structurate de fotbal'}</p>
-            <p>Â· <strong className="text-gray-300">{lang === 'en' ? 'Training:' : 'Antrenament:'}</strong> {lang === 'en' ? '225,000 matches Â· major European leagues Â· 2010â€“2025 Â· out-of-sample validation' : '225.000 meciuri Â· ligi majore europene Â· 2010â€“2025 Â· validare out-of-sample'}</p>
-            <p>Â· <strong className="text-gray-300">{lang === 'en' ? 'Features:' : 'Variabile:'}</strong> {lang === 'en' ? 'Elo ratings Â· home/away venue form Â· rolling windows (short/medium/long term) Â· H2H history Â· xG proxies Â· market odds signals' : 'Rating Elo Â· formÄƒ acasÄƒ/deplasare separatÄƒ Â· ferestre temporale multiple Â· istoric H2H Â· proxy xG Â· semnale din cotele de piaÈ›Äƒ'}</p>
-            <p>Â· <strong className="text-gray-300">{lang === 'en' ? 'Market:' : 'PiaÈ›Äƒ evaluatÄƒ:'}</strong> {lang === 'en' ? '1X2 full-time result Â· O/U 2.5 goals Â· BTTS' : '1X2 rezultat final Â· Peste/Sub 2.5 goluri Â· Ambele marcheazÄƒ'}</p>
-            <p>Â· <strong className="text-gray-300">Value bet:</strong> {lang === 'en' ? 'Detected when model probability exceeds implied market probability â€” edge measured against sharp bookmaker lines' : 'Detectat cÃ¢nd probabilitatea modelului depÄƒÈ™eÈ™te probabilitatea implicitÄƒ a pieÈ›ei â€” edge mÄƒsurat faÈ›Äƒ de cotele sharp'}</p>
-            <p>Â· <strong className="text-gray-300">{lang === 'en' ? 'Published picks:' : 'Picks publicate:'}</strong> {lang === 'en' ? 'Only matches where model has sufficient confidence Â· higher-confidence picks reserved for VIP tier' : 'Doar meciurile unde modelul are suficientÄƒ certitudine Â· picks cu certitudine ridicatÄƒ rezervate abonamentului VIP'}</p>
-            <p>Â· <strong className="text-gray-300">Equity curve:</strong> {lang === 'en' ? 'Fixed 1-unit stake per pick Â· avg odds ~2.0 Â· tracks live performance from April 2026' : 'Stake fix 1 unitate per pick Â· odds medii ~2.0 Â· urmÄƒreÈ™te performanÈ›a live din Aprilie 2026'}</p>
-            <p>Â· <strong className="text-gray-300">Auto-update:</strong> {lang === 'en' ? 'Results fetched and auto-marked daily at 23:30 from official football data sources' : 'Rezultatele sunt preluate È™i marcate automat zilnic la 23:30 din surse oficiale de date fotbal'}</p>
+            <p>· <strong className="text-gray-300">Model:</strong> {lang === 'en' ? 'XGBoost gradient boosting — ensemble of decision trees trained on structured football data' : 'XGBoost gradient boosting — ansamblu de arbori de decizie antrenați pe date structurate de fotbal'}</p>
+            <p>· <strong className="text-gray-300">{lang === 'en' ? 'Training:' : 'Antrenament:'}</strong> {lang === 'en' ? '225,000 matches · major European leagues · 2010–2025 · out-of-sample validation' : '225.000 meciuri · ligi majore europene · 2010–2025 · validare out-of-sample'}</p>
+            <p>· <strong className="text-gray-300">{lang === 'en' ? 'Features:' : 'Variabile:'}</strong> {lang === 'en' ? 'Elo ratings · home/away venue form · rolling windows (short/medium/long term) · H2H history · xG proxies · market odds signals' : 'Rating Elo · formă acasă/deplasare separată · ferestre temporale multiple · istoric H2H · proxy xG · semnale din cotele de piață'}</p>
+            <p>· <strong className="text-gray-300">{lang === 'en' ? 'Market:' : 'Piață evaluată:'}</strong> {lang === 'en' ? '1X2 full-time result · O/U 2.5 goals · BTTS' : '1X2 rezultat final · Peste/Sub 2.5 goluri · Ambele marchează'}</p>
+            <p>· <strong className="text-gray-300">Value bet:</strong> {lang === 'en' ? 'Detected when model probability exceeds implied market probability — edge measured against sharp bookmaker lines' : 'Detectat când probabilitatea modelului depășește probabilitatea implicită a pieței — edge măsurat față de cotele sharp'}</p>
+            <p>· <strong className="text-gray-300">{lang === 'en' ? 'Published picks:' : 'Picks publicate:'}</strong> {lang === 'en' ? 'Only matches where model has sufficient confidence · higher-confidence picks reserved for VIP tier' : 'Doar meciurile unde modelul are suficientă certitudine · picks cu certitudine ridicată rezervate abonamentului VIP'}</p>
+            <p>· <strong className="text-gray-300">Equity curve:</strong> {lang === 'en' ? 'Fixed 1-unit stake per pick · avg odds ~2.0 · tracks live performance from April 2026' : 'Stake fix 1 unitate per pick · odds medii ~2.0 · urmărește performanța live din Aprilie 2026'}</p>
+            <p>· <strong className="text-gray-300">Auto-update:</strong> {lang === 'en' ? 'Results fetched and auto-marked daily at 23:30 from official football data sources' : 'Rezultatele sunt preluate și marcate automat zilnic la 23:30 din surse oficiale de date fotbal'}</p>
           </div>
         </div>
 
         <div className="text-center mt-6 text-[10px] text-gray-700 font-mono">
-          {lang === 'en' ? 'Past performance does not guarantee future results. Statistical analysis Â· Not betting advice.' : 'PerformanÈ›ele trecute nu garanteazÄƒ rezultate viitoare. AnalizÄƒ statisticÄƒ Â· Nu sfat de pariere.'}
+          {lang === 'en' ? 'Past performance does not guarantee future results. Statistical analysis · Not betting advice.' : 'Performanțele trecute nu garantează rezultate viitoare. Analiză statistică · Nu sfat de pariere.'}
         </div>
       </main>
     </div>
