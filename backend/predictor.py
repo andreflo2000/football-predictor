@@ -352,8 +352,16 @@ def predict_match(
         classes = ["A", "D", "H"]
 
     prob_map = {c: round(float(p), 3) for c, p in zip(classes, proba)}
-    best_class = classes[int(np.argmax(proba))]
-    confidence = float(np.max(proba))
+    # Draw boost: ridica recall-ul pentru egaluri fara a distorsiona probabilitatile raportate
+    # Modelul subapreciaza sistematic Draw (recall ~0%) — boost corecteaza pragul de decizie
+    DRAW_BOOST = 1.4
+    proba_adj = proba.copy()
+    if "D" in classes:
+        proba_adj[list(classes).index("D")] *= DRAW_BOOST
+        proba_adj /= proba_adj.sum()
+    best_idx   = int(np.argmax(proba_adj))
+    best_class = classes[best_idx]
+    confidence = float(proba[best_idx])  # probabilitate originala, nu cea boosted
 
     label_map = {"H": "Victorie gazda", "D": "Egal", "A": "Victorie oaspete"}
 
