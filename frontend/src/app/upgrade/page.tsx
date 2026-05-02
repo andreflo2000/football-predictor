@@ -82,6 +82,7 @@ export default function UpgradePage() {
   const [error, setError] = useState<string | null>(null)
   const [isNative, setIsNative] = useState(false)
   const [liveStats, setLiveStats] = useState<{ total: number; high_conf_accuracy: number; final_equity: number } | null>(null)
+  const [countdown, setCountdown] = useState('')
 
   useEffect(() => {
     setUser(getUser())
@@ -93,6 +94,23 @@ export default function UpgradePage() {
         if (d?.total > 0) setLiveStats({ total: d.total, high_conf_accuracy: d.high_conf_accuracy, final_equity: d.final_equity ?? 0 })
       })
       .catch(() => null)
+  }, [])
+
+  useEffect(() => {
+    function tick() {
+      const now = new Date()
+      const next = new Date()
+      next.setHours(7, 0, 0, 0)
+      if (now >= next) next.setDate(next.getDate() + 1)
+      const diff = next.getTime() - now.getTime()
+      const h = Math.floor(diff / 3600000)
+      const m = Math.floor((diff % 3600000) / 60000)
+      const s = Math.floor((diff % 60000) / 1000)
+      setCountdown(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`)
+    }
+    tick()
+    const id = setInterval(tick, 1000)
+    return () => clearInterval(id)
   }, [])
 
   async function handleUpgrade(plan: 'analyst' | 'pro') {
@@ -176,8 +194,8 @@ export default function UpgradePage() {
           </h1>
           <p style={{ color: '#94a3b8', fontSize: 16, maxWidth: 520, margin: '0 auto' }}>
             {lang === 'en'
-              ? 'Our XGBoost model achieves 75% accuracy on HIGH confidence predictions. Choose the plan that fits your analysis style.'
-              : 'Modelul nostru XGBoost inregistreaza 75% acuratete la predictiile HIGH confidence. Alege planul potrivit pentru stilul tau de analiza.'}
+              ? <>Our XGBoost model achieves {liveStats ? `${liveStats.high_conf_accuracy}%` : '75%+'} accuracy on HIGH confidence predictions.{liveStats && liveStats.final_equity > 0 ? <> <span style={{ color: '#4ade80' }}>+{liveStats.final_equity}u profit = ~${(liveStats.final_equity * 4).toFixed(0)} at $2/pick.</span></> : null} Choose the plan that fits your analysis style.</>
+              : <>Modelul nostru XGBoost înregistrează {liveStats ? `${liveStats.high_conf_accuracy}%` : '75%+'} acuratețe la predicțiile HIGH confidence.{liveStats && liveStats.final_equity > 0 ? <> <span style={{ color: '#4ade80' }}>+{liveStats.final_equity}u profit = ~{(liveStats.final_equity * 20).toFixed(0)} RON dacă joci 20 RON/pick.</span></> : null} Alege planul potrivit pentru stilul tău de analiză.</>}
           </p>
         </div>
 
@@ -203,6 +221,15 @@ export default function UpgradePage() {
                 {lang === 'en' ? '→ Full transparent track record' : '→ Track record complet, transparent'}
               </Link>
             </div>
+          </div>
+        )}
+
+        {!alreadyPaid && countdown && (
+          <div style={{ textAlign: 'center', padding: '12px 24px', marginBottom: 24, borderRadius: 12, background: 'rgba(59,130,246,0.07)', border: '1px solid rgba(59,130,246,0.2)' }}>
+            <span style={{ color: '#94a3b8', fontSize: 12, fontFamily: 'monospace' }}>
+              {lang === 'en' ? "Tomorrow's picks unlock at 07:00 · " : 'Picks de mâine se deblochează la 07:00 · '}
+            </span>
+            <span style={{ color: '#60a5fa', fontSize: 15, fontWeight: 700, fontFamily: 'monospace' }}>{countdown}</span>
           </div>
         )}
 

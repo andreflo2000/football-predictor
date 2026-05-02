@@ -199,13 +199,17 @@ export default function TrackRecord() {
             </div>
             <div className="rounded-xl p-3 text-center" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
               <div className="text-2xl font-bold font-mono text-emerald-400">
-                {vipStats && vipStats.total > 0 ? `${vipStats.accuracy}%` : '—'}
+                {vipStats && vipStats.total >= 5 ? `${vipStats.accuracy}%` : '—'}
               </div>
               <div className="text-[10px] text-gray-500 font-mono mt-1">
                 {lang === 'en' ? 'Live accuracy (all time)' : 'Acuratețe live (total)'}
               </div>
               <div className="text-[9px] text-gray-700 font-mono mt-0.5">
-                {vipStats && vipStats.total > 0 ? `${vipStats.wins}/${vipStats.total} picks` : lang === 'en' ? 'collecting data...' : 'se colectează date...'}
+                {vipStats && vipStats.total >= 5
+                  ? `${vipStats.wins}/${vipStats.total} picks`
+                  : vipStats && vipStats.total > 0
+                    ? (lang === 'en' ? `n=${vipStats.total} · growing` : `n=${vipStats.total} · în creștere`)
+                    : (lang === 'en' ? 'collecting data...' : 'se colectează date...')}
               </div>
             </div>
             <div className="rounded-xl p-3 text-center" style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)' }}>
@@ -257,6 +261,9 @@ export default function TrackRecord() {
                 {history.summary.final_equity >= 0 ? '+' : ''}{history.summary.final_equity}u
               </div>
               <div className="text-[10px] font-mono text-gray-500 mt-1">Profit (1u stake)</div>
+              <div className="text-[9px] font-mono mt-0.5" style={{ color: history.summary.final_equity >= 0 ? '#4ade80' : '#f87171' }}>
+                ≈ {history.summary.final_equity >= 0 ? '+' : ''}{(history.summary.final_equity * 20).toFixed(0)} RON la 20 RON/pick
+              </div>
             </div>
           </div>
         )}
@@ -267,10 +274,12 @@ export default function TrackRecord() {
             <div className="card p-4 text-center">
               <div className="text-3xl font-bold font-mono text-green-400">{history.summary.high_conf_accuracy}%</div>
               <div className="text-[10px] font-mono text-gray-500 mt-1">{lang === 'en' ? 'Accuracy ≥65% conf (live)' : 'Acuratețe ≥65% conf (live)'}</div>
+              {stats?.high_conf_total ? <div className="text-[9px] font-mono text-gray-600 mt-0.5">{lang === 'en' ? `from ${stats.high_conf_total} picks` : `din ${stats.high_conf_total} picks`}</div> : null}
             </div>
             <div className="card p-4 text-center">
               <div className="text-3xl font-bold font-mono text-amber-400">{history.summary.accuracy}%</div>
               <div className="text-[10px] font-mono text-gray-500 mt-1">{lang === 'en' ? 'Overall accuracy (live)' : 'Acuratețe generală (live)'}</div>
+              <div className="text-[9px] font-mono text-gray-600 mt-0.5">{lang === 'en' ? `from ${history.summary.total} picks` : `din ${history.summary.total} picks`}</div>
             </div>
           </div>
         )}
