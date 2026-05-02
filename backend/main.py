@@ -1291,6 +1291,19 @@ def admin_auto_results(
     return {"started": True, "date": date or "today"}
 
 
+@app.post("/api/admin/rerun-picks")
+def admin_rerun_picks(
+    date: Optional[str] = Query(None),
+    user: dict = Depends(require_admin),
+):
+    """Trigger manual compute_and_store_picks via JWT admin. Folosit din admin panel."""
+    try:
+        result = compute_and_store_picks(date)
+        return {"ok": True, "picks": result.get("total_picks", 0), "date": result.get("date")}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 
 @app.api_route("/api/admin/cache/clear-odds", methods=["GET", "POST"])
 def admin_clear_odds_cache(secret: str = Query(default=""), user: dict = Depends(get_current_user)):

@@ -33,6 +33,9 @@ export default function AdminPage() {
   const [selTier, setSelTier]     = useState('pro')
   const [selDays, setSelDays]     = useState('30')
 
+  const [rerunLoading, setRerunLoading] = useState(false)
+  const [rerunMsg, setRerunMsg]         = useState('')
+
   useEffect(() => {
     if (getToken() && isAdmin()) {
       setAuthed(true)
@@ -68,6 +71,20 @@ export default function AdminPage() {
       setUsers(await res.json())
     } catch { setMsg('Eroare conexiune') }
     setLoading(false)
+  }
+
+  async function doRerunPicks() {
+    setRerunLoading(true); setRerunMsg('')
+    try {
+      const res = await fetch(`${API}/api/admin/rerun-picks`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${getToken()}` },
+      })
+      const data = await res.json()
+      if (!res.ok) { setRerunMsg(`❌ ${data.detail || 'Eroare'}`) }
+      else setRerunMsg(`✅ ${data.picks} picks generate pentru ${data.date}`)
+    } catch { setRerunMsg('❌ Eroare conexiune') }
+    setRerunLoading(false)
   }
 
   async function doSetTier() {
@@ -184,6 +201,28 @@ export default function AdminPage() {
             ))}
           </div>
         )}
+
+        {/* Rerun Picks */}
+        <div style={s.card}>
+          <span style={s.label}>Operatiuni sistem</span>
+          <button onClick={doRerunPicks} disabled={rerunLoading} style={{
+            width: '100%', padding: '12px', borderRadius: 8, border: 'none',
+            background: rerunLoading ? '#1f2937' : '#3b82f6',
+            color: rerunLoading ? '#4b5563' : '#fff',
+            fontWeight: 700, cursor: rerunLoading ? 'not-allowed' : 'pointer', fontSize: 14,
+          }}>
+            {rerunLoading ? 'Se generează picks...' : '🔄 Regenerează picks azi'}
+          </button>
+          {rerunMsg && (
+            <div style={{
+              marginTop: 10, padding: '10px 14px', borderRadius: 8,
+              background: rerunMsg.startsWith('✅') ? 'rgba(74,222,128,0.1)' : 'rgba(239,68,68,0.1)',
+              color: rerunMsg.startsWith('✅') ? '#4ade80' : '#f87171', fontSize: 13,
+            }}>
+              {rerunMsg}
+            </div>
+          )}
+        </div>
 
         {/* Set Tier */}
         <div style={s.card}>
