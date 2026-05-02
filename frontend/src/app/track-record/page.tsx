@@ -42,6 +42,7 @@ interface PickResult {
   confidence: number
   actual_score: string
   equity: number
+  created_at?: string
 }
 
 interface History {
@@ -462,7 +463,14 @@ export default function TrackRecord() {
                     {filtered.map((r, i) => (
                       <tr key={i} style={{ borderBottom: '1px solid #111827' }}
                         className="hover:bg-white/[0.02] transition-colors">
-                        <td className="p-3 text-gray-500">{r.date}</td>
+                        <td className="p-3">
+                          <div className="text-gray-500">{r.date}</div>
+                          {r.created_at && (
+                            <div className="text-[9px] text-gray-700 font-mono mt-0.5">
+                              pick @ {new Date(r.created_at).toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Bucharest' })}
+                            </div>
+                          )}
+                        </td>
                         <td className="p-3 text-gray-300">{r.home} – {r.away}</td>
                         <td className="p-3 text-center">
                           <span style={{

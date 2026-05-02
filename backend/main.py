@@ -1134,6 +1134,7 @@ def track_record_history(limit: int = Query(100, le=500)):
                 "confidence":   round(r.get("confidence", 0.6) * 100, 1),
                 "actual_score": r.get("actual_score", ""),
                 "equity":       round(running_units, 2),
+                "created_at":   r.get("created_at", ""),
             })
 
         results.reverse()  # cel mai recent primul
