@@ -881,7 +881,8 @@ def get_injuries_today(known_teams: list = None) -> dict:
     except Exception:
         pass
 
-    logger.info("[injuries] %d echipe cu absente confirmate", len(result))
+    import logging as _logging
+    _logging.getLogger(__name__).info("[injuries] %d echipe cu absente confirmate", len(result))
     return result
 
 
