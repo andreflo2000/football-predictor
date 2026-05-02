@@ -991,6 +991,9 @@ def track_record():
         # dar o putem aproxima din daily_picks JSONB)
         league_stats = _compute_league_stats(client, resolved)
 
+        wins_total = sum(1 for r in resolved if r["result"] == "win")
+        final_equity = round(wins_total - (len(resolved) - wins_total), 2)
+
         return {
             "total":               len(resolved),
             "high_conf_total":     len(above_65),
@@ -1001,6 +1004,7 @@ def track_record():
             "med_conf_accuracy":   acc(med_band),
             "tracking_since":      since,
             "days_tracked":        days,
+            "final_equity":        final_equity,
             # Breakdown detaliat pe praguri — înlocuiește valorile hardcodate din frontend
             "confidence_breakdown": [
                 {
