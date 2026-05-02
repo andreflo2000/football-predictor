@@ -470,6 +470,71 @@ def predict_match(
     }
 
 
+def apply_injury_adjustment(result: dict, home_team: str, away_team: str, injuries: dict) -> dict:
+    """
+    Ajustare post-predictie bazata pe absente confirmate.
+    Max ±6% shift pe probabilitati, fara reantrenare model.
+    Fallback silentios la result original daca orice eroare.
+    """
+    try:
+        if not injuries:
+            return result
+
+        h_inj = min(injuries.get(home_team, 0), 3)
+        a_inj = min(injuries.get(away_team, 0), 3)
+
+        if h_inj == 0 and a_inj == 0:
+            return result
+
+        # Fiecare absent confirmat = 2% shift, max 6% per echipa
+        h_shift = h_inj * 0.02
+        a_shift = a_inj * 0.02
+        net = a_shift - h_shift  # pozitiv = avantaj gazda (oaspetii au mai multi absenti)
+
+        if abs(net) < 0.01:
+            return result
+
+        hw = result["home_win"] + net * 0.6
+        aw = result["away_win"] - net * 0.6
+        dr = result["draw"]    + net * 0.05
+
+        # Renormalizare + cap
+        total = hw + dr + aw
+        hw = max(0.01, min(0.99, hw / total))
+        dr = max(0.01, min(0.99, dr / total))
+        aw = max(0.01, min(0.99, aw / total))
+
+        # Recalculeaza predictia si confidence
+        probs     = {"H": hw, "D": dr, "A": aw}
+        best      = max(probs, key=probs.get)
+        new_conf  = probs[best]
+        label_map = {"H": "Victorie gazda", "D": "Egal", "A": "Victorie oaspete"}
+
+        if new_conf >= 0.65:
+            conf_level = "high"
+        elif new_conf >= 0.55:
+            conf_level = "medium"
+        else:
+            conf_level = "low"
+
+        return {
+            **result,
+            "home_win":         round(hw, 3),
+            "draw":             round(dr, 3),
+            "away_win":         round(aw, 3),
+            "prediction":       best,
+            "prediction_label": label_map.get(best, result["prediction_label"]),
+            "confidence":       round(new_conf, 3),
+            "confidence_level": conf_level,
+            "high_confidence":  new_conf >= 0.65,
+            "injury_adjusted":  True,
+            "home_injuries":    h_inj,
+            "away_injuries":    a_inj,
+        }
+    except Exception:
+        return result  # fallback silentios
+
+
 def get_known_teams() -> list:
     if _team_stats is None:
         load_model()

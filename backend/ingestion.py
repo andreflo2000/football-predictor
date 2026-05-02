@@ -20,8 +20,8 @@ def compute_and_store_picks(date: str = None) -> dict:
     in tabelul daily_picks. Returneaza datele salvate.
     """
     # Import local ca sa evitam circular imports
-    from predictor import predict_match, get_known_teams
-    from fixtures import get_today_fixtures, get_today_odds
+    from predictor import predict_match, get_known_teams, apply_injury_adjustment
+    from fixtures import get_today_fixtures, get_today_odds, get_injuries_today
 
     target = date or datetime.date.today().isoformat()
     logger.info("[ingestion] Start pre-calcul picks pentru %s", target)
@@ -42,7 +42,8 @@ def compute_and_store_picks(date: str = None) -> dict:
     actual_date = fixtures[0].get("date", target) if fixtures else target
     # Trimite doar ligile cu meciuri azi — reduce consumul de quota The-Odds-API
     active_comps = list({f.get("competition_code") for f in fixtures if f.get("competition_code")})
-    odds_map = get_today_odds(known_teams=known, active_comp_codes=active_comps)
+    odds_map    = get_today_odds(known_teams=known, active_comp_codes=active_comps)
+    injuries    = get_injuries_today(known_teams=known)
 
     picks  = []
     errors = []
@@ -52,6 +53,7 @@ def compute_and_store_picks(date: str = None) -> dict:
             key  = (fix["home"].lower(), fix["away"].lower())
             odds = odds_map.get(key)
             result = predict_match(home_team=fix["home"], away_team=fix["away"], odds=odds)
+            result = apply_injury_adjustment(result, fix["home"], fix["away"], injuries)
 
             picks.append({
                 "home":             fix["home"],

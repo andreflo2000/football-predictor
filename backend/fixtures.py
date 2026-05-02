@@ -814,6 +814,77 @@ def _fetch_european_cups(date_str: str, known_teams: list) -> list:
     return results
 
 
+# Ligi cu date de injuries fiabile pe Free tier
+_INJURY_LEAGUE_IDS = [39, 78, 135, 140, 61]  # EPL, Bundesliga, Serie A, La Liga, Ligue 1
+
+
+def get_injuries_today(known_teams: list = None) -> dict:
+    """
+    Fetch absente confirmate ('Missing Fixture') pentru cele 5 ligi majore.
+    Returneaza: {team_name_normalized: count_absences}
+    Budget: 5 requests/zi, cached 6h in Redis.
+    """
+    if not AF_KEY:
+        return {}
+
+    import datetime as _dt
+    try:
+        import cache as _rc
+        cached = _rc.get("injuries_today", _dt.date.today().isoformat())
+        if cached is not None:
+            return cached
+    except Exception:
+        pass
+
+    season = _dt.date.today().year
+    if _dt.date.today().month < 7:
+        season -= 1
+
+    today_ts  = _dt.datetime.utcnow()
+    window_ts = today_ts + _dt.timedelta(days=5)
+    headers   = {"x-apisports-key": AF_KEY}
+    known     = known_teams or []
+    result: dict = {}
+
+    for league_id in _INJURY_LEAGUE_IDS:
+        try:
+            r = requests.get(
+                f"{AF_BASE_URL}/injuries",
+                headers=headers,
+                params={"league": league_id, "season": season},
+                timeout=10,
+            )
+            if r.status_code != 200:
+                continue
+            for item in r.json().get("response", []):
+                if item.get("player", {}).get("type") != "Missing Fixture":
+                    continue
+                fix_date_str = item.get("fixture", {}).get("date", "")
+                try:
+                    fix_dt = _dt.datetime.fromisoformat(fix_date_str.replace("Z", "+00:00")).replace(tzinfo=None)
+                    if not (today_ts <= fix_dt <= window_ts):
+                        continue
+                except Exception:
+                    continue
+                team_name = item.get("team", {}).get("name", "")
+                if not team_name:
+                    continue
+                norm = _normalize_name(team_name, known) if known else team_name.lower()
+                if norm:
+                    result[norm] = result.get(norm, 0) + 1
+        except Exception:
+            continue
+
+    try:
+        import cache as _rc
+        _rc.set("injuries_today", _dt.date.today().isoformat(), result, ttl=21600)
+    except Exception:
+        pass
+
+    logger.info("[injuries] %d echipe cu absente confirmate", len(result))
+    return result
+
+
 def get_today_odds(known_teams: list = None, active_comp_codes: list = None) -> dict:
     """
     Descarca cotele de azi din The-Odds-API (gratis: 500 req/luna).
