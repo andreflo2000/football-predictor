@@ -9,6 +9,7 @@ import time
 import logging
 import requests
 from fastapi import FastAPI, HTTPException, Query, Request, Depends, Header, BackgroundTasks
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr
 from typing import Optional
@@ -134,11 +135,40 @@ CACHE_TTL_FIXTURES = 86400  # 24 ore
 # ─────────────────────────────────────────────
 @app.get("/")
 @app.head("/")
+def api_root():
+    return {"status": "ok", "service": "Oxiano API"}
+
 @app.get("/health")
 @app.get("/api/health")
 def api_health():
-    import datetime as _dt
-    return {"status": "ok", "service": "Oxiano API", "ts": _dt.datetime.utcnow().isoformat()}
+    import predictor as _pred
+    now = datetime.datetime.utcnow().isoformat()
+    status = "ok"
+    model_status = "ok"
+    supabase_status = "ok"
+
+    # Model — foloseste globalele incarcate la startup, fara reload
+    try:
+        vals = [_pred._model, _pred._features, _pred._team_stats, _pred._label_encoder]
+        missing = [k for k, v in zip(["model", "features", "team_stats", "label_encoder"], vals) if v is None]
+        if missing:
+            model_status = f"not loaded: {missing}"
+            status = "error"
+    except Exception as e:
+        model_status = str(e)
+        status = "error"
+
+    # Supabase — query simplu
+    try:
+        get_client().table("daily_picks").select("id").limit(1).execute()
+    except Exception as e:
+        supabase_status = str(e)
+        status = "error"
+
+    payload = {"status": status, "model": model_status, "supabase": supabase_status, "timestamp": now}
+    if model_status != "ok":
+        return JSONResponse(status_code=503, content=payload)
+    return payload
 
 @app.get("/ping")
 @app.head("/ping")
