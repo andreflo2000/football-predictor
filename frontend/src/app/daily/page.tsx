@@ -94,7 +94,7 @@ function getOdd(p: Pick, prediction: 'H' | 'D' | 'A', prob: number): { odd: stri
   if (prediction === 'H' && p.odds_home) return { odd: p.odds_home.toFixed(2), isReal: true }
   if (prediction === 'D' && p.odds_draw) return { odd: p.odds_draw.toFixed(2), isReal: true }
   if (prediction === 'A' && p.odds_away) return { odd: p.odds_away.toFixed(2), isReal: true }
-  return { odd: (100 / (Math.max(prob, 1) * 1.08)).toFixed(2), isReal: false }
+  return { odd: Math.max(1.20, 100 / (Math.max(prob, 1) * 1.08)).toFixed(2), isReal: false }
 }
 
 function predLabel(p: Pick, lang: 'ro' | 'en' = 'ro') {
@@ -222,7 +222,7 @@ function PersonalTracker({ picks }: { picks: Pick[] }) {
 
   const addBet = (p: Pick) => {
     const pred   = predLabel(p)
-    const odd    = parseFloat((100 / (Math.max(pred.prob, 1) * 1.08)).toFixed(2))
+    const odd    = parseFloat(Math.max(1.20, 100 / (Math.max(pred.prob, 1) * 1.08)).toFixed(2))
     const id     = `${p.home}-${p.away}-${Date.now()}`
     const bet: TrackedBet = {
       id, odd,
@@ -767,7 +767,7 @@ function FreePicks({ picks, userTier }: { picks: Pick[], userTier?: string }) {
   const [mode, setMode] = useState<'result' | 'goals'>('result')
   if (picks.length === 0) return null
 
-  const oddSingle = (prob: number) => parseFloat((100 / (Math.max(prob, 1) * 1.08)).toFixed(2))
+  const oddSingle = (prob: number) => parseFloat(Math.max(1.20, 100 / (Math.max(prob, 1) * 1.08)).toFixed(2))
 
   // Top 3 picks valide (non-VIP, cu probabilitati reale)
   const seen = new Set<string>()
