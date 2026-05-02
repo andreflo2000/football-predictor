@@ -4,6 +4,8 @@ import Link from 'next/link'
 import { getUser, AuthUser, createCheckoutSession, isPaid } from '@/lib/auth'
 import { useLang } from '@/lib/LangContext'
 
+const API = process.env.NEXT_PUBLIC_API_URL || 'https://football-predictor-vlpp.onrender.com'
+
 const PLANS = (lang: 'ro' | 'en') => [
   {
     id: 'analyst' as const,
@@ -79,11 +81,18 @@ export default function UpgradePage() {
   const [loading, setLoading] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isNative, setIsNative] = useState(false)
+  const [liveStats, setLiveStats] = useState<{ total: number; high_conf_accuracy: number; final_equity: number } | null>(null)
 
   useEffect(() => {
     setUser(getUser())
     const cap = (window as any).Capacitor
     setIsNative(cap?.isNativePlatform?.() === true)
+    fetch(`${API}/api/track-record`)
+      .then(r => r.json())
+      .then(d => {
+        if (d?.total > 0) setLiveStats({ total: d.total, high_conf_accuracy: d.high_conf_accuracy, final_equity: d.final_equity ?? 0 })
+      })
+      .catch(() => null)
   }, [])
 
   async function handleUpgrade(plan: 'analyst' | 'pro') {
@@ -171,6 +180,31 @@ export default function UpgradePage() {
               : 'Modelul nostru XGBoost inregistreaza 75% acuratete la predictiile HIGH confidence. Alege planul potrivit pentru stilul tau de analiza.'}
           </p>
         </div>
+
+        {/* Live track record banner */}
+        {liveStats && (
+          <div style={{
+            display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 12,
+            marginBottom: 36, padding: '16px 24px', borderRadius: 16,
+            background: 'rgba(34,197,94,0.07)', border: '1px solid rgba(34,197,94,0.25)',
+          }}>
+            {[
+              { val: `${liveStats.high_conf_accuracy}%`, label: lang === 'en' ? 'accuracy ≥65% conf · live' : 'acuratețe ≥65% conf · live', color: '#4ade80' },
+              { val: `${liveStats.total}`, label: lang === 'en' ? 'verified picks' : 'picks verificate', color: '#60a5fa' },
+              { val: `${liveStats.final_equity >= 0 ? '+' : ''}${liveStats.final_equity}u`, label: lang === 'en' ? 'profit (1u stake)' : 'profit (1u miză)', color: liveStats.final_equity >= 0 ? '#4ade80' : '#f87171' },
+            ].map(s => (
+              <div key={s.label} style={{ textAlign: 'center', padding: '4px 20px' }}>
+                <div style={{ fontSize: 28, fontWeight: 800, fontFamily: 'monospace', color: s.color }}>{s.val}</div>
+                <div style={{ fontSize: 11, color: '#64748b', marginTop: 2, fontFamily: 'monospace', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{s.label}</div>
+              </div>
+            ))}
+            <div style={{ width: '100%', textAlign: 'center', marginTop: 4 }}>
+              <Link href="/track-record" style={{ fontSize: 11, color: '#22c55e', textDecoration: 'none', fontFamily: 'monospace' }}>
+                {lang === 'en' ? '→ Full transparent track record' : '→ Track record complet, transparent'}
+              </Link>
+            </div>
+          </div>
+        )}
 
         {alreadyPaid && (
           <div style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid #22c55e', borderRadius: 12, padding: '16px 24px', marginBottom: 32, textAlign: 'center', color: '#4ade80' }}>
@@ -342,12 +376,12 @@ export default function UpgradePage() {
           {(lang === 'en' ? [
             { icon: '🔒', text: 'Secure Gumroad payment' },
             { icon: '↩️', text: 'Cancel anytime' },
-            { icon: '📊', text: '75% verified accuracy' },
+            { icon: '📊', text: liveStats ? `${liveStats.high_conf_accuracy}% verified accuracy` : '75%+ verified accuracy' },
             { icon: '🇷🇴', text: 'Price in RON' },
           ] : [
             { icon: '🔒', text: 'Plata securizata Gumroad' },
             { icon: '↩️', text: 'Anulezi oricand' },
-            { icon: '📊', text: '75% acuratete verificata' },
+            { icon: '📊', text: liveStats ? `${liveStats.high_conf_accuracy}% acuratete verificata` : '75%+ acuratete verificata' },
             { icon: '🇷🇴', text: 'Pretul in RON' },
           ]).map(({ icon, text }) => (
             <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
