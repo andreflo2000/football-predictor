@@ -1578,26 +1578,28 @@ def create_checkout_session(
     return {"url": checkout_url}
 
 
-GUMROAD_WEBHOOK_SECRET = os.getenv("GUMROAD_WEBHOOK_SECRET", "")
+GUMROAD_SELLER_ID = os.getenv("GUMROAD_SELLER_ID", "")
 
 @app.post("/api/webhook/gumroad")
-async def gumroad_webhook(request: Request, token: Optional[str] = None):
+async def gumroad_webhook(request: Request):
     """
     Ping Gumroad — upgradeaza/downgradeaza tier dupa events de plata.
-    Setat in Gumroad Settings → Advanced → Ping URL:
-      https://football-predictor-api-n9sl.onrender.com/api/webhook/gumroad?token=SECRET
+    Setat in Gumroad Settings -> Advanced -> Ping URL:
+      https://football-predictor-api-n9sl.onrender.com/api/webhook/gumroad
     """
-    if GUMROAD_WEBHOOK_SECRET and token != GUMROAD_WEBHOOK_SECRET:
-        logger.warning("[gumroad] Webhook cu token invalid: %s", token)
-        raise HTTPException(status_code=403, detail="Forbidden")
-
     try:
         body = await request.body()
-        # Gumroad trimite form-encoded
         from urllib.parse import parse_qs
         data = {k: v[0] for k, v in parse_qs(body.decode("utf-8")).items()}
     except Exception:
         raise HTTPException(400, "Payload invalid")
+
+    # Validare seller_id daca e setat
+    if GUMROAD_SELLER_ID:
+        seller = data.get("seller_id", "")
+        if seller != GUMROAD_SELLER_ID:
+            logger.warning("[gumroad] Seller ID invalid: %s", seller)
+            raise HTTPException(status_code=403, detail="Forbidden")
 
     email        = data.get("email", "")
     permalink    = data.get("product_permalink", "")
