@@ -1159,7 +1159,7 @@ function PredictionDisplay({ prediction, fixture, standings, user }: {
 
 const QUICK_LEAGUES = [
   { id: 39,  flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿', nameRo: 'Premier League', nameEn: 'Premier League', acc: 70.0 },
-  { id: 140, flag: '🇪🇸',       nameRo: 'La Liga',        nameEn: 'La Liga',        acc: 86.1 },
+  { id: 140, flag: '🇪🇸',       nameRo: 'La Liga',        nameEn: 'La Liga',        acc: 64.5 },
   { id: 78,  flag: '🇩🇪',       nameRo: 'Bundesliga',     nameEn: 'Bundesliga',     acc: 79.4 },
   { id: 135, flag: '🇮🇹',       nameRo: 'Serie A',        nameEn: 'Serie A',        acc: 71.1 },
   { id: 61,  flag: '🇫🇷',       nameRo: 'Ligue 1',        nameEn: 'Ligue 1',        acc: 79.4 },
