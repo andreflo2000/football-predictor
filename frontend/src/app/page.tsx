@@ -596,10 +596,10 @@ function TierComparisonTable() {
     { ro: 'Notificări Telegram (2×/zi)',        en: 'Telegram alerts (2×/day)',          free: false, analyst: true,  pro: true  },
     { ro: 'Track record (7 zile)',              en: 'Track record (7 days)',             free: false, analyst: true,  pro: true  },
     { ro: 'xG + Elo + Model breakdown',         en: 'xG + Elo + Model breakdown',        free: false, analyst: false, pro: true  },
-    { ro: 'VALUE BET cu edge față de piață',    en: 'VALUE BET with market edge',        free: false, analyst: false, pro: true  },
+    { ro: 'Market Divergence Signal (edge față de piață)', en: 'Market Divergence Signal (market edge)', free: false, analyst: false, pro: true  },
     { ro: 'Score Matrix (Poisson bivariate)',   en: 'Score Matrix (Poisson bivariate)',  free: false, analyst: false, pro: true  },
     { ro: 'Track record complet + ROI',         en: 'Full track record + ROI',           free: false, analyst: false, pro: true  },
-    { ro: 'VIP Picks — confidence ≥75%',        en: 'VIP Picks — confidence ≥75%',      free: false, analyst: false, pro: true  },
+    { ro: 'VIP Outputs — confidence ≥75%',       en: 'VIP Outputs — confidence ≥75%',     free: false, analyst: false, pro: true  },
     { ro: 'Acumulator 5-fold optimizat AI',     en: '5-fold AI accumulator',             free: false, analyst: false, pro: true  },
   ]
   const tiers = [

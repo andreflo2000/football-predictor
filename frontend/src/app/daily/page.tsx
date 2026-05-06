@@ -160,7 +160,7 @@ function buildShareCardWA(p: Pick, dateStr: string): string {
     ``,
     `🎯 *Predicție: ${pred.short} — ${pred.full}*`,
     `📈 Confidence: *${p.confidence}%* · ${conf}`,
-    p.value_bet ? `💎 *VALUE BET detectat*` : '',
+    p.value_bet ? `⚡ *MARKET DIVERGENCE detectat*` : '',
     edge,
     `⚡ Elo: ${p.home_elo} vs ${p.away_elo}`,
     ``,
@@ -685,7 +685,7 @@ function PickCard({ pick, rank, userTier }: { pick: Pick; rank: number; userTier
               color: '#f59e0b', fontSize: 10, fontWeight: 700, padding: '3px 8px',
               borderRadius: 6, fontFamily: 'monospace', letterSpacing: '0.05em',
             }}>
-              ⚡ VALUE +{pick.edge}%
+              ⚡ DIVERGENCE +{pick.edge}%
             </span>
           )}
           {pick.market_signal === 'VALUE_HOME' || pick.market_signal === 'VALUE_AWAY' ? (
@@ -1361,7 +1361,7 @@ export default function DailyPage() {
                     onClick={() => setFilter('all')}
                     className="text-xs font-mono px-4 py-2 rounded-lg"
                     style={{ background: 'rgba(99,102,241,0.12)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.25)' }}>
-                    {lang === 'en' ? 'See all picks →' : 'Vezi toate pick-urile →'}
+                    {lang === 'en' ? 'See all outputs →' : 'Vezi toate analizele →'}
                   </button>
                 )}
               </div>
@@ -1389,15 +1389,15 @@ export default function DailyPage() {
                           <div className="text-center px-6 py-6">
                             <div className="text-2xl mb-2">🔒</div>
                             <div className="text-white font-bold text-base mb-1">
-                              {lang === 'en' ? `${shown.length - FREE_LIMIT} more picks locked` : `Încă ${shown.length - FREE_LIMIT} pick-uri blocate`}
+                              {lang === 'en' ? `${shown.length - FREE_LIMIT} more outputs locked` : `Încă ${shown.length - FREE_LIMIT} analize blocate`}
                             </div>
                             <div className="text-gray-400 text-xs font-mono mb-4">
-                              {lang === 'en' ? 'Upgrade to Analyst to unlock all picks + Kelly% + stats' : 'Upgrade la Analyst pentru toate pick-urile + Kelly% + statistici'}
+                              {lang === 'en' ? 'Upgrade to Analyst to unlock all outputs + Kelly% + stats' : 'Upgrade la Analyst pentru toate analizele + Kelly% + statistici'}
                             </div>
                             <a href="/upgrade"
                               className="inline-block px-6 py-2.5 rounded-xl font-bold text-sm"
                               style={{ background: 'linear-gradient(135deg, #22d3ee, #3b82f6)', color: '#000' }}>
-                              {lang === 'en' ? '⚡ Unlock all picks — $8/mo' : '⚡ Deblochează toate — 39 RON/lună'}
+                              {lang === 'en' ? '⚡ Unlock all outputs — $8/mo' : '⚡ Deblochează toate — 39 RON/lună'}
                             </a>
                           </div>
                         </div>
