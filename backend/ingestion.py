@@ -21,7 +21,7 @@ def compute_and_store_picks(date: str = None) -> dict:
     """
     # Import local ca sa evitam circular imports
     from predictor import predict_match, get_known_teams, apply_injury_adjustment
-    from fixtures import get_today_fixtures, get_today_odds, get_injuries_today
+    from fixtures import get_today_fixtures, get_today_odds, get_injuries_today, COMPETITIONS
 
     target = date or datetime.date.today().isoformat()
     logger.info("[ingestion] Start pre-calcul picks pentru %s", target)
@@ -52,7 +52,9 @@ def compute_and_store_picks(date: str = None) -> dict:
         try:
             key  = (fix["home"].lower(), fix["away"].lower())
             odds = odds_map.get(key)
-            result = predict_match(home_team=fix["home"], away_team=fix["away"], odds=odds)
+            div_code = COMPETITIONS.get(fix.get("competition_code", ""), {}).get("div", "")
+            result = predict_match(home_team=fix["home"], away_team=fix["away"],
+                                   odds=odds, league_code=div_code)
             result = apply_injury_adjustment(result, fix["home"], fix["away"], injuries)
 
             picks.append({

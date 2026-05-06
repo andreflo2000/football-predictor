@@ -6,14 +6,13 @@ import numpy as np
 import pandas as pd
 from xgboost import XGBClassifier
 from sklearn.preprocessing import LabelEncoder
-from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, classification_report
 
 warnings.filterwarnings("ignore")
 
 BASE_DIR    = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR    = os.path.join(BASE_DIR, "data", "csv", "club")
-MODEL_PATH  = os.path.join(BASE_DIR, "model.pkl")
+MODEL_PATH  = os.path.join(BASE_DIR, "model_no_odds.pkl")
 XG_PATH     = os.path.join(BASE_DIR, "data", "csv", "fbref_xg.csv")
 MIN_MATCHES = 6
 WINDOWS     = [3, 5, 10]
@@ -48,18 +47,11 @@ def load_data():
 # 1b. INCARCARE xG REAL (Understat)
 # ─────────────────────────────────────────────────────────
 def load_xg_data():
-    """
-    Incarca xG real din fbref_xg.csv (scrapat din Understat).
-    Returneaza un dict: (Div, date_str, home_lower, away_lower) -> (xg_h, xg_a)
-    Aplica mapare de nume Understat -> CSV pentru a creste rata de match.
-    """
     if not os.path.exists(XG_PATH):
         print("    xG file lipsa — se foloseste proxy din goluri")
         return {}
 
-    # Mapare Understat -> format CSV (football-data.co.uk)
     NAME_MAP = {
-        # Premier League
         "manchester city":         "man city",
         "manchester united":       "man united",
         "newcastle united":        "newcastle",
@@ -69,7 +61,6 @@ def load_xg_data():
         "sheffield united":        "sheffield utd",
         "nottingham forest":       "nott'm forest",
         "tottenham":               "tottenham",
-        # La Liga
         "atletico madrid":         "ath madrid",
         "athletic club":           "ath bilbao",
         "real betis":              "betis",
@@ -88,7 +79,6 @@ def load_xg_data():
         "girona":                  "girona",
         "almeria":                 "almeria",
         "las palmas":              "las palmas",
-        # Serie A
         "inter":                   "inter",
         "ac milan":                "milan",
         "hellas verona":           "verona",
@@ -105,7 +95,6 @@ def load_xg_data():
         "salernitana":             "salernitana",
         "us cremonese":            "cremonese",
         "frosinone calcio":        "frosinone",
-        # Bundesliga
         "fc augsburg":             "augsburg",
         "bayer leverkusen":        "leverkusen",
         "borussia dortmund":       "dortmund",
@@ -133,7 +122,6 @@ def load_xg_data():
         "darmstadt 98":            "darmstadt",
         "holstein kiel":           "holstein kiel",
         "sv darmstadt 98":         "darmstadt",
-        # Ligue 1
         "paris saint-germain":     "paris sg",
         "olympique marseille":     "marseille",
         "olympique lyonnais":      "lyon",
@@ -186,13 +174,9 @@ def preprocess(data):
     if missing:
         raise RuntimeError(f"Coloane lipsa: {missing}")
 
-    # Pastram si coloanele de cote daca exista
-    odds_cols = ["PSH","PSD","PSA","B365H","B365D","B365A","AvgH","AvgD","AvgA",
-                 "MaxH","MaxD","MaxA","PSCH","PSCD","PSCA",
-                 "BbAvH","BbAvD","BbAvA","BbMxH","BbMxD","BbMxA"]   # variante vechi football-data
-    extra = ["Div"] + [c for c in odds_cols if c in data.columns]
+    extra = ["Div"]
     keep = cols + extra
-    keep = list(dict.fromkeys(keep))  # deduplicare
+    keep = list(dict.fromkeys(keep))
     data = data[keep].copy()
     data["FTHG"] = pd.to_numeric(data["FTHG"], errors="coerce")
     data["FTAG"] = pd.to_numeric(data["FTAG"], errors="coerce")
@@ -202,7 +186,6 @@ def preprocess(data):
     data["Date"] = pd.to_datetime(data["Date"], dayfirst=True, errors="coerce")
     data = data.dropna(subset=["Date"])
 
-    # Liga — folosim Div ca identificator de liga
     if "Div" in data.columns:
         data["Div"] = data["Div"].astype(str).str.strip()
     else:
@@ -214,203 +197,11 @@ def preprocess(data):
 
 
 # ─────────────────────────────────────────────────────────
-# 3. MARKET DATA — cote → probabilitati implicite
-# ─────────────────────────────────────────────────────────
-def build_market_features(data):
-    """
-    Market Intelligence features — COV, CLV, steam/drift, sharp-soft divergence.
-
-    Surse de date necesare (football-data.co.uk):
-      PSH/PSD/PSA   = Pinnacle opening (pre-match)
-      PSCH/PSCD/PSCA = Pinnacle closing (la startul meciului) ← cel mai sharp bookmaker
-      MaxH/MaxD/MaxA = Maximum la close (toate casele)
-      AvgH/AvgD/AvgA = Media la close
-      B365H/B365D/B365A = Bet365 (soft book, reflecta opinia publicului)
-    """
-    print(">>> Calculez Market Intelligence features (COV/CLV/Steam/Sharp)...")
-    result = pd.DataFrame(index=data.index)
-
-    has_ps_open  = all(c in data.columns for c in ["PSH",  "PSD",  "PSA"])
-    has_ps_close = all(c in data.columns for c in ["PSCH", "PSCD", "PSCA"])
-    has_avg      = all(c in data.columns for c in ["AvgH", "AvgD", "AvgA"])
-    has_max      = all(c in data.columns for c in ["MaxH", "MaxD", "MaxA"])
-    has_b365     = all(c in data.columns for c in ["B365H","B365D","B365A"])
-
-    def safe_num(col):
-        return pd.to_numeric(data[col], errors="coerce").where(lambda x: x > 1.01) if col in data.columns else pd.Series(np.nan, index=data.index)
-
-    # ── 1. Pinnacle line movement: opening → closing ───────────────────────
-    if has_ps_open and has_ps_close:
-        psh, psd, psa   = safe_num("PSH"),  safe_num("PSD"),  safe_num("PSA")
-        psch, pscd, psca = safe_num("PSCH"), safe_num("PSCD"), safe_num("PSCA")
-
-        # Miscarea relativa: >0 = cota crescut (drift), <0 = cota scazut (steam = bani intrați)
-        result["ps_move_h"] = ((psch / psh) - 1).clip(-0.40, 0.40)
-        result["ps_move_a"] = ((psca / psa) - 1).clip(-0.40, 0.40)
-        result["ps_move_d"] = ((pscd / psd) - 1).clip(-0.40, 0.40)
-
-        # Directie binara
-        result["home_steamed"] = (psch < psh * 0.98).astype(float)   # bani pe gazda
-        result["away_steamed"] = (psca < psa * 0.98).astype(float)   # bani pe oaspete
-        result["home_drifted"] = (psch > psh * 1.03).astype(float)   # piata fuge de gazda
-        result["away_drifted"] = (psca > psa * 1.03).astype(float)
-
-        # Closing Line Value (CLV): prob implicita la close vs open
-        vig_o = (1/psh + 1/psd + 1/psa).clip(lower=0.9)
-        vig_c = (1/psch + 1/pscd + 1/psca).clip(lower=0.9)
-        result["clv_h"] = ((1/psch)/vig_c - (1/psh)/vig_o).clip(-0.15, 0.15)
-        result["clv_a"] = ((1/psca)/vig_c - (1/psa)/vig_o).clip(-0.15, 0.15)
-
-        # Reverse line movement: cota a scazut DAR linia implicitly se misca invers
-        # → public pariaza pe favorit, dar sharp money e pe cealalta parte
-        result["reverse_line_h"] = ((result["home_steamed"] == 1) & (result["clv_h"] < -0.02)).astype(float)
-        result["reverse_line_a"] = ((result["away_steamed"] == 1) & (result["clv_a"] < -0.02)).astype(float)
-
-        print(f"    Pinnacle movement data: {(psch.notna()).sum():,} meciuri cu PS closing")
-    else:
-        for col in ["ps_move_h","ps_move_a","ps_move_d",
-                    "home_steamed","away_steamed","home_drifted","away_drifted",
-                    "clv_h","clv_a","reverse_line_h","reverse_line_a"]:
-            result[col] = 0.0
-        print("    ATENTIE: PSH/PSCH lipsa — features de miscare setate la 0")
-
-    # ── 2. Sharp vs Soft divergence ────────────────────────────────────────
-    # Pinnacle (sharp) vs Bet365 (soft/public sentiment)
-    ps_close_h = safe_num("PSCH") if has_ps_close else safe_num("PSH")
-    ps_close_a = safe_num("PSCA") if has_ps_close else safe_num("PSA")
-
-    if has_b365:
-        b365h, b365a = safe_num("B365H"), safe_num("B365A")
-        result["sharp_soft_div_h"] = (ps_close_h - b365h).clip(-1.0, 1.0)
-        result["sharp_soft_div_a"] = (ps_close_a - b365a).clip(-1.0, 1.0)
-        # >0 = Pinnacle mai mare = piata sharp nu favorizeaza echipa → public o supraevalueaza
-        result["public_fav_h"] = (result["sharp_soft_div_h"] > 0.08).astype(float)
-        result["public_fav_a"] = (result["sharp_soft_div_a"] > 0.08).astype(float)
-    elif has_avg:
-        avgh, avga = safe_num("AvgH"), safe_num("AvgA")
-        result["sharp_soft_div_h"] = (ps_close_h - avgh).clip(-1.0, 1.0)
-        result["sharp_soft_div_a"] = (ps_close_a - avga).clip(-1.0, 1.0)
-        result["public_fav_h"] = (result["sharp_soft_div_h"] > 0.08).astype(float)
-        result["public_fav_a"] = (result["sharp_soft_div_a"] > 0.08).astype(float)
-    else:
-        for col in ["sharp_soft_div_h","sharp_soft_div_a","public_fav_h","public_fav_a"]:
-            result[col] = 0.0
-
-    # ── 3. Closing Odds Variance (dezacord între bookmakers la close) ───────
-    close_cols_h = [c for c in ["PSCH","MaxH","AvgH","B365H"] if c in data.columns]
-    close_cols_a = [c for c in ["PSCA","MaxA","AvgA","B365A"] if c in data.columns]
-
-    if len(close_cols_h) >= 2:
-        close_mat_h = pd.concat([safe_num(c) for c in close_cols_h], axis=1)
-        close_mat_a = pd.concat([safe_num(c) for c in close_cols_a], axis=1)
-        result["close_var_h"] = close_mat_h.std(axis=1).fillna(0).clip(0, 1.0)
-        result["close_var_a"] = close_mat_a.std(axis=1).fillna(0).clip(0, 1.0)
-        # COV ridicat = piata nesigura = informatie valoroasa
-        result["high_cov_h"] = (result["close_var_h"] > 0.10).astype(float)
-        result["high_cov_a"] = (result["close_var_a"] > 0.10).astype(float)
-    else:
-        for col in ["close_var_h","close_var_a","high_cov_h","high_cov_a"]:
-            result[col] = 0.0
-
-    # ── 4. Market efficiency (vig) ─────────────────────────────────────────
-    if has_max:
-        maxh, maxd, maxa = safe_num("MaxH"), safe_num("MaxD"), safe_num("MaxA")
-        result["market_vig"] = (1/maxh + 1/maxd + 1/maxa - 1).clip(0, 0.25)
-        result["low_vig"]    = (result["market_vig"] < 0.04).astype(float)
-    else:
-        result["market_vig"] = 0.05
-        result["low_vig"]    = 0.0
-
-    # ── 5. Value zone 1.60–2.10 + interactiuni ────────────────────────────
-    ref_h = safe_num("PSCH") if has_ps_close else (safe_num("MaxH") if has_max else safe_num("PSH"))
-    ref_a = safe_num("PSCA") if has_ps_close else (safe_num("MaxA") if has_max else safe_num("PSA"))
-
-    result["value_zone_h"] = ((ref_h >= 1.60) & (ref_h <= 2.10)).astype(float)
-    result["value_zone_a"] = ((ref_a >= 1.60) & (ref_a <= 2.10)).astype(float)
-
-    # Interactiuni: drift/steam IN zona de valoare → semnalul cel mai puternic pentru surprize
-    result["drift_in_value_h"] = result.get("home_drifted", pd.Series(0.0, index=data.index)) \
-                                  * result["value_zone_h"]
-    result["steam_in_value_a"] = result.get("away_steamed", pd.Series(0.0, index=data.index)) \
-                                  * result["value_zone_a"]
-    result["trap_game_h"] = (
-        (result["value_zone_h"] == 1) &
-        (result.get("home_drifted", pd.Series(0.0, index=data.index)) == 1) &
-        (result.get("sharp_soft_div_h", pd.Series(0.0, index=data.index)) > 0.05)
-    ).astype(float)
-
-    result = result.fillna(0.0)
-
-    n_cols    = len(result.columns)
-    n_nonzero = (result != 0).any(axis=1).sum()
-    print(f"    Market Intelligence: {n_cols} features, {n_nonzero:,}/{len(data):,} meciuri cu date ({n_nonzero/len(data)*100:.1f}%)")
-    return result
-
-
-def build_odds_features(data):
-    """
-    Converteste cotele bookmakerilor in probabilitati normalizate.
-    Pinnacle (PS) este cel mai sharp bookmaker — cel mai valoros feature.
-    Meciurile fara cote primesc valori medii (has_odds=0).
-    """
-    print(">>> Procesez cote bookmakers...")
-    result = pd.DataFrame(index=data.index)
-
-    sources = [
-        ("ps",   "PSH",   "PSD",   "PSA"),    # Pinnacle — cel mai sharp
-        ("avg",  "AvgH",  "AvgD",  "AvgA"),   # Media pietei
-        ("b365", "B365H", "B365D", "B365A"),  # Bet365
-        ("max",  "MaxH",  "MaxD",  "MaxA"),   # Maximul pietei
-    ]
-
-    any_odds = pd.Series(False, index=data.index)
-
-    for name, ch, cd, ca in sources:
-        if not all(c in data.columns for c in [ch, cd, ca]):
-            continue
-        h = pd.to_numeric(data[ch], errors="coerce").where(lambda x: x > 1.01)
-        d = pd.to_numeric(data[cd], errors="coerce").where(lambda x: x > 1.01)
-        a = pd.to_numeric(data[ca], errors="coerce").where(lambda x: x > 1.01)
-
-        raw_h = 1.0 / h
-        raw_d = 1.0 / d
-        raw_a = 1.0 / a
-        margin = raw_h + raw_d + raw_a  # overround (1.05-1.08 tipic)
-
-        # Probabilitati normalizate (suma = 1.0)
-        result[f"mkt_ph_{name}"] = raw_h / margin
-        result[f"mkt_pd_{name}"] = raw_d / margin
-        result[f"mkt_pa_{name}"] = raw_a / margin
-        result[f"mkt_margin_{name}"] = margin
-
-        valid = (raw_h.notna() & raw_d.notna() & raw_a.notna())
-        any_odds = any_odds | valid
-
-    result["has_odds"] = any_odds.astype(float)
-
-    # Inlocuieste NaN cu media datelor (meciuri fara cote = "meci mediu")
-    for col in result.columns:
-        if col != "has_odds":
-            mean_val = result.loc[any_odds, col].mean()
-            if pd.notna(mean_val):
-                result[col] = result[col].fillna(mean_val)
-
-    n_with = any_odds.sum()
-    print(f"    Meciuri cu cote: {n_with:,} / {len(data):,} ({n_with/len(data)*100:.1f}%)")
-    return result
-
-
-# ─────────────────────────────────────────────────────────
-# 4. ELO PER LIGA (fix principal — nu global!)
+# 3. ELO PER LIGA
 # ─────────────────────────────────────────────────────────
 def build_elo_features(data):
-    """
-    Elo calculat SEPARAT per liga.
-    Echipele din ligi diferite nu se influenteaza reciproc.
-    Elo porneste de la 1500 la prima aparitie in fiecare liga.
-    """
     print(">>> Calculez Elo per liga...")
-    ratings = {}  # (liga, echipa) -> elo
+    ratings = {}
 
     def get(league, team):
         return ratings.get((league, team), 1500.0)
@@ -428,19 +219,17 @@ def build_elo_features(data):
         ra = get(league, away)
         rh_adj = rh + ELO_HOME
 
-        ea = expected(rh_adj, ra)  # prob victorie gazda
+        ea = expected(rh_adj, ra)
 
         h_elo.append(rh)
         a_elo.append(ra)
         elo_diff.append(rh_adj - ra)
 
-        # Prob estimate H/D/A din Elo
         diff_abs = abs(rh_adj - ra)
         dp = max(0.15, min(0.35, 0.27 * np.exp(-diff_abs / 500)))
         elo_prob_h.append(ea * (1 - dp))
         elo_prob_d.append(dp)
 
-        # Update dupa meci
         sa, sb = {"H": (1, 0), "D": (0.5, 0.5), "A": (0, 1)}[ftr]
         ratings[(league, home)] = rh + ELO_K * (sa - ea)
         ratings[(league, away)] = ra + ELO_K * (sb - (1 - ea))
@@ -460,20 +249,11 @@ def build_elo_features(data):
 # 4. FEATURES ATAC / APARARE + FORMA
 # ─────────────────────────────────────────────────────────
 def build_team_features(data, xg_lookup=None):
-    """
-    Pentru fiecare meci, calculam (fara leakage):
-    - rata de goluri / xG marcate/primite acasa si in deplasare
-    - forma recenta (win rate ultimele 5)
-    - streak
-    xg_lookup: dict (Div, date_str, home_lower, away_lower) -> (xg_h, xg_a)
-    """
     print(">>> Calculez features atac/aparare per echipa...")
     if xg_lookup:
         print(f"    xG real disponibil pentru {len(xg_lookup):,} meciuri")
 
-    # Structuri de istoric per echipa
-    hist = {}  # team -> list de {gf, ga, xgf, xga, is_home, pts}
-
+    hist = {}
     rows = []
     xg_real_used = 0
 
@@ -484,7 +264,6 @@ def build_team_features(data, xg_lookup=None):
         div = str(row.get("Div", ""))
         date_obj = row["Date"].date() if hasattr(row["Date"], "date") else None
 
-        # Cauta xG real pentru acest meci
         real_xg_h = real_xg_a = None
         if xg_lookup and date_obj:
             key = (div, str(date_obj), home.strip().lower(), away.strip().lower())
@@ -549,7 +328,6 @@ def build_team_features(data, xg_lookup=None):
             gf_venue5 = avg_gf(venue_r, 5, 1.4 if as_home else 1.1)
             ga_venue5 = avg_ga(venue_r, 5, 1.1 if as_home else 1.3)
 
-            # xG rolling: folosim real daca avem, altfel proxy din goluri
             xgf5 = avg_xgf(all_r, 5)
             xga5 = avg_xga(all_r, 5)
             xgf_v5 = avg_xgf(venue_r, 5)
@@ -574,7 +352,6 @@ def build_team_features(data, xg_lookup=None):
                 "clean5":      sum(1 for r in all_r[-5:] if r["ga"] == 0) / max(len(all_r[-5:]), 1),
                 "streak":      streak(all_r),
                 "n_matches":   len(all_r),
-                # xG rolling real (None daca nu avem date)
                 "_xgf5":       xgf5,
                 "_xga5":       xga5,
                 "_xgf_v5":     xgf_v5,
@@ -586,15 +363,13 @@ def build_team_features(data, xg_lookup=None):
         h_stats = get_stats(home, as_home=True)
         a_stats = get_stats(away, as_home=False)
 
-        # xG pentru feature-uri predictive (INAINTE de meci — rolling history)
-        # Folosim xG real rolling daca avem, altfel proxy din goluri
         def pick_xg(xgf5, xga5, xgf_v5, xga_v5, gf_v5, ga_v5):
             if xgf_v5 is not None and xga_v5 is not None:
-                return xgf_v5, xga_v5  # xG real venue-specific
+                return xgf_v5, xga_v5
             elif xgf5 is not None and xga5 is not None:
-                return xgf5, xga5  # xG real general
+                return xgf5, xga5
             else:
-                return gf_v5, ga_v5  # proxy din goluri
+                return gf_v5, ga_v5
 
         h_xgf, h_xga = pick_xg(h_stats["_xgf5"], h_stats["_xga5"],
                                 h_stats["_xgf_v5"], h_stats["_xga_v5"],
@@ -606,7 +381,6 @@ def build_team_features(data, xg_lookup=None):
         xg_h = (h_xgf + a_xga) / 2
         xg_a = (a_xgf + h_xga) / 2
 
-        # Curata cheile interne
         for k in ["_xgf5", "_xga5", "_xgf_v5", "_xga_v5", "_gf_v5", "_ga_v5"]:
             h_stats.pop(k, None)
             a_stats.pop(k, None)
@@ -622,7 +396,6 @@ def build_team_features(data, xg_lookup=None):
 
         rows.append(row_feat)
 
-        # Update istoric (cu xG real daca avem)
         h_pts = {"H": 3, "D": 1, "A": 0}[ftr]
         a_pts = {"H": 0, "D": 1, "A": 3}[ftr]
         hist.setdefault(home, []).append({
@@ -681,17 +454,16 @@ def build_h2h_features(data):
 
 
 # ─────────────────────────────────────────────────────────
-# 6. ASAMBLARE
+# 6. ASAMBLARE (fara features de cote)
 # ─────────────────────────────────────────────────────────
-def assemble(data, team_df, h2h_df, elo_df, odds_df, market_df):
-    print(">>> Asamblam feature matrix...")
+def assemble(data, team_df, h2h_df, elo_df):
+    print(">>> Asamblam feature matrix (fara cote)...")
 
     le_div = LabelEncoder()
     league_id = le_div.fit_transform(data["Div"])
 
-    X = pd.concat([team_df, h2h_df, elo_df, odds_df, market_df], axis=1)
+    X = pd.concat([team_df, h2h_df, elo_df], axis=1)
 
-    # Diferentiale
     for col in ["atk_all5", "def_all5", "atk_all10", "def_all10",
                 "atk_venue5", "def_venue5", "win5", "win10",
                 "pts5", "pts10", "win_venue5", "pts_venue5"]:
@@ -702,26 +474,22 @@ def assemble(data, team_df, h2h_df, elo_df, odds_df, market_df):
     X["month"]           = data["Date"].dt.month.values
     X["season_progress"] = ((data["Date"].dt.month - 8) % 12) / 11.0
 
-    # Features specifice pentru egaluri
-    # Egal mai probabil cand: echipe egale, joc defensiv, elo_diff mic
-    X["balanced"]    = np.exp(-np.abs(X["elo_diff"]) / 150)   # 1.0 cand elo_diff=0
-    X["low_scoring"] = 1.0 / (X["xg_h"] + X["xg_a"] + 0.5)  # creste cand xg mic
-    X["xg_sim"]      = np.exp(-np.abs(X["xg_diff"]) * 2)     # 1.0 cand xg_h≈xg_a
-    # Poisson draw proxy: P(draw) ≈ exp(-(lam+mu)) * I0(2*sqrt(lam*mu))
+    X["balanced"]    = np.exp(-np.abs(X["elo_diff"]) / 150)
+    X["low_scoring"] = 1.0 / (X["xg_h"] + X["xg_a"] + 0.5)
+    X["xg_sim"]      = np.exp(-np.abs(X["xg_diff"]) * 2)
     lam = X["xg_h"].clip(0.1, 6)
     mu  = X["xg_a"].clip(0.1, 6)
     X["poisson_draw"] = np.exp(-(lam + mu)) * np.exp(2 * np.sqrt(lam * mu) - lam - mu + (lam + mu))
 
-    # Filtru cold-start
     valid = (X["h_n_matches"] >= MIN_MATCHES) & (X["a_n_matches"] >= MIN_MATCHES)
     X = X[valid].fillna(0)
     y = data.loc[valid, "FTR"]
-    print(f"    Meciuri cu istoric: {len(X)}")
+    print(f"    Meciuri cu istoric suficient: {len(X)}")
     return X, y
 
 
 # ─────────────────────────────────────────────────────────
-# 7. ANTRENARE
+# 7. ANTRENARE (fara filtrare has_odds)
 # ─────────────────────────────────────────────────────────
 from calibrator import CalibratedXGB
 
@@ -734,56 +502,49 @@ def train_model(X, y):
 
     optuna.logging.set_verbosity(optuna.logging.WARNING)
 
-    print(">>> Antrenez XGBoost cu temporal split + Optuna + calibrare...")
+    print(">>> Antrenez XGBoost NO-ODDS cu temporal split + Optuna + calibrare...")
     le = LabelEncoder()
     y_enc = le.fit_transform(y)
 
-    # Antrenam pe TOT setul — has_odds e feature explicit, modelul invata ambele populatii
-    has_odds_mask = X["has_odds"] == 1
+    # Antrenam pe TOATE meciurile (nu filtram dupa has_odds)
     X_all = X.reset_index(drop=True)
     y_all = y_enc
-    print(f"    Meciuri cu cote: {has_odds_mask.sum():,} / {len(X):,} ({has_odds_mask.mean()*100:.1f}%)")
-    print(f"    Antrenam pe TOT setul ({len(X_all):,} meciuri) — has_odds ca feature")
+    print(f"    Total meciuri disponibile: {len(X_all):,}")
 
-    # ── Temporal split cu set separat de calibrare ─────────────────────────
-    # Train 0-65% | Val 65-75% (Optuna) | Cal 75-80% (calibrare) | Test 80-100%
+    # Temporal split (acelasi schema: 70% train | 10% val | 20% test)
     n = len(X_all)
-    val_start  = int(n * 0.65)
-    cal_start  = int(n * 0.75)
-    test_start = int(n * 0.80)
+    train_end  = int(n * 0.80)
+    val_start  = int(n * 0.70)
 
-    X_train    = X_all.iloc[:val_start]
-    y_train    = y_all[:val_start]
+    X_train = X_all.iloc[:val_start]
+    y_train = y_all[:val_start]
 
-    X_val      = X_all.iloc[val_start:cal_start]
-    y_val      = y_all[val_start:cal_start]
+    X_val   = X_all.iloc[val_start:train_end]
+    y_val   = y_all[val_start:train_end]
 
-    X_cal      = X_all.iloc[cal_start:test_start]
-    y_cal      = y_all[cal_start:test_start]
+    X_test  = X_all.iloc[train_end:]
+    y_test  = y_all[train_end:]
 
-    X_test     = X_all.iloc[test_start:]
-    y_test     = y_all[test_start:]
+    print(f"    Temporal split: Train={len(X_train)} | Val={len(X_val)} | Test={len(X_test)}")
+    print(f"    (Train 0-70% | Val 70-80% | Test 80-100% cronologic)")
 
-    print(f"    Temporal split: Train={len(X_train)} | Val={len(X_val)} | Cal={len(X_cal)} | Test={len(X_test)}")
-    print(f"    (Train 0-65% | Val 65-75% | Cal 75-80% | Test 80-100% cronologic)")
-
-    # ── FIX 2: Optuna hyperparameter tuning ───────────────────────────────
+    # Optuna tuning
     print(f"\n>>> Optuna tuning (50 trials)...")
 
     def objective(trial):
         params = dict(
-            n_estimators      = trial.suggest_int("n_estimators", 300, 1500),
-            max_depth         = trial.suggest_int("max_depth", 3, 8),
-            learning_rate     = trial.suggest_float("learning_rate", 0.01, 0.3, log=True),
-            subsample         = trial.suggest_float("subsample", 0.6, 1.0),
-            colsample_bytree  = trial.suggest_float("colsample_bytree", 0.5, 1.0),
-            min_child_weight  = trial.suggest_int("min_child_weight", 1, 10),
-            gamma             = trial.suggest_float("gamma", 0.0, 5.0),
-            eval_metric       = "mlogloss",
+            n_estimators          = trial.suggest_int("n_estimators", 300, 1500),
+            max_depth             = trial.suggest_int("max_depth", 3, 8),
+            learning_rate         = trial.suggest_float("learning_rate", 0.01, 0.3, log=True),
+            subsample             = trial.suggest_float("subsample", 0.6, 1.0),
+            colsample_bytree      = trial.suggest_float("colsample_bytree", 0.5, 1.0),
+            min_child_weight      = trial.suggest_int("min_child_weight", 1, 10),
+            gamma                 = trial.suggest_float("gamma", 0.0, 5.0),
+            eval_metric           = "mlogloss",
             early_stopping_rounds = 50,
-            random_state      = 42,
-            n_jobs            = -1,
-            tree_method       = "hist",
+            random_state          = 42,
+            n_jobs                = -1,
+            tree_method           = "hist",
         )
         m = XGBClassifier(**params)
         sw = compute_sample_weight("balanced", y_train)
@@ -800,7 +561,7 @@ def train_model(X, y):
     print(f"    Best params: {best}")
     print(f"    Best val accuracy: {study.best_value*100:.2f}%")
 
-    # ── FIX 3: Antrenare finala cu best params + class weights ─────────────
+    # Antrenare finala
     print("\n>>> Antrenez modelul final cu best params + sample weights...")
     model = XGBClassifier(
         **best,
@@ -816,18 +577,18 @@ def train_model(X, y):
               sample_weight=sw_train,
               verbose=100)
 
-    # ── FIX 4: Calibrare probabilitati pe X_cal (set separat!) ──────────────
-    print("\n>>> Calibrez probabilitatile (isotonic regression pe X_cal — set separat de val)...")
-    proba_cal  = model.predict_proba(X_cal)
+    # Calibrare isotonica pe X_val
+    print("\n>>> Calibrez probabilitatile (isotonic regression pe X_val)...")
+    proba_val  = model.predict_proba(X_val)
     n_classes  = len(le.classes_)
     calibrators = []
     for i in range(n_classes):
         ir = IsotonicRegression(out_of_bounds="clip")
-        ir.fit(proba_cal[:, i], (y_cal == i).astype(int))
+        ir.fit(proba_val[:, i], (y_val == i).astype(int))
         calibrators.append(ir)
     calibrated = CalibratedXGB(model, calibrators, n_classes)
 
-    # ── FIX 5: Raport complet pe test temporal ────────────────────────────
+    # Raport final
     preds = calibrated.predict(X_test)
     proba = calibrated.predict_proba(X_test)
 
@@ -836,21 +597,25 @@ def train_model(X, y):
     edge     = acc - baseline
 
     print(f"\n{'='*55}")
-    print(f"  RAPORT FINAL — Test temporal (ultimele 20%)")
+    print(f"  RAPORT FINAL NO-ODDS — Test temporal (ultimele 20%)")
     print(f"{'='*55}")
     print(f"  Acuratete test:        {acc*100:.2f}%")
     print(f"  Baseline majority:     {baseline*100:.2f}%")
     print(f"  Edge real vs baseline: {edge*100:+.2f}%")
     print(f"\n{classification_report(y_test, preds, target_names=le.classes_)}")
 
-    # Brier score multiclass (medie OvR)
+    # Draw recall explicit
+    from sklearn.metrics import recall_score
+    draw_idx = list(le.classes_).index("D")
+    draw_recall = recall_score(y_test, preds, labels=[draw_idx], average=None)[0]
+    print(f"  *** Draw recall: {draw_recall:.4f} ({draw_recall*100:.1f}%) ***")
+
     brier = np.mean([
         brier_score_loss((y_test == i).astype(int), proba[:, i])
         for i in range(len(le.classes_))
     ])
     print(f"  Brier score:           {brier:.4f}  ({'bun' if brier < 0.20 else 'acceptabil' if brier < 0.25 else 'slab'})")
 
-    # Top 15 features
     importances = model.feature_importances_
     feat_names  = list(X_all.columns)
     top15_idx   = np.argsort(importances)[::-1][:15]
@@ -858,7 +623,6 @@ def train_model(X, y):
     for rank, i in enumerate(top15_idx, 1):
         print(f"    {rank:2d}. {feat_names[i]:<35} {importances[i]:.4f}")
 
-    # Confidence threshold analysis
     max_conf = proba.max(axis=1)
     print(f"\n  Acuratete per prag de incredere (test temporal):")
     for thr in [0.45, 0.50, 0.55, 0.60, 0.65, 0.70]:
@@ -868,8 +632,7 @@ def train_model(X, y):
             print(f"    >= {thr:.0%}  ->  {acc_thr*100:.2f}%  ({mask.sum():,} meciuri, {mask.mean()*100:.1f}%)")
     print(f"{'='*55}\n")
 
-    # feature_means calculat DOAR pe train (fara val/cal/test)
-    feature_means = X_all.iloc[:val_start].mean().to_dict()
+    feature_means = X_all.iloc[:train_end].mean().to_dict()
 
     return calibrated, le, feature_means
 
@@ -911,29 +674,24 @@ def build_team_stats(hist, elo_ratings):
                 else: break
             return s if last == 3 else (-s if last == 0 else 0)
 
-        # Elo: cauta key "liga|echipa" — ia cea mai mare valoare (cel mai bun Elo al echipei)
         team_elo = max(
             (v for k, v in elo_ratings.items() if k.split("|", 1)[-1] == team),
             default=1500.0
         )
 
         team_stats[team] = {
-            # All games
             "atk_all5":    avg(last5, "gf"),
             "def_all5":    avg(last5, "ga"),
             "atk_all10":   avg(last10, "gf"),
             "def_all10":   avg(last10, "ga"),
-            # Home venue stats
             "atk_home5":   avg(home5, "gf", 1.4),
             "def_home5":   avg(home5, "ga", 1.1),
             "win_home5":   win_rate(home5),
             "pts_home5":   pts_rate(home5),
-            # Away venue stats
             "atk_away5":   avg(away5, "gf", 1.1),
             "def_away5":   avg(away5, "ga", 1.3),
             "win_away5":   win_rate(away5),
             "pts_away5":   pts_rate(away5),
-            # Form
             "win5":        win_rate(last5),
             "win10":       win_rate(last10),
             "draw5":       sum(1 for r in last5 if r["pts"] == 1) / max(len(last5), 1),
@@ -945,7 +703,6 @@ def build_team_stats(hist, elo_ratings):
             "streak":      streak(records),
             "n_matches":   len(records),
             "elo":         team_elo,
-            # xG real rolling (None daca datele Understat lipsesc pentru aceasta echipa)
             "xgf_home5":   avg_xg(home5, "xgf"),
             "xga_home5":   avg_xg(home5, "xga"),
             "xgf_away5":   avg_xg(away5, "xgf"),
@@ -960,19 +717,16 @@ def build_team_stats(hist, elo_ratings):
 # 9. MAIN
 # ─────────────────────────────────────────────────────────
 def main():
-    data                    = load_data()
-    data                    = preprocess(data)
-    xg_lookup               = load_xg_data()
-    odds_df                 = build_odds_features(data)
-    market_df               = build_market_features(data)
-    elo_df, elo_ratings     = build_elo_features(data)
-    team_df, hist           = build_team_features(data, xg_lookup=xg_lookup)
+    data                     = load_data()
+    data                     = preprocess(data)
+    xg_lookup                = load_xg_data()
+    elo_df, elo_ratings      = build_elo_features(data)
+    team_df, hist            = build_team_features(data, xg_lookup=xg_lookup)
     h2h_df, h2h_history      = build_h2h_features(data)
-    X, y                    = assemble(data, team_df, h2h_df, elo_df, odds_df, market_df)
+    X, y                     = assemble(data, team_df, h2h_df, elo_df)
     model, le, feature_means = train_model(X, y)
     team_stats               = build_team_stats(hist, elo_ratings)
 
-    # Trim h2h_history la ultimele 6 per pereche — suficient pentru inference, economiseste memorie
     h2h_history_trimmed = {k: v[-6:] for k, v in h2h_history.items()}
 
     print(">>> Salvez modelul...")
@@ -986,7 +740,7 @@ def main():
             "feature_means":  feature_means,
             "h2h_history":    h2h_history_trimmed,
         }, f)
-    print(">>> Model salvat!")
+    print(f">>> Model salvat: {MODEL_PATH}")
 
 
 if __name__ == "__main__":

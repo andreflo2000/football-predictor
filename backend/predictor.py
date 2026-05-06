@@ -85,6 +85,8 @@ def _get_team_stats(team: str, as_home: bool) -> dict:
             "win_venue5": 0.40, "pts_venue5": 0.40,
             "btts5": 0.50, "over25_5": 0.50, "clean5": 0.30,
             "streak": 0, "n_matches": 6,
+            "xgf_venue5": None, "xga_venue5": None,
+            "xgf_all5": None, "xga_all5": None,
         }
 
     s = _team_stats[team]
@@ -112,12 +114,52 @@ def _get_team_stats(team: str, as_home: bool) -> dict:
         "clean5":     s.get("clean5", 0.30),
         "streak":     s.get("streak", 0),
         "n_matches":  s.get("n_matches", 6),
+        # xG real rolling (None daca modelul vechi nu are aceste date)
+        "xgf_venue5": s.get("xgf_home5" if as_home else "xgf_away5"),
+        "xga_venue5": s.get("xga_home5" if as_home else "xga_away5"),
+        "xgf_all5":   s.get("xgf_all5"),
+        "xga_all5":   s.get("xga_all5"),
     }
+
+
+# Home advantage per liga (Elo points) — calculat din datele de antrenament
+# Formula: elo_adv = 400 * log10(P_home_adj / (1 - P_home_adj)) la elo_diff=0
+_HOME_ADV: dict[str, int] = {
+    "E0": 23, "E1": 18, "E2": 15, "E3": 9, "EC": 6,
+    "D1": 22, "D2": 25,
+    "SP1": 34, "SP2": 25,
+    "I1": 26, "I2": 22,
+    "F1": 31, "F2": 27,
+    "P1": 28, "P2": 20,
+    "N1": 30,
+    "B1": 38,
+    "T1": 30,
+    "G1": 43,
+    "SC0": 4, "SC1": -5,
+}
+_DEFAULT_HOME_ADV = 25
+
+# Draw boost per liga — ligi cu mai putine egaluri au nevoie de boost mai mare
+# Calibrat din draw_rate per liga din setul de antrenament
+_DRAW_BOOST: dict[str, float] = {
+    "E0": 1.40, "E1": 1.35, "E2": 1.35, "E3": 1.38, "EC": 1.38,
+    "D1": 1.38, "D2": 1.32,
+    "SP1": 1.38, "SP2": 1.28,
+    "I1": 1.35, "I2": 1.25,
+    "F1": 1.30, "F2": 1.22,
+    "P1": 1.40, "P2": 1.35,
+    "N1": 1.48,
+    "B1": 1.42,
+    "T1": 1.42,
+    "G1": 1.48,
+    "SC0": 1.44, "SC1": 1.38,
+}
+_DEFAULT_DRAW_BOOST = 1.40
 
 
 def _build_feature_vector(home_team: str, away_team: str,
                            odds: dict = None, league_id: int = 0,
-                           month: int = None) -> pd.DataFrame:
+                           month: int = None, league_code: str = "") -> pd.DataFrame:
     """
     Construieste vectorul complet de ~80 features pe baza team_stats.
     odds: dict optional cu chei PSH/PSD/PSA, B365H/B365D/B365A, etc.
@@ -134,15 +176,26 @@ def _build_feature_vector(home_team: str, away_team: str,
     elo_diff = h_elo - a_elo
 
     # Elo probabilities (formula clasica)
-    elo_diff_adj = elo_diff + 50  # home advantage (calibrat post-COVID)
+    home_adv = _HOME_ADV.get(league_code, _DEFAULT_HOME_ADV)
+    elo_diff_adj = elo_diff + home_adv
     elo_prob_h = 1 / (1 + 10 ** (-elo_diff_adj / 400))
     # Draw probability: aproximare empirica
     diff_abs = abs(elo_diff_adj)
     elo_prob_d = max(0.15, min(0.35, 0.27 * math.exp(-diff_abs / 500)))
 
-    # xG proxy
-    xg_h = (h["atk_venue5"] + a["def_venue5"]) / 2
-    xg_a = (a["atk_venue5"] + h["def_venue5"]) / 2
+    # xG — real (Understat rolling) cu fallback la proxy din goluri
+    h_xgf = h.get("xgf_venue5") or h.get("xgf_all5")
+    h_xga = h.get("xga_venue5") or h.get("xga_all5")
+    a_xgf = a.get("xgf_venue5") or a.get("xgf_all5")
+    a_xga = a.get("xga_venue5") or a.get("xga_all5")
+    if h_xgf is not None and a_xga is not None:
+        xg_h = (h_xgf + a_xga) / 2
+    else:
+        xg_h = (h["atk_venue5"] + a["def_venue5"]) / 2
+    if a_xgf is not None and h_xga is not None:
+        xg_a = (a_xgf + h_xga) / 2
+    else:
+        xg_a = (a["atk_venue5"] + h["def_venue5"]) / 2
     xg_diff = xg_h - xg_a
 
     feat = {}
@@ -335,12 +388,14 @@ def predict_match(
     month: int = None,
     neutral: bool = False,
     tournament: str = "Friendly",
+    league_code: str = "",
 ) -> dict:
     if _model is None:
         load_model()
 
     X = _build_feature_vector(home_team, away_team, odds=odds,
-                              league_id=league_id, month=month)
+                              league_id=league_id, month=month,
+                              league_code=league_code)
 
     proba = _model.predict_proba(X)[0]
 
@@ -351,12 +406,11 @@ def predict_match(
         classes = ["A", "D", "H"]
 
     prob_map = {c: round(float(p), 3) for c, p in zip(classes, proba)}
-    # Draw boost: ridica recall-ul pentru egaluri fara a distorsiona probabilitatile raportate
-    # Modelul subapreciaza sistematic Draw (recall ~0%) — boost corecteaza pragul de decizie
-    DRAW_BOOST = 1.4
+    # Draw boost per liga: corecteaza subaprecierea sistematica a egalurilor
+    draw_boost = _DRAW_BOOST.get(league_code, _DEFAULT_DRAW_BOOST)
     proba_adj = proba.copy()
     if "D" in classes:
-        proba_adj[list(classes).index("D")] *= DRAW_BOOST
+        proba_adj[list(classes).index("D")] *= draw_boost
         proba_adj /= proba_adj.sum()
     best_idx   = int(np.argmax(proba_adj))
     best_class = classes[best_idx]
