@@ -60,10 +60,15 @@ export default function AdminPage() {
         headers: { Authorization: `Bearer ${getToken()}` }
       })
       if (res.status === 403) { setSearchErr('Acces refuzat'); setLoading(false); return }
+      if (!res.ok) {
+        const text = await res.text()
+        setSearchErr(`HTTP ${res.status}: ${text.slice(0, 120)}`)
+        setLoading(false); return
+      }
       const data = await res.json()
       setUsers(data)
       if (!q) setAllUsers(data)
-    } catch { setSearchErr('Eroare conexiune backend') }
+    } catch (e: any) { setSearchErr(`Eroare: ${e?.message || String(e)}`) }
     setLoading(false)
   }
 
