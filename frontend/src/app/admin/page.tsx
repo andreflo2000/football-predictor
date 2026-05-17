@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { login, getToken, getUser, isAdmin } from '@/lib/auth'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'https://football-predictor-vlpp.onrender.com'
@@ -37,20 +37,35 @@ export default function AdminPage() {
   const [rerunMsg, setRerunMsg]         = useState('')
   const [allUsers, setAllUsers]         = useState<UserRow[]>([])
   const [showSuggestions, setShowSuggestions] = useState(false)
+  const [searchErr, setSearchErr]       = useState('')
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     if (getToken() && isAdmin()) {
       setAuthed(true)
-      doSearch('')
+      loadUsers('')
     }
   }, [])
 
-  // search live cu debounce 300ms
-  useEffect(() => {
-    if (!authed) return
-    const t = setTimeout(() => doSearch(search), 300)
-    return () => clearTimeout(t)
-  }, [search, authed])
+  function handleSearchChange(val: string) {
+    setSearch(val)
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => loadUsers(val), 300)
+  }
+
+  async function loadUsers(q: string) {
+    setLoading(true); setSearchErr('')
+    try {
+      const res = await fetch(`${API}/api/admin/users?search=${encodeURIComponent(q)}`, {
+        headers: { Authorization: `Bearer ${getToken()}` }
+      })
+      if (res.status === 403) { setSearchErr('Acces refuzat'); setLoading(false); return }
+      const data = await res.json()
+      setUsers(data)
+      if (!q) setAllUsers(data)
+    } catch { setSearchErr('Eroare conexiune backend') }
+    setLoading(false)
+  }
 
   async function doLogin() {
     setLoginLoading(true); setLoginErr('')
@@ -62,31 +77,16 @@ export default function AdminPage() {
         return
       }
       setAuthed(true)
-      doSearch('')
+      loadUsers('')
     } catch (e: any) {
       setLoginErr(e.message || 'Eroare login')
     }
     setLoginLoading(false)
   }
 
-  async function doSearch(q = search) {
-    setLoading(true); setMsg('')
-    try {
-      const token = getToken()
-      const res = await fetch(`${API}/api/admin/users?search=${encodeURIComponent(q)}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      if (res.status === 403) { setMsg('Acces refuzat'); setLoading(false); return }
-      const data = await res.json()
-      setUsers(data)
-      if (!q) setAllUsers(data)
-    } catch { setMsg('Eroare conexiune') }
-    setLoading(false)
-  }
-
-  const suggestions = selEmail
+  const suggestions = selEmail.length > 0
     ? allUsers.filter(u => u.email.toLowerCase().includes(selEmail.toLowerCase()) && u.email !== selEmail)
-    : []
+    : allUsers.filter(u => u.email !== selEmail)
 
   async function doRerunPicks() {
     setRerunLoading(true); setRerunMsg('')
@@ -117,7 +117,7 @@ export default function AdminPage() {
       if (!res.ok) { setMsg(data.detail || 'Eroare'); setLoading(false); return }
       setMsg(`✅ ${data.email} → ${data.tier}${data.tier_expires ? ` · expiră ${data.tier_expires.split('T')[0]}` : ' · nelimitat'}`)
       setSelEmail('')
-      doSearch(search)
+      loadUsers(search)
     } catch { setMsg('Eroare conexiune') }
     setLoading(false)
   }
@@ -173,16 +173,17 @@ export default function AdminPage() {
           <span style={s.label}>Caută utilizator</span>
           <div style={{ display: 'flex', gap: 8 }}>
             <input
-              placeholder="Email sau parte din email..."
+              placeholder="Scrie email — lista se filtrează automat..."
               value={search}
-              onChange={e => setSearch(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && doSearch(search)}
+              onChange={e => handleSearchChange(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && loadUsers(search)}
               style={{ ...s.input, marginBottom: 0, flex: 1 }}
             />
-            <button style={s.btn} onClick={() => doSearch(search)} disabled={loading}>
+            <button style={s.btn} onClick={() => loadUsers(search)} disabled={loading}>
               {loading ? '...' : 'Caută'}
             </button>
           </div>
+          {searchErr && <div style={{ color: '#f87171', fontSize: 12, marginTop: 6 }}>{searchErr}</div>}
         </div>
 
         {/* User list */}
