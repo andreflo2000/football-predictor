@@ -155,11 +155,18 @@ def api_health():
         status = "error"
 
     # Supabase — query simplu
-    try:
-        get_client().table("daily_picks").select("id").limit(1).execute()
-    except Exception as e:
-        supabase_status = str(e)
+    env_url = bool(os.getenv("SUPABASE_URL"))
+    env_key = bool(os.getenv("SUPABASE_KEY") or os.getenv("SUPABASE_SERVICE_KEY"))
+    client = get_client()
+    if client is None:
+        supabase_status = f"client=None (SUPABASE_URL={'ok' if env_url else 'MISSING'}, KEY={'ok' if env_key else 'MISSING'})"
         status = "error"
+    else:
+        try:
+            client.table("daily_picks").select("id").limit(1).execute()
+        except Exception as e:
+            supabase_status = str(e)
+            status = "error"
 
     payload = {"status": status, "model": model_status, "supabase": supabase_status, "timestamp": now}
     if model_status != "ok":
